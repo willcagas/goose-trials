@@ -30,7 +30,6 @@ export default function LoginModal({isOpen, onClose}: LoginModalProps)
             return;
         }
 
-        /* Uncomment out once get Supabase credentials (backend)
         try{
             const supabase = createClient();
             //destructuring; allows extraction of only error component of return from supabase call
@@ -40,7 +39,7 @@ export default function LoginModal({isOpen, onClose}: LoginModalProps)
                 options:
                 {
                     //sends user back to the page they were currently on when tried to login (Ex: game page)
-                    emailRedirectTo: `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(window.location.pathname)}`
+                    emailRedirectTo: window.location.origin
                 }
             });
 
@@ -56,17 +55,12 @@ export default function LoginModal({isOpen, onClose}: LoginModalProps)
         {
             setError('Failed to send magic link. Please try again');
         }
-    }
-    */
-    setLoading(false);
-    //temporary code, shows success (remove once get Supabase info)
-    setTimeout(() =>
-        {
-        setSuccess(true);
-        setLoading(false);
-    }, 1000);
+        finally{
+            setLoading(false);
+        }
     }
 
+    
     if (!isOpen)
     {
         return null;
@@ -184,6 +178,7 @@ export default function LoginModal({isOpen, onClose}: LoginModalProps)
         )}
 
         {success && (
+            <div>
             <p style={{
             color: '#FFD700',
             marginTop: '1rem',
@@ -192,6 +187,15 @@ export default function LoginModal({isOpen, onClose}: LoginModalProps)
             }}>
             ✓ Check your email for the magic link!
             </p>
+            <p style={{
+            color: '#cccccc',
+            marginTop: '0.5rem',
+            marginBottom: 0,
+            fontSize: '0.8rem',
+            }}>
+            Your guest scores will be transferred to your account automatically.
+            </p>
+            </div>
         )}
         </div>
     </div>
