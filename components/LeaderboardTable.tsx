@@ -1,0 +1,2 @@
+// LeaderboardTable component
+

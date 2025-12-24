@@ -2,7 +2,7 @@
 import {useState} from 'react';
 import {createClient} from '@/lib/supabase/client';
 
-interface LoginModalProps{
+interface LoginModalProps
     isOpen: boolean;
     onClose: () => void;
 }
