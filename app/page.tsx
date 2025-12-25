@@ -5,6 +5,15 @@ import Navbar from '@/components/Navbar';
 import {useEffect, useRef, useState} from 'react';
 import {Zap, Hash, Eye, Layers, Route, ArrowUpDown} from 'lucide-react';
 
+interface FlyingGoose {
+  id: number;
+  x: number;
+  y: number;
+  angle: number;
+  velocityX: number;
+  velocityY: number;
+}
+
 interface ProtocolCardProps {
   number: string;
   title: string;
@@ -149,7 +158,69 @@ function ProtocolSection() {
 
 export default function HomePage() {
   const {loading} = useSession();
-  
+  const [geese, setGeese] = useState<FlyingGoose[]>([]);
+  const gooseIdRef = useRef(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setGeese(prevGeese => {
+        return prevGeese.map(goose => ({
+          ...goose,
+          x: goose.x + goose.velocityX,
+          y: goose.y + goose.velocityY
+        })).filter(goose => {
+          // Remove geese that have flown off screen
+          return goose.x > -200 && goose.x < window.innerWidth + 200 &&
+                 goose.y > -200 && goose.y < window.innerHeight + 200;
+        });
+      });
+    }, 16); // ~60fps
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleClick = (e: React.MouseEvent) => {
+    // Randomly choose a side: 0=top, 1=right, 2=bottom, 3=left
+    const side = Math.floor(Math.random() * 4);
+    let startX, startY, angle;
+
+    const speed = 8 + Math.random() * 7; // Speed between 8-15 pixels per frame
+
+    switch(side) {
+      case 0: // Top
+        startX = Math.random() * window.innerWidth;
+        startY = -200;
+        angle = Math.PI / 2 + (Math.random() - 0.5) * Math.PI / 2; // Downward angles
+        break;
+      case 1: // Right
+        startX = window.innerWidth + 200;
+        startY = Math.random() * window.innerHeight;
+        angle = Math.PI + (Math.random() - 0.5) * Math.PI / 2; // Leftward angles
+        break;
+      case 2: // Bottom
+        startX = Math.random() * window.innerWidth;
+        startY = window.innerHeight + 200;
+        angle = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI / 2; // Upward angles
+        break;
+      default: // Left
+        startX = -200;
+        startY = Math.random() * window.innerHeight;
+        angle = (Math.random() - 0.5) * Math.PI / 2; // Rightward angles
+        break;
+    }
+
+    const newGoose: FlyingGoose = {
+      id: gooseIdRef.current++,
+      x: startX,
+      y: startY,
+      angle: angle,
+      velocityX: Math.cos(angle) * speed,
+      velocityY: Math.sin(angle) * speed
+    };
+
+    setGeese(prev => [...prev, newGoose]);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50 text-gray-900">
@@ -159,16 +230,31 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900 relative overflow-hidden">
+    <div className="min-h-screen bg-gray-50 text-gray-900 relative overflow-hidden" onClick={handleClick}>
+      {/* Flying Geese */}
+      {geese.map(goose => (
+        <div
+          key={goose.id}
+          className="FlyingGoose"
+          style={{
+            left: `${goose.x}px`,
+            top: `${goose.y}px`,
+            transform: `rotate(${goose.angle}rad)`,
+          }}
+        >
+          <img className="Goose_spritesheet" src="/newSpriteSheet.png" alt="Flying Goose" />
+        </div>
+      ))}
+
       {/* Grid Pattern Background */}
-      <div 
+      <div
         className="absolute inset-0 opacity-[0.08]"
         style={{
           backgroundImage: 'radial-gradient(circle, rgba(0,0,0,0.15) 1px, transparent 1px)',
           backgroundSize: '32px 32px',
         }}
       />
-      
+
       <Navbar />
       
       {/* Hero Section */}
