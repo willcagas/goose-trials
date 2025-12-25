@@ -56,15 +56,15 @@ function ProtocolCard({number, title, desc, delay, isVisible}: ProtocolCardProps
           transform: `perspective(1000px) rotateX(${rotate.x}deg) rotateY(${rotate.y}deg)`,
           transition: rotate.x === 0 && rotate.y === 0 ? 'transform 0.5s ease-out' : 'transform 0.1s ease-out'
         }}
-        className="relative group p-8 rounded-lg bg-white border border-gray-200 shadow-sm hover:border-[#FFD700] hover:shadow-lg transition-all duration-500 overflow-hidden cursor-pointer h-full flex flex-col"
+        className="relative group p-8 rounded-lg bg-white border border-gray-200 shadow-sm hover:border-[#c9a504] hover:shadow-lg transition-all duration-500 overflow-hidden cursor-pointer h-full flex flex-col"
       >
         {/* Content */}
         <div className="relative z-10 flex-1 flex flex-col">
           <div className="flex justify-between items-start mb-6">
-            <div className="text-6xl font-bold text-gray-100 group-hover:text-[#FFD700]/70 transition-all duration-500 leading-none">
+            <div className="text-6xl font-bold text-gray-200 group-hover:text-[#c9a504]/70 transition-all duration-500 leading-none">
               {number}
             </div>
-            <div className="w-8 h-8 border-t-2 border-r-2 border-gray-200 group-hover:border-[#FFD700]/50 transition-colors duration-300" />
+            <div className="w-8 h-8 border-t-2 border-r-2 border-gray-200 group-hover:border-[#c9a504]/50 transition-colors duration-300" />
           </div>
           
           <h3 className="text-2xl font-bold mb-3 text-gray-900 group-hover:translate-x-2 transition-transform duration-300 relative z-10">
@@ -77,7 +77,7 @@ function ProtocolCard({number, title, desc, delay, isVisible}: ProtocolCardProps
         </div>
         
         {/* Bottom Corner Accent */}
-        <div className="absolute bottom-0 right-0 w-16 h-16 bg-gradient-to-br from-transparent to-[#FFD700]/5 rounded-br-lg" />
+        <div className="absolute bottom-0 right-0 w-16 h-16 bg-gradient-to-br from-transparent to-[#c9a504]/5 rounded-br-lg" />
       </div>
     </div>
   );
@@ -134,7 +134,7 @@ function ProtocolSection() {
         {/* Header */}
         <div className={`text-center mb-12 md:mb-16 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
           <h2 className="text-4xl md:text-5xl font-bold uppercase tracking-tighter mb-2 text-gray-900">
-            The <span className="text-[#FFD700]">Protocol</span>
+            The <span className="text-[#c9a504]">Protocol</span>
           </h2>
           <p className="text-gray-500 text-sm md:text-base">
             Fastest benchmark on Ring Road. Optimized for procrastination between classes.
@@ -302,7 +302,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12 md:mb-16">
             <h2 className="text-4xl md:text-5xl font-bold uppercase tracking-tighter mb-4 text-gray-900">
-              The <span className="text-[#FFD700]">Trials</span>
+              The <span className="text-[#c9a504]">Trials</span>
             </h2>
             <p className="text-gray-500 max-w-lg mx-auto">
               Each game is 20 seconds of pure cognitive intensity.
@@ -310,111 +310,111 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div className="relative overflow-hidden group p-8 rounded-3xl bg-white border-2 border-gray-200 hover:border-[#FFD700] transition-all shadow-sm hover:shadow-md">
+            <div className="relative overflow-hidden group p-8 rounded-3xl bg-white border-2 border-gray-200 hover:border-[#c9a504] transition-all shadow-sm hover:shadow-md">
               <div className="absolute top-0 right-0 p-4">
-                <span className="px-3 py-1 bg-[#FFD700]/10 text-[#E6C200] text-[10px] font-bold uppercase rounded-full border border-[#FFD700]/30">
+                <span className="px-3 py-1 bg-[#c9a504]/10 text-[#E6C200] text-[10px] font-bold uppercase rounded-full border border-[#c9a504]/30">
                   REACTION
                 </span>
               </div>
               <div className="mb-4">
-                <Zap className="w-8 h-8 text-[#FFD700]" />
+                <Zap className="w-8 h-8 text-[#c9a504]" />
               </div>
               <h3 className="text-2xl font-bold mb-3 text-gray-900 uppercase pr-20">Reaction Time</h3>
               <p className="text-gray-600 text-sm leading-relaxed mb-6">
                 Test your reflexes with split-second timing challenges.
               </p>
               <div className="w-full h-1 bg-gray-200 rounded-full overflow-hidden">
-                <div className="h-full bg-[#FFD700] w-0 group-hover:w-full transition-all duration-700"></div>
+                <div className="h-full bg-[#c9a504] w-0 group-hover:w-full transition-all duration-700"></div>
               </div>
             </div>
 
-            <div className="relative overflow-hidden group p-8 rounded-3xl bg-white border-2 border-gray-200 hover:border-[#FFD700] transition-all shadow-sm hover:shadow-md">
+            <div className="relative overflow-hidden group p-8 rounded-3xl bg-white border-2 border-gray-200 hover:border-[#c9a504] transition-all shadow-sm hover:shadow-md">
               <div className="absolute top-0 right-0 p-4">
-                <span className="px-3 py-1 bg-[#FFD700]/10 text-[#E6C200] text-[10px] font-bold uppercase rounded-full border border-[#FFD700]/30">
+                <span className="px-3 py-1 bg-[#c9a504]/10 text-[#E6C200] text-[10px] font-bold uppercase rounded-full border border-[#c9a504]/30">
                   MEMORY
                 </span>
               </div>
               <div className="mb-4">
-                <Hash className="w-8 h-8 text-[#FFD700]" />
+                <Hash className="w-8 h-8 text-[#c9a504]" />
               </div>
               <h3 className="text-2xl font-bold mb-3 text-gray-900 uppercase pr-20">Number Memory</h3>
               <p className="text-gray-600 text-sm leading-relaxed mb-6">
                 Remember and recall increasingly long number sequences.
               </p>
               <div className="w-full h-1 bg-gray-200 rounded-full overflow-hidden">
-                <div className="h-full bg-[#FFD700] w-0 group-hover:w-full transition-all duration-700"></div>
+                <div className="h-full bg-[#c9a504] w-0 group-hover:w-full transition-all duration-700"></div>
               </div>
             </div>
 
-            <div className="relative overflow-hidden group p-8 rounded-3xl bg-white border-2 border-gray-200 hover:border-[#FFD700] transition-all shadow-sm hover:shadow-md">
+            <div className="relative overflow-hidden group p-8 rounded-3xl bg-white border-2 border-gray-200 hover:border-[#c9a504] transition-all shadow-sm hover:shadow-md">
               <div className="absolute top-0 right-0 p-4">
-                <span className="px-3 py-1 bg-[#FFD700]/10 text-[#E6C200] text-[10px] font-bold uppercase rounded-full border border-[#FFD700]/30">
+                <span className="px-3 py-1 bg-[#c9a504]/10 text-[#E6C200] text-[10px] font-bold uppercase rounded-full border border-[#c9a504]/30">
                   VISUAL
                 </span>
               </div>
               <div className="mb-4">
-                <Eye className="w-8 h-8 text-[#FFD700]" />
+                <Eye className="w-8 h-8 text-[#c9a504]" />
               </div>
               <h3 className="text-2xl font-bold mb-3 text-gray-900 uppercase pr-20">Chimp Test</h3>
               <p className="text-gray-600 text-sm leading-relaxed mb-6">
                 Master pattern recognition and working memory.
               </p>
               <div className="w-full h-1 bg-gray-200 rounded-full overflow-hidden">
-                <div className="h-full bg-[#FFD700] w-0 group-hover:w-full transition-all duration-700"></div>
+                <div className="h-full bg-[#c9a504] w-0 group-hover:w-full transition-all duration-700"></div>
               </div>
             </div>
 
-            <div className="relative overflow-hidden group p-8 rounded-3xl bg-white border-2 border-gray-200 hover:border-[#FFD700] transition-all shadow-sm hover:shadow-md">
+            <div className="relative overflow-hidden group p-8 rounded-3xl bg-white border-2 border-gray-200 hover:border-[#c9a504] transition-all shadow-sm hover:shadow-md">
               <div className="absolute top-0 right-0 p-4">
-                <span className="px-3 py-1 bg-[#FFD700]/10 text-[#E6C200] text-[10px] font-bold uppercase rounded-full border border-[#FFD700]/30">
+                <span className="px-3 py-1 bg-[#c9a504]/10 text-[#E6C200] text-[10px] font-bold uppercase rounded-full border border-[#c9a504]/30">
                   SPATIAL
                 </span>
               </div>
               <div className="mb-4">
-                <Layers className="w-8 h-8 text-[#FFD700]" />
+                <Layers className="w-8 h-8 text-[#c9a504]" />
               </div>
               <h3 className="text-2xl font-bold mb-3 text-gray-900 uppercase pr-20">Tower of Hanoi</h3>
               <p className="text-gray-600 text-sm leading-relaxed mb-6">
                 Solve the classic puzzle with optimal moves.
               </p>
               <div className="w-full h-1 bg-gray-200 rounded-full overflow-hidden">
-                <div className="h-full bg-[#FFD700] w-0 group-hover:w-full transition-all duration-700"></div>
+                <div className="h-full bg-[#c9a504] w-0 group-hover:w-full transition-all duration-700"></div>
               </div>
             </div>
 
-            <div className="relative overflow-hidden group p-8 rounded-3xl bg-white border-2 border-gray-200 hover:border-[#FFD700] transition-all shadow-sm hover:shadow-md">
+            <div className="relative overflow-hidden group p-8 rounded-3xl bg-white border-2 border-gray-200 hover:border-[#c9a504] transition-all shadow-sm hover:shadow-md">
               <div className="absolute top-0 right-0 p-4">
-                <span className="px-3 py-1 bg-[#FFD700]/10 text-[#E6C200] text-[10px] font-bold uppercase rounded-full border border-[#FFD700]/30">
+                <span className="px-3 py-1 bg-[#c9a504]/10 text-[#E6C200] text-[10px] font-bold uppercase rounded-full border border-[#c9a504]/30">
                   SPATIAL
                 </span>
               </div>
               <div className="mb-4">
-                <Route className="w-8 h-8 text-[#FFD700]" />
+                <Route className="w-8 h-8 text-[#c9a504]" />
               </div>
               <h3 className="text-2xl font-bold mb-3 text-gray-900 uppercase pr-20">Pathfinding</h3>
               <p className="text-gray-600 text-sm leading-relaxed mb-6">
                 Navigate mazes and find the shortest route.
               </p>
               <div className="w-full h-1 bg-gray-200 rounded-full overflow-hidden">
-                <div className="h-full bg-[#FFD700] w-0 group-hover:w-full transition-all duration-700"></div>
+                <div className="h-full bg-[#c9a504] w-0 group-hover:w-full transition-all duration-700"></div>
               </div>
             </div>
 
-            <div className="relative overflow-hidden group p-8 rounded-3xl bg-white border-2 border-gray-200 hover:border-[#FFD700] transition-all shadow-sm hover:shadow-md">
+            <div className="relative overflow-hidden group p-8 rounded-3xl bg-white border-2 border-gray-200 hover:border-[#c9a504] transition-all shadow-sm hover:shadow-md">
               <div className="absolute top-0 right-0 p-4">
-                <span className="px-3 py-1 bg-[#FFD700]/10 text-[#E6C200] text-[10px] font-bold uppercase rounded-full border border-[#FFD700]/30">
+                <span className="px-3 py-1 bg-[#c9a504]/10 text-[#E6C200] text-[10px] font-bold uppercase rounded-full border border-[#c9a504]/30">
                   VISUAL
                 </span>
               </div>
               <div className="mb-4">
-                <ArrowUpDown className="w-8 h-8 text-[#FFD700]" />
+                <ArrowUpDown className="w-8 h-8 text-[#c9a504]" />
               </div>
               <h3 className="text-2xl font-bold mb-3 text-gray-900 uppercase pr-20">Sorting</h3>
               <p className="text-gray-600 text-sm leading-relaxed mb-6">
                 Organize elements quickly and efficiently.
               </p>
               <div className="w-full h-1 bg-gray-200 rounded-full overflow-hidden">
-                <div className="h-full bg-[#FFD700] w-0 group-hover:w-full transition-all duration-700"></div>
+                <div className="h-full bg-[#c9a504] w-0 group-hover:w-full transition-all duration-700"></div>
               </div>
             </div>
           </div>
@@ -426,7 +426,7 @@ export default function HomePage() {
         <div className="max-w-4xl mx-auto text-center">
           <div className="mb-8">
             <h2 className="text-4xl md:text-5xl font-bold uppercase tracking-tighter mb-4 text-gray-900">
-              The <span className="text-[#FFD700]">Rankings</span>
+              The <span className="text-[#c9a504]">Rankings</span>
             </h2>
             <p className="text-gray-500 max-w-lg mx-auto">
               See how you stack up against Waterloo students. Top performers get bragging rights.
