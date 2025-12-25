@@ -1,2 +1,0 @@
-// ResultCard component
-

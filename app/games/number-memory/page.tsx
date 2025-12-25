@@ -1,2 +1,0 @@
-// Number memory game
-

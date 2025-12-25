@@ -1,2 +1,0 @@
--- Optional seed data
-

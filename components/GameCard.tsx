@@ -1,2 +1,0 @@
-// GameCard component
-

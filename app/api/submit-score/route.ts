@@ -1,2 +1,0 @@
-// Submit score API route
-

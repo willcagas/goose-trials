@@ -1,2 +1,0 @@
-// Chimp game
-
