@@ -123,3 +123,59 @@
     @apply bg-background text-foreground;
   }
 }
+
+.Character {
+  --goose-scale: 6;
+  width: calc(32px * var(--goose-scale));
+  height: calc(32px * var(--goose-scale));
+  overflow: hidden;
+  position: fixed;
+  z-index: 9999;
+}
+
+.Character img {
+  display: block;
+  max-width: none;
+  min-width: auto;
+  width: auto;
+  height: auto;
+  flex-shrink: 0;
+  transform: scale(var(--goose-scale));
+  transform-origin: top left;
+}
+
+
+.Goose_spritesheet {
+  animation: moveSpritesheet 0.4s steps(2) infinite;
+}
+@keyframes moveSpritesheet {
+  from {
+    transform: scale(var(--goose-scale)) translate3d(0px, 0, 0);
+  }
+  to {
+    transform: scale(var(--goose-scale)) translate3d(-100%, 0, 0);
+  }
+}
+
+.FlyingGoose {
+  --goose-scale: 6;
+  width: calc(32px * var(--goose-scale));
+  height: calc(32px * var(--goose-scale));
+  overflow: hidden;
+  position: fixed;
+  z-index: 9999;
+  pointer-events: none;
+  transform-origin: center;
+}
+
+.FlyingGoose img {
+  display: block;
+  max-width: none;
+  min-width: auto;
+  width: auto;
+  height: auto;
+  flex-shrink: 0;
+  transform: scale(var(--goose-scale));
+  transform-origin: top left;
+  image-rendering: pixelated;
+}
