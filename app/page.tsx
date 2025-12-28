@@ -113,14 +113,14 @@ function ProtocolSection() {
     },
     {
       number: "02",
-      title: "Complete 5 Games",
+      title: "Complete 6 Games",
       desc: "Finish all mini-games in under 2 minutes total.",
       delay: "delay-300"
     },
     {
       number: "03",
       title: "See Your Rank",
-      desc: "Check the Waterloo-only leaderboard and compete.",
+      desc: "Check your campus leaderboard. Also see how you rank globally.",
       delay: "delay-450"
     }
   ];
@@ -137,7 +137,7 @@ function ProtocolSection() {
             The <span className="text-[#c9a504]">Protocol</span>
           </h2>
           <p className="text-gray-500 text-sm md:text-base">
-            Fastest benchmark on Ring Road. Optimized for procrastination between classes.
+            Fastest cognitive benchmark. Optimized for quick breaks between classes.
           </p>
         </div>
 
@@ -260,20 +260,15 @@ export default function HomePage() {
       {/* Hero Section */}
       <section className="relative z-10 px-4 py-8 md:py-12 text-center bg-[#0a0a0a] text-white min-h-[calc(100vh-4rem)] flex items-center">
         <div className="max-w-4xl mx-auto w-full">
-          {/* University of Waterloo Exclusive Banner */}
-          <div className="inline-block px-4 py-1.5 rounded-full border border-yellow-500/30 bg-yellow-500/5 text-yellow-500 text-xs font-bold uppercase tracking-widest mb-8 animate-pulse">
-            University of Waterloo Exclusive
-          </div>
-          
           {/* Main Headline */}
-          <h1 className="text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold mb-4 md:mb-6 tracking-tight leading-[1.1]">
-            <span className="block text-white mb-1">Think You’re Smart? Prove It.</span>
-            <span className="block text-[#FFD700]">Compete Against Waterloo's Best</span>
+          <h1 className="text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold mb-4 md:mb-6 tracking-tight leading-[1.1] text-center flex flex-col items-center">
+            <span className="block text-white mb-1">Think You're Smart? Prove It.</span>
+            <span className="text-[#FFD700] whitespace-nowrap">Battle your campus. Benchmark the world.</span>
           </h1>
           
           {/* Value Proposition */}
           <p className="text-base md:text-lg lg:text-xl mb-5 text-white/90 font-medium">
-            Five quick games. One leaderboard. See where you rank.
+            Six quick games. One leaderboard. See where you rank.
           </p>
           
           {/* CTA Buttons */}
@@ -434,7 +429,7 @@ export default function HomePage() {
               The <span className="text-[#c9a504]">Rankings</span>
             </h2>
             <p className="text-gray-500 max-w-lg mx-auto">
-              See how you stack up against Waterloo students. Top performers get bragging rights.
+              See how you stack up against students from universities everywhere. Top performers get bragging rights.
             </p>
           </div>
           <Link 
