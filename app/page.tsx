@@ -278,12 +278,15 @@ export default function HomePage() {
           
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Link 
-              href="/games"
-              className="px-8 md:px-10 py-3 md:py-4 bg-[#FFD700] text-black font-bold text-base md:text-lg uppercase tracking-wide rounded-lg hover:opacity-90 hover:scale-105 transition-all min-w-[160px] text-center"
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                document.getElementById('trials')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="px-8 md:px-10 py-3 md:py-4 bg-[#FFD700] text-black font-bold text-base md:text-lg uppercase tracking-wide rounded-lg hover:opacity-90 hover:scale-105 transition-all min-w-[160px] text-center cursor-pointer"
             >
               Play Now
-            </Link>
+            </button>
             <Link 
               href="/leaderboard"
               className="px-8 md:px-10 py-3 md:py-4 bg-transparent border-2 border-white text-white font-bold text-base md:text-lg uppercase tracking-wide rounded-lg hover:bg-white/10 transition-all min-w-[160px] text-center"
@@ -298,7 +301,7 @@ export default function HomePage() {
       <ProtocolSection />
 
       {/* The Trials Section */}
-      <section className="relative z-10 px-4 py-16 md:py-24 bg-gray-50">
+      <section id="trials" className="relative z-10 px-4 py-16 md:py-24 bg-gray-50">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12 md:mb-16">
             <h2 className="text-4xl md:text-5xl font-bold uppercase tracking-tighter mb-4 text-gray-900">
@@ -310,23 +313,25 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div className="relative overflow-hidden group p-8 rounded-3xl bg-white border-2 border-gray-200 hover:border-[#c9a504] transition-all shadow-sm hover:shadow-md">
-              <div className="absolute top-0 right-0 p-4">
-                <span className="px-3 py-1 bg-[#c9a504]/10 text-[#E6C200] text-[10px] font-bold uppercase rounded-full border border-[#c9a504]/30">
-                  REACTION
-                </span>
+            <Link href="/games/reaction" onClick={(e) => e.stopPropagation()}>
+              <div className="relative overflow-hidden group p-8 rounded-3xl bg-white border-2 border-gray-200 hover:border-[#c9a504] transition-all shadow-sm hover:shadow-md">
+                <div className="absolute top-0 right-0 p-4">
+                  <span className="px-3 py-1 bg-[#c9a504]/10 text-[#E6C200] text-[10px] font-bold uppercase rounded-full border border-[#c9a504]/30">
+                    REACTION
+                  </span>
+                </div>
+                <div className="mb-4">
+                  <Zap className="w-8 h-8 text-[#c9a504]" />
+                </div>
+                <h3 className="text-2xl font-bold mb-3 text-gray-900 uppercase pr-20">Reaction Time</h3>
+                <p className="text-gray-600 text-sm leading-relaxed mb-6">
+                  Test your reflexes with split-second timing challenges.
+                </p>
+                <div className="w-full h-1 bg-gray-200 rounded-full overflow-hidden">
+                  <div className="h-full bg-[#c9a504] w-0 group-hover:w-full transition-all duration-700"></div>
+                </div>
               </div>
-              <div className="mb-4">
-                <Zap className="w-8 h-8 text-[#c9a504]" />
-              </div>
-              <h3 className="text-2xl font-bold mb-3 text-gray-900 uppercase pr-20">Reaction Time</h3>
-              <p className="text-gray-600 text-sm leading-relaxed mb-6">
-                Test your reflexes with split-second timing challenges.
-              </p>
-              <div className="w-full h-1 bg-gray-200 rounded-full overflow-hidden">
-                <div className="h-full bg-[#c9a504] w-0 group-hover:w-full transition-all duration-700"></div>
-              </div>
-            </div>
+            </Link>
 
             <div className="relative overflow-hidden group p-8 rounded-3xl bg-white border-2 border-gray-200 hover:border-[#c9a504] transition-all shadow-sm hover:shadow-md">
               <div className="absolute top-0 right-0 p-4">
