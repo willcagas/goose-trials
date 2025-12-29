@@ -1,3 +1,24 @@
-[00:00:03.126] Server  LOG     ✓ Ready in 2.3s
-[00:03:00.408] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[01:09:11.812] Server  LOG     ✓ Compiled in 1260ms
+[00:00:02.975] Server  LOG     ✓ Ready in 2.1s
+[00:00:08.200] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:00:08.545] Browser LOG     Starting onboarding for user: 53a0990a-4ae9-41bd-aada-e51a38a779d5
+[00:00:10.115] Browser LOG     Guest scores migrated and guest_id cleared
+[00:00:10.115] Browser LOG     Onboarding completed successfully
+[00:00:10.115] Browser LOG     University assigned: 94d88840-67ac-47d3-a98c-411cf50d5653
+[00:00:10.115] Browser LOG     Onboarding completed successfully
+[00:00:32.791] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:00:57.254] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:00:57.499] Browser LOG     Starting onboarding for user: 53a0990a-4ae9-41bd-aada-e51a38a779d5
+[00:00:57.505] Browser LOG     Starting onboarding for user: 53a0990a-4ae9-41bd-aada-e51a38a779d5
+[00:00:58.648] Browser LOG     Username saved and pending username cleared
+[00:00:58.648] Browser LOG     Onboarding completed successfully
+[00:00:58.648] Browser LOG     University assigned: 94d88840-67ac-47d3-a98c-411cf50d5653
+[00:00:58.648] Browser LOG     Onboarding completed successfully
+[00:00:59.509] Browser LOG     Username saved and pending username cleared
+[00:00:59.509] Browser LOG     Onboarding completed successfully
+[00:00:59.509] Browser LOG     University assigned: 94d88840-67ac-47d3-a98c-411cf50d5653
+[00:00:59.509] Browser LOG     Onboarding completed successfully
+[00:01:29.063] Browser LOG     Score submitted successfully!
+[00:01:32.844] Browser LOG     Score submitted successfully!
+[00:01:36.731] Browser LOG     Score submitted successfully!
+[00:01:41.348] Browser LOG     Score submitted successfully!
+[00:02:34.594] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { submitGuestScore } from '@/lib/db/scores';
+import { submitScore } from '@/lib/db/scores';
 import Link from 'next/link';
 
 type GameState = 'idle' | 'waiting' | 'ready' | 'clicked' | 'tooEarly' | 'complete';
@@ -79,7 +79,7 @@ export default function ReactionTimeGame() {
 
       // Submit score to database
       setSubmitting(true);
-      const result = await submitGuestScore('reaction-speed', reaction);
+      const result = await submitScore('reaction-speed', reaction);
       setSubmitting(false);
 
       if (result.success) {

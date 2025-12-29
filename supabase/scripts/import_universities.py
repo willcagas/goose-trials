@@ -1,14 +1,21 @@
 import json
 import os
+import pathlib
 import sys
+import urllib.parse
 from typing import Any, Dict, List, Optional
 
 import psycopg
 
 try:
-    # Optional: supports loading SUPABASE_DB_URL from a .env file
+    # Optional: supports loading DATABASE_URL or SUPABASE_DB_URL from a .env file
     from dotenv import load_dotenv
-    load_dotenv()
+    # Load .env from project root (go up two levels from script location)
+    script_dir = pathlib.Path(__file__).parent.absolute()
+    project_root = script_dir.parent.parent
+    env_path = project_root / '.env'
+    # override=True ensures .env file values take precedence over existing env vars
+    load_dotenv(env_path, override=True)
 except Exception:
     pass
 
@@ -36,6 +43,20 @@ create index if not exists idx_university_domains_university
   on public.university_domains(university_id);
 """
 
+# Ensure the unique constraint exists (in case table was created without it)
+ENSURE_CONSTRAINT_SQL = """
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint 
+    where conname = 'universities_name_country_key'
+  ) then
+    alter table public.universities 
+    add constraint universities_name_country_key unique (name, country);
+  end if;
+end $$;
+"""
+
 
 UPSERT_UNIVERSITY_SQL = """
 insert into public.universities (name, country, alpha_two_code, website)
@@ -58,6 +79,10 @@ def normalize_domain(d: str) -> str:
     # remove trailing slash or protocol if present in dataset variants
     d = d.replace("http://", "").replace("https://", "")
     d = d.strip("/")
+    # PostgreSQL text can be very long, but domains should be reasonable
+    # Truncate if absurdly long (max 253 chars per RFC, but allow some buffer)
+    if len(d) > 255:
+        d = d[:255]
     return d
 
 
@@ -82,12 +107,25 @@ def main() -> None:
         sys.exit(1)
 
     json_path = sys.argv[1]
-    db_url = os.environ.get("SUPABASE_DB_URL")
+    # Check for DATABASE_URL first (common convention), then SUPABASE_DB_URL for backwards compatibility
+    db_url = os.environ.get("DATABASE_URL") or os.environ.get("SUPABASE_DB_URL")
 
     if not db_url:
-        print("ERROR: SUPABASE_DB_URL is not set.")
-        print('Example: export SUPABASE_DB_URL="postgresql://postgres:PASS@db.xxx.supabase.co:5432/postgres"')
+        print("ERROR: DATABASE_URL or SUPABASE_DB_URL is not set.")
+        print('Example: DATABASE_URL="postgresql://postgres:PASS@db.xxx.supabase.co:5432/postgres"')
+        print("\nTip: Make sure you have a .env file in the project root with DATABASE_URL set,")
+        print("     or set it as an environment variable in your shell.")
+        print("\nNote: If you get IPv4/IPv6 connection errors, use the Session Pooler connection string")
+        print("     from Supabase Dashboard → Database → Connection Pooling → Session mode")
         sys.exit(1)
+    
+    # Extract hostname for diagnostic message (masked for security)
+    try:
+        parsed = urllib.parse.urlparse(db_url)
+        hostname = parsed.hostname or "unknown"
+        print(f"Connecting to database at: {hostname}")
+    except Exception:
+        pass
 
     data = load_json(json_path)
 
@@ -95,18 +133,30 @@ def main() -> None:
     inserted_domains = 0
     skipped = 0
 
-    with psycopg.connect(db_url) as conn:
+    print("Loading data...")
+    print(f"Total entries to process: {len(data)}")
+    
+    with psycopg.connect(db_url, connect_timeout=30) as conn:
+        print("Connected. Setting up database...")
         conn.execute("set statement_timeout = '0'")  # allow long import
         with conn.cursor() as cur:
             # Ensure tables exist (safe to run)
             cur.execute(CREATE_TABLES_SQL)
+            # Ensure the unique constraint exists (in case table was created without it)
+            cur.execute(ENSURE_CONSTRAINT_SQL)
             conn.commit()
+            print("Database setup complete. Starting import...")
 
-            for entry in data:
+            for idx, entry in enumerate(data, 1):
+                # Use savepoint for each entry so failures don't rollback previous work
+                savepoint_name = f"sp_entry_{idx}"
                 try:
+                    cur.execute(f"SAVEPOINT {savepoint_name}")
+                    
                     name = (entry.get("name") or "").strip()
                     if not name:
                         skipped += 1
+                        cur.execute(f"RELEASE SAVEPOINT {savepoint_name}")
                         continue
 
                     country = entry.get("country")
@@ -120,7 +170,10 @@ def main() -> None:
 
                     # upsert university and get id
                     cur.execute(UPSERT_UNIVERSITY_SQL, (name, country, alpha_two_code, website))
-                    uni_id = cur.fetchone()[0]
+                    result = cur.fetchone()
+                    if not result:
+                        raise ValueError("Failed to get university ID from upsert")
+                    uni_id = result[0]
                     inserted_unis += 1
 
                     domains = entry.get("domains") or []
@@ -132,18 +185,41 @@ def main() -> None:
                         dom = normalize_domain(str(d))
                         if not dom:
                             continue
-                        cur.execute(INSERT_DOMAIN_SQL, (dom, uni_id, i == 0))
-                        inserted_domains += 1
+                        # Validate uni_id is valid UUID
+                        if not uni_id:
+                            raise ValueError(f"Invalid university_id: {uni_id}")
+                        try:
+                            cur.execute(INSERT_DOMAIN_SQL, (dom, uni_id, i == 0))
+                            inserted_domains += 1
+                        except Exception as domain_err:
+                            # Log domain-specific errors but continue
+                            print(f"  Warning: Failed to insert domain '{dom}': {domain_err}")
+                            # Don't skip the whole entry, just this domain
+                            continue
+
+                    # Release savepoint on success
+                    cur.execute(f"RELEASE SAVEPOINT {savepoint_name}")
 
                 except Exception as e:
-                    # keep going, but print the error context
+                    # Rollback to savepoint to undo just this entry
                     skipped += 1
-                    print(f"Skipping entry due to error: {e}\nEntry: {entry}")
-                    conn.rollback()
-                else:
-                    # commit in chunks to avoid huge transactions
-                    if (inserted_unis % 500) == 0:
-                        conn.commit()
+                    try:
+                        cur.execute(f"ROLLBACK TO SAVEPOINT {savepoint_name}")
+                    except Exception:
+                        pass  # Savepoint might not exist if error happened early
+                    
+                    import traceback
+                    error_msg = str(e)
+                    error_type = type(e).__name__
+                    print(f"\n[Entry {idx}/{len(data)}] Skipping entry due to error ({error_type}): {error_msg}")
+                    print(f"Entry: {entry}")
+                    # Print full traceback for debugging
+                    traceback.print_exc()
+                
+                # commit in chunks to avoid huge transactions
+                if (inserted_unis % 500) == 0:
+                    conn.commit()
+                    print(f"Progress: {inserted_unis} universities, {inserted_domains} domains processed...")
 
             conn.commit()
 

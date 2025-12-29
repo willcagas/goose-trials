@@ -10,6 +10,7 @@ interface LoginModalProps
 
 export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
     const [email, setEmail] = useState('');
+    const [username, setUsername] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState(false);
@@ -28,7 +29,26 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
             return;
         }
 
+        if (!username || username.trim().length === 0) {
+            setError('Username is required');
+            setLoading(false);
+            return;
+        }
+
+        // Validate username (alphanumeric, underscore, hyphen, 3-20 chars)
+        const usernameRegex = /^[a-zA-Z0-9_-]{3,20}$/;
+        if (!usernameRegex.test(username.trim())) {
+            setError('Username must be 3-20 characters and contain only letters, numbers, underscores, or hyphens');
+            setLoading(false);
+            return;
+        }
+
         try {
+            // Store username in localStorage before sending magic link
+            // We'll retrieve it during onboarding
+            const usernameKey = 'pending_username';
+            localStorage.setItem(usernameKey, username.trim());
+
             const supabase = createClient();
             //destructuring; allows extraction of only error component of return from supabase call
             const { error } = await supabase.auth.signInWithOtp({
@@ -47,6 +67,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
             setSuccess(true);
             setEmail('');
+            setUsername('');
         }
         catch (err) {
             setError('Failed to send magic link. Please try again');
@@ -115,11 +136,33 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                     marginBottom: '1.5rem',
                     fontSize: '0.9rem',
                 }}>
-                    Enter your UWaterloo email to appear on the leaderboard
+                    Enter your UWaterloo email and choose a username
                 </p>
 
                 {/* Form - triggered when user clicks Submit (handleSubmit takes action) */}
                 <form onSubmit={handleSubmit}>
+                <input
+                        type="text"
+                        placeholder="username (3-20 characters)"
+                        value={username}
+                        onChange={(event) => setUsername(event.target.value)}
+                        required
+                        minLength={3}
+                        maxLength={20}
+                        pattern="[a-zA-Z0-9_-]{3,20}"
+                        style={{
+                            width: '100%',
+                            padding: '0.75rem',
+                            marginBottom: '1rem',
+                            border: '1px solid #FFD700',
+                            borderRadius: '4px',
+                            fontSize: '1rem',
+                            boxSizing: 'border-box',
+                            backgroundColor: '#2a2a2a',
+                            color: '#ffffff'
+                        }}
+                    />
+
                     <input
                         type="email"
                         placeholder="your.email@uwaterloo.ca"
@@ -138,6 +181,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                             color: '#ffffff'
                         }}
                     />
+                    
 
                     <button
                         type="submit"
