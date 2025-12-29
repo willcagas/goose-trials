@@ -10,6 +10,9 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
+import { extractEmailDomain, findUniversityByDomain } from '@/lib/auth/domain';
+import { getProfile, upsertProfile } from '@/lib/db/profiles';
+import { migrateGuestScores } from '@/lib/guest/migrate';
 
 export async function POST(request: NextRequest) {
   try {
@@ -28,7 +31,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Extract email domain
     const email = user.email;
     if (!email) {
       return NextResponse.json(
@@ -37,7 +39,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const emailDomain = email.split('@')[1]?.toLowerCase();
+    // Extract email domain and find university
+    const emailDomain = extractEmailDomain(email);
     if (!emailDomain) {
       return NextResponse.json(
         { success: false, error: 'Invalid email format' },
@@ -53,71 +56,42 @@ export async function POST(request: NextRequest) {
       guest_id = body.guest_id || null;
       username = body.username || null;
     } catch {
-      // Body is optional, continue without guest_id or username
       guest_id = null;
       username = null;
     }
 
-    // Step 1: Check if profile exists (to preserve existing username if not provided)
-    const { data: existingProfile } = await supabase
-      .from('profiles')
-      .select('id, university_id, username')
-      .eq('id', user.id)
-      .single();
-
-    // Step 2: Find university by domain
-    const { data: universityData, error: universityError } = await supabase
-      .rpc('find_university_by_domain', { p_email_domain: emailDomain });
-
-    const university_id = universityError ? null : (universityData as string | null);
-
-    // Step 3: Upsert profile with university_id and username
-    // If username is provided, use it (for new profiles or updates)
-    // If username is not provided but profile exists, preserve existing username
+    // Get existing profile to preserve username if needed
+    const existingProfile = await getProfile(user.id);
+    
+    // Find university by domain
+    const university_id = await findUniversityByDomain(emailDomain);
+    
+    // Determine final username (preserve existing if new one not provided)
     const finalUsername = username || existingProfile?.username || null;
 
-    const profileData: {
-      id: string;
-      email: string;
-      university_id?: string | null;
-      username?: string | null;
-    } = {
+    // Upsert profile
+    const profileData = {
       id: user.id,
       email: email,
       university_id: university_id,
+      ...(finalUsername && { username: finalUsername }),
     };
 
-    // Include username if we have one (either new or existing)
-    if (finalUsername) {
-      profileData.username = finalUsername;
-    }
-
-    // If profile exists, update it; otherwise insert
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .upsert(profileData, {
-        onConflict: 'id',
-      });
-
-    if (profileError) {
-      console.error('Profile upsert error:', profileError);
+    const profileResult = await upsertProfile(profileData);
+    if (!profileResult.success) {
       return NextResponse.json(
-        { success: false, error: 'Failed to create/update profile' },
+        { success: false, error: profileResult.error || 'Failed to create/update profile' },
         { status: 500 }
       );
     }
 
-    // Step 4: Migrate guest scores if guest_id provided
+    // Migrate guest scores if guest_id provided
     let migrationSuccess = true;
     if (guest_id) {
-      const { error: migrationError } = await supabase.rpc('migrate_guest_scores', {
-        target_guest_id: guest_id,
-      });
-
-      if (migrationError) {
-        console.error('Migration error:', migrationError);
-        // Don't fail the entire request if migration fails
-        migrationSuccess = false;
+      const migrationResult = await migrateGuestScores(guest_id, user.id);
+      migrationSuccess = migrationResult.success;
+      if (!migrationResult.success) {
+        console.error('Migration error:', migrationResult.error);
       }
     }
 

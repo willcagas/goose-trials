@@ -1,12 +1,37 @@
 'use client';
 import Link from 'next/link';
 import {useState} from 'react';
+import {usePathname, useRouter} from 'next/navigation';
 import {useSession} from '@/app/providers/SessionContext';
 import LoginModal from '@/components/LoginModal';
 
 export default function Navbar() {
   const [showLogin, setShowLogin] = useState(false);
   const {user, signOut} = useSession();
+  const pathname = usePathname();
+  const router = useRouter();
+
+  const handleGamesClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    
+    if (pathname === '/') {
+      // On homepage, scroll to trials section
+      const trialsSection = document.getElementById('trials');
+      if (trialsSection) {
+        trialsSection.scrollIntoView({ behavior: 'smooth' });
+      }
+    } else {
+      // On other pages, navigate to homepage then scroll after load
+      router.push('/');
+      // Wait for navigation, then scroll
+      setTimeout(() => {
+        const trialsSection = document.getElementById('trials');
+        if (trialsSection) {
+          trialsSection.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 100);
+    }
+  };
 
   return (
     <>
@@ -23,12 +48,12 @@ export default function Navbar() {
 
         {/* Navigation Links and Sign In / Sign Out Button */}
         <div className="flex items-center gap-4 md:gap-6">
-          <Link 
-            href="/games" 
-            className="text-white uppercase text-sm font-medium tracking-wide hover:text-[#FFD700] transition-colors"
+          <button
+            onClick={handleGamesClick}
+            className="text-white uppercase text-sm font-medium tracking-wide hover:text-[#FFD700] transition-colors cursor-pointer bg-transparent border-none"
           >
             Games
-          </Link>
+          </button>
           <Link 
             href="/leaderboard" 
             className="text-white uppercase text-sm font-medium tracking-wide hover:text-[#FFD700] transition-colors"

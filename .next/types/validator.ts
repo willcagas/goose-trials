@@ -95,7 +95,7 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
 // Validate ../../app/games/reaction/page.tsx
 {
   type __IsExpected<Specific extends AppPageConfig<"/games/reaction">> = Specific
-  const handler = {} as typeof import("../../app/games/reaction/page.js")
+  const handler = {} as typeof import("../../app/games/reaction-time/page.js")
   type __Check = __IsExpected<typeof handler>
   // @ts-ignore
   type __Unused = __Check

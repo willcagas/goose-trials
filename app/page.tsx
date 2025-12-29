@@ -308,7 +308,7 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <Link href="/games/reaction" onClick={(e) => e.stopPropagation()}>
+            <a href="/games/reaction-time" onClick={(e) => e.stopPropagation()}>
               <div className="relative overflow-hidden group p-8 rounded-3xl bg-white border-2 border-gray-200 hover:border-[#c9a504] transition-all shadow-sm hover:shadow-md">
                 <div className="absolute top-0 right-0 p-4">
                   <span className="px-3 py-1 bg-[#c9a504]/10 text-[#E6C200] text-[10px] font-bold uppercase rounded-full border border-[#c9a504]/30">
@@ -326,7 +326,7 @@ export default function HomePage() {
                   <div className="h-full bg-[#c9a504] w-0 group-hover:w-full transition-all duration-700"></div>
                 </div>
               </div>
-            </Link>
+            </a>
 
             <div className="relative overflow-hidden group p-8 rounded-3xl bg-white border-2 border-gray-200 hover:border-[#c9a504] transition-all shadow-sm hover:shadow-md">
               <div className="absolute top-0 right-0 p-4">

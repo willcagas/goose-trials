@@ -6,8 +6,6 @@ interface Test {
   slug: string;
   name: string;
   description: string | null;
-  unit: string | null;
-  lower_is_better: boolean;
 }
 
 async function getTests(): Promise<Test[]> {
@@ -15,7 +13,7 @@ async function getTests(): Promise<Test[]> {
   
   const { data, error } = await supabase
     .from('tests')
-    .select('slug, name, description, unit, lower_is_better')
+    .select('slug, name, description')
     .order('name');
 
   if (error) {
@@ -64,11 +62,6 @@ export default async function LeaderboardPage() {
                     <p className="text-gray-600 text-sm mb-4 leading-relaxed">
                       {test.description}
                     </p>
-                  )}
-                  {test.unit && (
-                    <div className="text-xs text-gray-500 uppercase tracking-wide">
-                      Unit: {test.unit}
-                    </div>
                   )}
                   <div className="mt-4 pt-4 border-t border-gray-200">
                     <span className="text-sm text-gray-500 group-hover:text-[#c9a504] transition-colors">

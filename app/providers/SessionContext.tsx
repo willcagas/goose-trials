@@ -53,6 +53,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
     // Consolidated onboarding trigger function
     const triggerOnboardingIfNeeded = async (userId: string | null) => {
+        // I  added 10 million guards lmao (kinda overkill)
         // Don't trigger if no user logged in
         if (!userId) {
             return;

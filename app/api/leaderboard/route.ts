@@ -7,6 +7,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
+import { getLeaderboard } from '@/lib/db/leaderboard';
 
 export async function GET(request: NextRequest) {
   try {
@@ -31,23 +32,22 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Call the get_leaderboard RPC function
-    const { data, error } = await supabase.rpc('get_leaderboard', {
-      p_test_slug: testSlug,
-      p_limit: limit,
-      p_user_id: userId,
-      p_university_id: universityId || null,
+    // Get leaderboard data
+    const { data, error } = await getLeaderboard({
+      testSlug,
+      limit,
+      userId,
+      universityId: universityId || null,
     });
 
     if (error) {
-      console.error('Error calling get_leaderboard:', error);
       return NextResponse.json(
-        { error: error.message },
+        { error },
         { status: 500 }
       );
     }
 
-    return NextResponse.json({ data: data || [] });
+    return NextResponse.json({ data });
   } catch (error) {
     console.error('Unexpected error in /api/leaderboard:', error);
     return NextResponse.json(

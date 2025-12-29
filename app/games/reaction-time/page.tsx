@@ -79,7 +79,7 @@ export default function ReactionTimeGame() {
 
       // Submit score to database
       setSubmitting(true);
-      const result = await submitScore('reaction-speed', reaction);
+      const result = await submitScore('reaction-time', reaction);
       setSubmitting(false);
 
       if (result.success) {

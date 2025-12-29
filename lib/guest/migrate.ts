@@ -1,41 +1,36 @@
-import {getGuestId, clearGuestId} from './guestId';
+import { createClient } from '@/lib/supabase/server';
 
-export async function migrateGuestScores(): Promise<boolean>
-{
-    const guestId = getGuestId();
+/**
+ * Migrate guest scores to the authenticated user
+ * Server-side function (use in API routes)
+ * 
+ * @param guestId - The guest ID whose scores should be migrated
+ * @param userId - The authenticated user ID to migrate scores to
+ * @returns Success status and optional error message
+ */
+export async function migrateGuestScores(
+  guestId: string,
+  userId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const supabase = await createClient();
+    
+    // Call the Supabase RPC function to migrate scores
+    const { error } = await supabase.rpc('migrate_guest_scores', {
+      target_guest_id: guestId,
+    });
 
-    if (!guestId)
-    {
-        console.log('No guest scores to migrate');
-        return false;
+    if (error) {
+      console.error('Migration error:', error);
+      return { success: false, error: error.message };
     }
 
-    try{
-        const response = await fetch('/api/migrate-guest',{
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                guest_id:guestId,
-            }),
-        })
-
-        if (!response.ok)
-        {
-            throw Error('Migration failed');
-        }
-
-        const data = await response.json();
-
-        if (data.success)
-        {
-            clearGuestId();
-            console.log('Guest scores migrated successfully');
-            return true;
-        }
-        return false;
-    }catch (error){
-        return false;
-    }
+    return { success: true };
+  } catch (error) {
+    console.error('Unexpected error migrating guest scores:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
 }
