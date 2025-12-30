@@ -1,8 +1,49 @@
-[00:00:02.755] Server  LOG     ✓ Ready in 1928ms
-[00:00:07.793] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[00:01:14.487] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[00:01:15.952] Browser LOG     Starting onboarding for user: 70ec893f-9dca-4afb-876f-d81193eb5dc6
-[00:01:17.240] Browser LOG     Onboarding completed successfully
-[00:01:17.240] Browser LOG     University assigned: 94d88840-67ac-47d3-a98c-411cf50d5653
-[00:01:17.240] Browser LOG     Onboarding completed successfully
-[00:01:41.622] Server  LOG     ✓ Compiled in 185ms
+[00:00:02.742] Server  LOG     ✓ Ready in 2.1s
+[00:00:05.401] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:00:05.401] Browser LOG     Starting onboarding for user: 70ec893f-9dca-4afb-876f-d81193eb5dc6
+[00:00:07.476] Browser LOG     Onboarding completed successfully
+[00:00:07.476] Browser LOG     University assigned: 94d88840-67ac-47d3-a98c-411cf50d5653
+[00:00:07.476] Browser LOG     Onboarding completed successfully
+[00:01:41.430] Server  LOG     ✓ Compiled in 226ms
+[00:01:48.434] Server  LOG     ✓ Compiled in 206ms
+[00:01:55.600] Server  LOG     ✓ Compiled in 130ms
+[00:02:04.652] Server  LOG     ✓ Compiled in 125ms
+[00:02:12.736] Server  LOG     ✓ Compiled in 152ms
+[00:02:23.900] Server  LOG     ✓ Compiled in 279ms
+[00:02:42.232] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:03:22.187] Server  LOG     ✓ Compiled in 173ms
+[00:03:31.862] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:03:39.377] Server  LOG     ✓ Compiled in 149ms
+[00:04:14.069] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:04:51.282] Server  WARN    ⚠ Fast Refresh had to perform a full reload when ./goose-trials/app/providers/MeContext.tsx changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+[00:04:51.282] Server  WARN    ⚠ Fast Refresh had to perform a full reload when ./goose-trials/app/providers/MeContext.tsx changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+[00:04:51.314] Server  LOG     ✓ Compiled in 277ms
+[00:04:52.245] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:04:52.765] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:04:59.353] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:05:27.942] Server  LOG     ✓ Compiled in 129ms
+[00:05:42.569] Server  LOG     ✓ Compiled in 162ms
+[00:05:49.852] Server  LOG     ✓ Compiled in 126ms
+[00:05:54.195] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:06:20.470] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:07:09.318] Server  LOG     ✓ Compiled in 136ms
+[00:07:15.374] Server  LOG     ✓ Compiled in 135ms
+[00:07:24.017] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:07:54.805] Server  LOG     ✓ Compiled in 159ms
+[00:08:59.073] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:08:59.613] Browser LOG     Starting onboarding for user: 70ec893f-9dca-4afb-876f-d81193eb5dc6
+[00:09:00.786] Browser LOG     Onboarding completed successfully
+[00:09:00.786] Browser LOG     University assigned: 94d88840-67ac-47d3-a98c-411cf50d5653
+[00:09:00.786] Browser LOG     Onboarding completed successfully
+[00:09:10.469] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:09:15.258] Browser LOG     Score submitted successfully!
+[00:09:28.075] Browser LOG     Score submitted successfully!
+[00:09:32.277] Browser LOG     Score submitted successfully!
+[00:09:43.674] Browser LOG     Score submitted successfully!
+[00:09:50.024] Browser LOG     Score submitted successfully!
+[00:09:56.510] Browser LOG     Score submitted successfully!
+[00:10:00.745] Browser LOG     Score submitted successfully!
+[00:10:07.343] Browser LOG     Score submitted successfully!
+[00:10:13.437] Browser LOG     Score submitted successfully!
+[00:10:18.286] Browser LOG     Score submitted successfully!
+[00:10:26.140] Browser LOG     Score submitted successfully!

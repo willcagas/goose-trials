@@ -33,6 +33,8 @@ interface UniversityInfo {
   alpha_two_code: string | null;
 }
 
+type UniversityMap = Record<string, UniversityInfo>;
+
 type LeaderboardScope = 'global' | 'campus';
 
 async function fetchLeaderboard(
@@ -81,6 +83,29 @@ async function fetchUniversityInfo(universityId: string): Promise<UniversityInfo
   return data || null;
 }
 
+async function fetchUniversities(universityIds: string[]): Promise<UniversityMap> {
+  if (universityIds.length === 0) {
+    return {};
+  }
+  
+  const response = await fetch(`/api/universities?ids=${universityIds.join(',')}`);
+  
+  if (!response.ok) {
+    return {};
+  }
+
+  const { data } = await response.json();
+  const map: UniversityMap = {};
+  
+  if (data && Array.isArray(data)) {
+    data.forEach((uni: UniversityInfo) => {
+      map[uni.id] = uni;
+    });
+  }
+  
+  return map;
+}
+
 function formatScore(score: number, unit: string | null): string {
   if (unit === 'ms') {
     return `${score.toFixed(0)} ms`;
@@ -104,6 +129,7 @@ export default function LeaderboardTestPage() {
 
   const [testInfo, setTestInfo] = useState<TestInfo | null>(null);
   const [universityInfo, setUniversityInfo] = useState<UniversityInfo | null>(null);
+  const [universityMap, setUniversityMap] = useState<UniversityMap>({});
   const [globalData, setGlobalData] = useState<LeaderboardEntry[]>([]);
   const [campusData, setCampusData] = useState<LeaderboardEntry[]>([]);
   const [scope, setScope] = useState<LeaderboardScope>('global');
@@ -150,6 +176,18 @@ export default function LeaderboardTestPage() {
       // Always fetch global
       const global = await fetchLeaderboard(testSlug, null, me?.userId || null);
       setGlobalData(global);
+
+      // Fetch university info for all unique university IDs in global leaderboard
+      const uniqueUniversityIds = [...new Set(
+        global
+          .map(entry => entry.university_id)
+          .filter((id): id is string => id !== null)
+      )];
+      
+      if (uniqueUniversityIds.length > 0) {
+        const uniMap = await fetchUniversities(uniqueUniversityIds);
+        setUniversityMap(uniMap);
+      }
 
       // Fetch campus if user has universityId
       if (me?.universityId) {
@@ -321,6 +359,11 @@ export default function LeaderboardTestPage() {
                       <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-gray-700">
                         Player
                       </th>
+                      {scope === 'global' && (
+                        <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-gray-700">
+                          University
+                        </th>
+                      )}
                       <th className="px-6 py-4 text-right text-xs font-bold uppercase tracking-wider text-gray-700">
                         Score
                       </th>
@@ -363,6 +406,13 @@ export default function LeaderboardTestPage() {
                             </span>
                           </div>
                         </td>
+                        {scope === 'global' && (
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                            {entry.university_id && universityMap[entry.university_id]
+                              ? universityMap[entry.university_id].name
+                              : <span className="text-gray-400">—</span>}
+                          </td>
+                        )}
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 text-right">
                           {formatScore(entry.best_score, testInfo?.unit || null)}
                         </td>

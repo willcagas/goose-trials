@@ -75,6 +75,9 @@ export function MeProvider({ children }: { children: React.ReactNode }) {
   const currentUserId = user?.id ?? null;
   const currentUserIdRef = useRef<string | null>(null);
 
+  // Initial fetch on mount
+  const hasFetchedInitialRef = useRef(false);
+  
   // Fetch on mount (once) and when user ID changes (login/logout)
   useEffect(() => {
     const prevUserId = currentUserIdRef.current;
@@ -84,14 +87,17 @@ export function MeProvider({ children }: { children: React.ReactNode }) {
     currentUserIdRef.current = currentUserId;
 
     // Only fetch if:
-    // 1. We haven't fetched yet for this user (initial load or first login), OR
-    // 2. The user ID has actually changed (login/logout)
+    // 1. Initial mount (never fetched before), OR
+    // 2. We haven't fetched yet for this user (initial load or first login), OR
+    // 3. The user ID has actually changed (login/logout)
     const shouldFetch = 
+      !hasFetchedInitialRef.current ||
       (lastFetchedUserIdRef.current === null && currentUserId !== null) ||
       (hasUserIdChanged && currentUserId !== null) ||
       (hasUserIdChanged && currentUserId === null && prevUserId !== null); // Logout case
 
     if (shouldFetch && !isFetchingRef.current && fetchMeRef.current) {
+      hasFetchedInitialRef.current = true;
       fetchMeRef.current();
     }
   }, [currentUserId]);
