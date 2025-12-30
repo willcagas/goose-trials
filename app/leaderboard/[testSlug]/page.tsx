@@ -243,7 +243,7 @@ export default function LeaderboardTestPage() {
                   : 'text-gray-500 hover:text-gray-700'
               }`}
             >
-              Campus
+              Your University
             </button>
           </div>
           {/* University name display when on Campus */}

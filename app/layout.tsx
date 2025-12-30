@@ -1,5 +1,6 @@
 import {SessionProvider} from '@/app/providers/SessionContext';
 import {MeProvider} from '@/app/providers/MeContext';
+import UsernamePrompt from '@/components/UsernamePrompt';
 import './globals.css';
 
 //Next.js feature: automatically wraps all pages with layout.tsx
@@ -12,6 +13,7 @@ export default function RootLayout({children,}: {children: React.ReactNode;}) {
           <SessionProvider>
             <MeProvider>
               {children}
+              <UsernamePrompt />
             </MeProvider>
           </SessionProvider>
       </body>

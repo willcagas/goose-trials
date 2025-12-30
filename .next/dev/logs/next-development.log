@@ -1,22 +1,8 @@
-[00:00:02.946] Server  LOG     ✓ Ready in 2s
-[00:00:06.044] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[00:00:06.044] Browser LOG     Starting onboarding for user: 82e0261d-2e24-4d3c-baf6-b460b8a82402
-[00:00:08.413] Browser LOG     Onboarding completed successfully
-[00:00:08.413] Browser LOG     Onboarding completed successfully
-[00:00:35.704] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[00:01:31.212] Server  LOG     ✓ Compiled in 195ms
-[00:03:05.268] Server  LOG     ✓ Compiled in 193ms
-[00:08:14.593] Server  LOG     ✓ Compiled in 276ms
-[00:08:49.315] Server  LOG     ✓ Compiled in 147ms
-[00:09:38.562] Server  LOG     ✓ Compiled in 273ms
-[00:10:29.461] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[00:10:29.906] Browser LOG     Starting onboarding for user: 70ec893f-9dca-4afb-876f-d81193eb5dc6
-[00:10:30.461] Browser LOG     Starting onboarding for user: 70ec893f-9dca-4afb-876f-d81193eb5dc6
-[00:10:31.761] Browser LOG     Onboarding completed successfully
-[00:10:31.761] Browser LOG     University assigned: 94d88840-67ac-47d3-a98c-411cf50d5653
-[00:10:31.761] Browser LOG     Onboarding completed successfully
-[00:10:32.504] Browser LOG     Onboarding completed successfully
-[00:10:32.504] Browser LOG     University assigned: 94d88840-67ac-47d3-a98c-411cf50d5653
-[00:10:32.504] Browser LOG     Onboarding completed successfully
-[00:11:36.604] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[00:11:41.597] Browser LOG     Score submitted successfully!
+[00:00:02.755] Server  LOG     ✓ Ready in 1928ms
+[00:00:07.793] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:01:14.487] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:01:15.952] Browser LOG     Starting onboarding for user: 70ec893f-9dca-4afb-876f-d81193eb5dc6
+[00:01:17.240] Browser LOG     Onboarding completed successfully
+[00:01:17.240] Browser LOG     University assigned: 94d88840-67ac-47d3-a98c-411cf50d5653
+[00:01:17.240] Browser LOG     Onboarding completed successfully
+[00:01:41.622] Server  LOG     ✓ Compiled in 185ms

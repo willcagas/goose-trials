@@ -4,7 +4,6 @@
   "/api/onboarding/route": "app/api/onboarding/route.js",
   "/api/tests/route": "app/api/tests/route.js",
   "/api/universities/route": "app/api/universities/route.js",
-  "/games/reaction-time/page": "app/games/reaction-time/page.js",
   "/leaderboard/[testSlug]/page": "app/leaderboard/[testSlug]/page.js",
   "/leaderboard/page": "app/leaderboard/page.js",
   "/page": "app/page.js"

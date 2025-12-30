@@ -61,12 +61,20 @@ export default function Navbar() {
             Rankings
           </Link>
           {user ? (
-            <button
-              onClick={signOut}
-              className="px-4 md:px-6 py-2 bg-transparent border-2 border-white text-white font-bold text-sm uppercase tracking-wide rounded-lg hover:bg-white/10 transition-colors"
-            >
-              Sign Out
-            </button>
+            <>
+              <Link 
+                href="/profile" 
+                className="text-white uppercase text-sm font-medium tracking-wide hover:text-[#FFD700] transition-colors"
+              >
+                Profile
+              </Link>
+              <button
+                onClick={signOut}
+                className="px-4 md:px-6 py-2 bg-transparent border-2 border-white text-white font-bold text-sm uppercase tracking-wide rounded-lg hover:bg-white/10 transition-colors"
+              >
+                Sign Out
+              </button>
+            </>
           ) : (
             <button
               onClick={() => setShowLogin(true)}
