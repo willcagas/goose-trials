@@ -37,7 +37,7 @@ export default async function LeaderboardPage() {
             Leaderboards
           </h1>
           <p className="text-gray-600 text-lg">
-            Compare your scores with players from around the world.
+            Compare your scores with players from your university and the world.
           </p>
         </div>
 

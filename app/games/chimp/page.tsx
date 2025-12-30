@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { submitGuestScore } from '@/lib/db/scores';
+import { submitScore } from '@/lib/db/scores';
 
 type Phase = 'idle' | 'showing' | 'hidden' | 'failed';
 
@@ -29,7 +29,7 @@ return 7;
 //Generate an array of unique random cell indices
 //maxExclusive is the number of cells possible (ex: for a 5x5, maxExclusive would be 25)
 function pickRandomUniqueIndices(count: number, maxExclusive: number) {
-const all = [];
+const all: number[] = [];
 for (let i = 0; i < maxExclusive; i++) all.push(i);
 
 //Fisher-Yates list shuffle
@@ -152,15 +152,6 @@ async function advanceToNextLevel() {
     setBestLevel(clearedLevel);
   }
 
-  // Submit score (best cleared level)
-  setSubmitting(true);
-  const result = await submitGuestScore('chimp', clearedLevel);
-  setSubmitting(false);
-
-  if (!result.success) {
-    console.error('Failed to submit score:', result.error);
-  }
-
   //Move to next level
   const nextLevel = clearedLevel + 1;
   startRun(nextLevel);
@@ -176,9 +167,24 @@ async function handleCellClick(cell: Cell) {
 
   const valueClicked = cell.value;
 
-  //Wrong number => fail immediately
+  //Wrong number => fail immediately, submit final score
   if (valueClicked !== nextExpected) {
     setPhase('failed');
+    
+    // Submit score - the last successfully cleared level (level - 1)
+    // If player fails on level 4, their score is 3 (or 0 if they never cleared any level)
+    const finalScore = Math.max(level - 1, 0);
+    if (finalScore > 0) {
+      setSubmitting(true);
+      const result = await submitScore('chimp', finalScore);
+      setSubmitting(false);
+      
+      if (result.success) {
+        console.log('Score submitted successfully!');
+      } else {
+        console.error('Failed to submit score:', result.error);
+      }
+    }
     return;
   }
 
@@ -305,7 +311,7 @@ return (
             </div>
 
             {submitting && <p className="text-yellow-100/80 mb-2">Saving score...</p>}
-            {!submitting && <p className="text-yellow-100/80 mb-2">✓ Score saved (or attempted)</p>}
+            {!submitting && <p className="text-green-300/80 mb-2">✓ Score saved!</p>}
 
             <div className="flex flex-wrap items-center justify-center gap-3 mt-4">
               <button

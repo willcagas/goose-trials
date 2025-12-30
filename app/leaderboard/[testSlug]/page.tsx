@@ -110,6 +110,9 @@ function formatScore(score: number, unit: string | null): string {
   if (unit === 'ms') {
     return `${score.toFixed(0)} ms`;
   }
+  if (unit === 'level') {
+    return `${score.toFixed(0)}`;
+  }
   return unit ? `${score.toFixed(2)} ${unit}` : score.toFixed(2);
 }
 
@@ -365,7 +368,7 @@ export default function LeaderboardTestPage() {
                         </th>
                       )}
                       <th className="px-6 py-4 text-right text-xs font-bold uppercase tracking-wider text-gray-700">
-                        Score
+                        {testInfo?.unit === 'level' ? 'Level' : 'Score'}
                       </th>
                       <th className="px-6 py-4 text-right text-xs font-bold uppercase tracking-wider text-gray-700">
                         Achieved
