@@ -1,43 +1,22 @@
-[00:00:02.962] Server  LOG     ✓ Ready in 2.1s
-[00:00:08.980] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[00:00:10.998] Browser LOG     Starting onboarding for user: 53a0990a-4ae9-41bd-aada-e51a38a779d5
-[00:00:12.552] Browser LOG     Onboarding completed successfully
-[00:00:12.552] Browser LOG     University assigned: 94d88840-67ac-47d3-a98c-411cf50d5653
-[00:00:12.552] Browser LOG     Onboarding completed successfully
-[00:02:24.226] Server  LOG     ✓ Compiled in 140ms
-[00:02:27.397] Server  LOG     ✓ Compiled in 147ms
-[00:02:33.976] Server  LOG     ✓ Compiled in 141ms
-[00:02:34.526] Browser ERROR   ./goose-trials/app/page.tsx:329:20
-Parsing ecmascript source code failed
-  327 |                 </div>
-  328 |               </div>
-> 329 |             </Link>
-      |                    ^
-> 330 |
-      | ^
-> 331 |             <div className="relative overflow-hidden group p-8 rounded-3xl bg-white border-2 border-gray-200 hover:border-[#c9a504] transition-all shadow-sm hover:shadow-md">
-      | ^^^^^^^^^^^^^
-  332 |               <div className="absolute top-0 right-0 p-4">
-  333 |                 <span className="px-3 py-1 bg-[#c9a504]/10 text-[#E6C200] text-[10px] font-bold uppercase rounded-full border border-[#c9a504]/30">
-  334 |                   MEMORY
-
-Expected '</', got 'jsx text (
-
-            )'
-
-Import traces:
-  Client Component Browser:
-    ./goose-trials/app/page.tsx [Client Component Browser]
-    ./goose-trials/app/page.tsx [Server Component]
-
-  Client Component SSR:
-    ./goose-trials/app/page.tsx [Client Component SSR]
-    ./goose-trials/app/page.tsx [Server Component]
-[00:03:08.341] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[00:03:24.041] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[00:03:32.701] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[00:04:48.370] Browser LOG     Score submitted successfully!
-[00:06:55.221] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[00:07:34.377] Server  LOG     ✓ Compiled in 109ms
-[00:07:40.284] Server  LOG     ✓ Compiled in 313ms
-[00:07:58.101] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:00:02.946] Server  LOG     ✓ Ready in 2s
+[00:00:06.044] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:00:06.044] Browser LOG     Starting onboarding for user: 82e0261d-2e24-4d3c-baf6-b460b8a82402
+[00:00:08.413] Browser LOG     Onboarding completed successfully
+[00:00:08.413] Browser LOG     Onboarding completed successfully
+[00:00:35.704] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:01:31.212] Server  LOG     ✓ Compiled in 195ms
+[00:03:05.268] Server  LOG     ✓ Compiled in 193ms
+[00:08:14.593] Server  LOG     ✓ Compiled in 276ms
+[00:08:49.315] Server  LOG     ✓ Compiled in 147ms
+[00:09:38.562] Server  LOG     ✓ Compiled in 273ms
+[00:10:29.461] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:10:29.906] Browser LOG     Starting onboarding for user: 70ec893f-9dca-4afb-876f-d81193eb5dc6
+[00:10:30.461] Browser LOG     Starting onboarding for user: 70ec893f-9dca-4afb-876f-d81193eb5dc6
+[00:10:31.761] Browser LOG     Onboarding completed successfully
+[00:10:31.761] Browser LOG     University assigned: 94d88840-67ac-47d3-a98c-411cf50d5653
+[00:10:31.761] Browser LOG     Onboarding completed successfully
+[00:10:32.504] Browser LOG     Onboarding completed successfully
+[00:10:32.504] Browser LOG     University assigned: 94d88840-67ac-47d3-a98c-411cf50d5653
+[00:10:32.504] Browser LOG     Onboarding completed successfully
+[00:11:36.604] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:11:41.597] Browser LOG     Score submitted successfully!

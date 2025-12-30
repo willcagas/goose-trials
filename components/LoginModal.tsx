@@ -2,241 +2,143 @@
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
-interface LoginModalProps
-{
-    isOpen: boolean;
-    onClose: () => void;
+interface LoginModalProps {
+  isOpen: boolean;
+  onClose: () => void;
 }
 
 export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
-    const [email, setEmail] = useState('');
-    const [username, setUsername] = useState('');
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
-    const [success, setSuccess] = useState(false);
+  const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
 
-    const handleSubmit = async (event: React.FormEvent) => {
-        //prevents page from refreshing
-        event.preventDefault();
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    setSuccess(false);
 
-        setLoading(true);
-        setError('');
-        setSuccess(false);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.signInWithOtp({
+        email: email,
+        options: {
+          emailRedirectTo: window.location.origin,
+        },
+      });
 
-        if (!email.endsWith('@uwaterloo.ca')) {
-            setError('Must use a @uwaterloo.ca email');
-            setLoading(false);
-            return;
-        }
+      if (error) {
+        throw error;
+      }
 
-        if (!username || username.trim().length === 0) {
-            setError('Username is required');
-            setLoading(false);
-            return;
-        }
-
-        // Validate username (alphanumeric, underscore, hyphen, 3-20 chars)
-        const usernameRegex = /^[a-zA-Z0-9_-]{3,20}$/;
-        if (!usernameRegex.test(username.trim())) {
-            setError('Username must be 3-20 characters and contain only letters, numbers, underscores, or hyphens');
-            setLoading(false);
-            return;
-        }
-
-        try {
-            // Store username in localStorage before sending magic link
-            // We'll retrieve it during onboarding
-            const usernameKey = 'pending_username';
-            localStorage.setItem(usernameKey, username.trim());
-
-            const supabase = createClient();
-            //destructuring; allows extraction of only error component of return from supabase call
-            const { error } = await supabase.auth.signInWithOtp({
-                //signInWithOtp sends magic link (one time password)
-                email: email,
-                options:
-                {
-                    //sends user back to the page they were currently on when tried to login (Ex: game page)
-                    emailRedirectTo: window.location.origin
-                }
-            });
-
-            if (error) {
-                throw error;
-            }
-
-            setSuccess(true);
-            setEmail('');
-            setUsername('');
-        }
-        catch (err) {
-            setError('Failed to send magic link. Please try again');
-        }
-        finally {
-            setLoading(false);
-        }
+      setSuccess(true);
+      setEmail('');
+    } catch {
+      setError('Failed to send magic link. Please try again.');
+    } finally {
+      setLoading(false);
     }
+  };
 
+  const handleClose = () => {
+    setEmail('');
+    setError('');
+    setSuccess(false);
+    onClose();
+  };
 
-    if (!isOpen) {
-        return null;
-    }
+  if (!isOpen) return null;
 
-    return (
-        // Dark overlay covering entire screen
-        <div style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)', // Semi-transparent black
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000, // Appears above everything
-        }}>
-            {/* Black modal box with gold accents */}
-            <div style={{
-                backgroundColor: '#1a1a1a',
-                padding: '2rem',
-                borderRadius: '8px',
-                maxWidth: '400px',
-                width: '90%',
-                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)',
-                border: '2px solid #FFD700' //Gold border
-            }}>
-                {/* Header with title and close button */}
-                <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: '1rem',
-                }}>
-                    <h2 style={{ margin: 0, fontSize: '1.5rem', color: '#FFD700' }}>
-                        Sign in to Goose Trials
-                    </h2>
-                    <button
-                        onClick={onClose}
-                        style={{
-                            border: 'none',
-                            background: 'none',
-                            fontSize: '1.5rem',
-                            cursor: 'pointer',
-                            color: '#FFD700',
-                        }}
-                    >
-                        ×
-                    </button>
-                </div>
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+        onClick={handleClose}
+      />
 
-                {/* Subtitle */}
-                <p style={{
-                    color: '#cccccc',
-                    marginBottom: '1.5rem',
-                    fontSize: '0.9rem',
-                }}>
-                    Enter your UWaterloo email and choose a username
-                </p>
+      {/* Modal */}
+      <div className="relative bg-[#0a0a0a] border border-white/20 rounded-2xl p-8 w-full max-w-md shadow-2xl">
+        {/* Close button */}
+        <button
+          onClick={handleClose}
+          className="absolute top-4 right-4 text-white/60 hover:text-white transition-colors"
+        >
+          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
 
-                {/* Form - triggered when user clicks Submit (handleSubmit takes action) */}
-                <form onSubmit={handleSubmit}>
-                <input
-                        type="text"
-                        placeholder="username (3-20 characters)"
-                        value={username}
-                        onChange={(event) => setUsername(event.target.value)}
-                        required
-                        minLength={3}
-                        maxLength={20}
-                        pattern="[a-zA-Z0-9_-]{3,20}"
-                        style={{
-                            width: '100%',
-                            padding: '0.75rem',
-                            marginBottom: '1rem',
-                            border: '1px solid #FFD700',
-                            borderRadius: '4px',
-                            fontSize: '1rem',
-                            boxSizing: 'border-box',
-                            backgroundColor: '#2a2a2a',
-                            color: '#ffffff'
-                        }}
-                    />
-
-                    <input
-                        type="email"
-                        placeholder="your.email@uwaterloo.ca"
-                        value={email}
-                        onChange={(event) => setEmail(event.target.value)}
-                        required
-                        style={{
-                            width: '100%',
-                            padding: '0.75rem',
-                            marginBottom: '1rem',
-                            border: '1px solid #FFD700',
-                            borderRadius: '4px',
-                            fontSize: '1rem',
-                            boxSizing: 'border-box',
-                            backgroundColor: '#2a2a2a',
-                            color: '#ffffff'
-                        }}
-                    />
-                    
-
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        style={{
-                            width: '100%',
-                            padding: '0.75rem',
-                            backgroundColor: loading ? '#555555' : '#FFD700',
-                            color: loading ? '#999999' : '#000000',
-                            border: 'none',
-                            borderRadius: '4px',
-                            fontSize: '1rem',
-                            fontWeight: '600',
-                            cursor: loading ? 'not-allowed' : 'pointer',
-                            transition: 'background-color 0.2s',
-                        }}
-                    >
-                        {/* Used ternary operator because JSX doesn't allow if statements */}
-                        {loading ? 'Sending...' : 'Send Magic Link'}
-                    </button>
-                </form>
-
-                {/* && means only execute if statement is true */}
-                {error && (
-                    <p style={{
-                        color: '#ff6b6b',
-                        marginTop: '1rem',
-                        marginBottom: 0,
-                        fontSize: '0.9rem',
-                    }}>
-                        ⚠️ {error}
-                    </p>
-                )}
-
-                {success && (
-                    <div>
-                        <p style={{
-                            color: '#FFD700',
-                            marginTop: '1rem',
-                            marginBottom: 0,
-                            fontSize: '0.9rem',
-                        }}>
-                            ✓ Check your email for the magic link!
-                        </p>
-                        <p style={{
-                            color: '#cccccc',
-                            marginTop: '0.5rem',
-                            marginBottom: 0,
-                            fontSize: '0.8rem',
-                        }}>
-                            Your guest scores will be transferred to your account automatically.
-                        </p>
-                    </div>
-                )}
-            </div>
+        {/* Header */}
+        <div className="text-center mb-6">
+          <div className="w-12 h-12 bg-[#FFD700] rounded-full flex items-center justify-center mx-auto mb-4">
+            <span className="text-gray-900 font-bold text-2xl">G</span>
+          </div>
+          <h2 className="text-white text-2xl font-bold uppercase tracking-wide">
+            {success ? 'Check Your Email' : 'Join the Trials'}
+          </h2>
+          <p className="text-white/60 mt-2">
+            {success
+              ? "We've sent you a magic link to sign in"
+              : 'Enter your email to receive a sign-in link'}
+          </p>
         </div>
-    );
+
+        {success ? (
+          <div className="text-center space-y-4">
+            <div className="w-16 h-16 bg-[#FFD700]/20 rounded-full flex items-center justify-center mx-auto">
+              <svg className="w-8 h-8 text-[#FFD700]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <p className="text-white/80">
+              Click the link in your email to sign in. You can close this modal.
+            </p>
+            <p className="text-white/50 text-sm">
+              Your guest scores will be transferred automatically.
+            </p>
+            <button
+              onClick={() => {
+                setSuccess(false);
+                setEmail('');
+              }}
+              className="text-[#FFD700] hover:underline font-medium"
+            >
+              Use a different email
+            </button>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <input
+                type="email"
+                placeholder="Enter your email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#FFD700] transition-colors"
+                required
+              />
+            </div>
+
+            {error && (
+              <p className="text-red-400 text-sm">{error}</p>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full px-4 py-3 bg-[#FFD700] text-gray-900 font-bold uppercase tracking-wide rounded-lg hover:bg-[#FFD700]/90 transition-colors disabled:opacity-50"
+            >
+              {loading ? 'Sending...' : 'Send Magic Link'}
+            </button>
+
+            <p className="text-white/40 text-xs text-center">
+              Use your university email to appear on campus leaderboards
+            </p>
+          </form>
+        )}
+      </div>
+    </div>
+  );
 }
