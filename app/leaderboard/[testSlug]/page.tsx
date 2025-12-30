@@ -35,7 +35,7 @@ interface UniversityInfo {
 
 type UniversityMap = Record<string, UniversityInfo>;
 
-type LeaderboardScope = 'global' | 'campus';
+type LeaderboardScope = 'global' | 'country' | 'campus';
 
 async function fetchLeaderboard(
   testSlug: string,
@@ -125,6 +125,15 @@ function formatDate(dateString: string): string {
   });
 }
 
+function getFlagEmoji(countryCode: string | null): string {
+  if (!countryCode || countryCode.length !== 2) return '';
+  const codePoints = countryCode
+    .toUpperCase()
+    .split('')
+    .map(char => 127397 + char.charCodeAt(0));
+  return String.fromCodePoint(...codePoints);
+}
+
 export default function LeaderboardTestPage() {
   const params = useParams();
   const testSlug = params.testSlug as string;
@@ -134,17 +143,22 @@ export default function LeaderboardTestPage() {
   const [universityInfo, setUniversityInfo] = useState<UniversityInfo | null>(null);
   const [universityMap, setUniversityMap] = useState<UniversityMap>({});
   const [globalData, setGlobalData] = useState<LeaderboardEntry[]>([]);
+  const [countryData, setCountryData] = useState<LeaderboardEntry[]>([]);
   const [campusData, setCampusData] = useState<LeaderboardEntry[]>([]);
   const [scope, setScope] = useState<LeaderboardScope>('global');
+  const [scopeInitialized, setScopeInitialized] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Determine default scope
+  // Determine default scope (only once when me data first loads)
   useEffect(() => {
-    if (!meLoading && me?.universityId) {
-      setScope('campus');
+    if (!meLoading && !scopeInitialized) {
+      if (me?.universityId) {
+        setScope('campus');
+      }
+      setScopeInitialized(true);
     }
-  }, [meLoading, me?.universityId]);
+  }, [meLoading, me?.universityId, scopeInitialized]);
 
   // Fetch test info
   useEffect(() => {
@@ -187,8 +201,9 @@ export default function LeaderboardTestPage() {
           .filter((id): id is string => id !== null)
       )];
       
+      let uniMap: UniversityMap = {};
       if (uniqueUniversityIds.length > 0) {
-        const uniMap = await fetchUniversities(uniqueUniversityIds);
+        uniMap = await fetchUniversities(uniqueUniversityIds);
         setUniversityMap(uniMap);
       }
 
@@ -196,6 +211,26 @@ export default function LeaderboardTestPage() {
       if (me?.universityId) {
         const campus = await fetchLeaderboard(testSlug, me.universityId, me?.userId || null);
         setCampusData(campus);
+
+        // Filter global data by user's country for country leaderboard
+        const userUni = uniMap[me.universityId];
+        if (userUni?.country) {
+          const countryFiltered = global.filter(entry => {
+            if (!entry.university_id) return false;
+            const entryUni = uniMap[entry.university_id];
+            return entryUni?.country === userUni.country;
+          });
+          // Re-rank the filtered entries
+          const countryRanked = countryFiltered.map((entry, index) => ({
+            ...entry,
+            rank: index + 1,
+          }));
+          setCountryData(countryRanked);
+        } else {
+          setCountryData([]);
+        }
+      } else {
+        setCountryData([]);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load leaderboard');
@@ -211,8 +246,9 @@ export default function LeaderboardTestPage() {
     }
   }, [meLoading, loadLeaderboards]);
 
-  const currentData = scope === 'campus' ? campusData : globalData;
+  const currentData = scope === 'campus' ? campusData : scope === 'country' ? countryData : globalData;
   const canViewCampus = me?.universityId !== null;
+  const canViewCountry = me?.universityId !== null && universityInfo?.country !== null;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -274,6 +310,21 @@ export default function LeaderboardTestPage() {
               Global
             </button>
             <button
+              onClick={() => setScope('country')}
+              disabled={!canViewCountry}
+              className={`px-6 py-3 font-bold text-sm uppercase tracking-wide transition-colors ${
+                !canViewCountry
+                  ? 'text-gray-300 cursor-not-allowed'
+                  : scope === 'country'
+                  ? 'border-b-2 border-[#c9a504] text-gray-900'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {me?.isLoggedIn && universityInfo?.country
+                ? <>{getFlagEmoji(universityInfo.alpha_two_code)}&nbsp;&nbsp;{universityInfo.country}</>
+                : 'Your Country'}
+            </button>
+            <button
               onClick={() => setScope('campus')}
               disabled={!canViewCampus}
               className={`px-6 py-3 font-bold text-sm uppercase tracking-wide transition-colors ${
@@ -284,20 +335,11 @@ export default function LeaderboardTestPage() {
                   : 'text-gray-500 hover:text-gray-700'
               }`}
             >
-              Your University
+              {me?.isLoggedIn && universityInfo?.name
+                ? universityInfo.name
+                : 'Your University'}
             </button>
           </div>
-          {/* University name display when on Campus */}
-          {scope === 'campus' && universityInfo && (
-            <div className="mt-4 px-6 py-2 bg-[#c9a504]/10 rounded-lg border border-[#c9a504]/20">
-              <p className="text-sm text-gray-700">
-                <span className="font-semibold">{universityInfo.name}</span>
-                {universityInfo.country && (
-                  <span className="text-gray-500 ml-2">• {universityInfo.country}</span>
-                )}
-              </p>
-            </div>
-          )}
           {/* Messages for campus access */}
           {!canViewCampus && me?.isLoggedIn && (
             <div className="mt-4 px-6 py-3 bg-yellow-50 rounded-lg border border-yellow-200">
@@ -320,7 +362,7 @@ export default function LeaderboardTestPage() {
         </div>
 
         {/* Loading State */}
-        {loading && (
+        {(loading || !scopeInitialized) && (
           <div className="text-center py-12">
             <p className="text-gray-500">Loading leaderboard...</p>
           </div>
@@ -334,7 +376,7 @@ export default function LeaderboardTestPage() {
         )}
 
         {/* Leaderboard Table */}
-        {!loading && !error && (
+        {!loading && !error && scopeInitialized && (
           <>
             {currentData.length === 0 ? (
               <div className="text-center py-16 bg-white rounded-lg border border-gray-200">
@@ -343,11 +385,17 @@ export default function LeaderboardTestPage() {
                     ? universityInfo
                       ? `No scores yet from ${universityInfo.name}.`
                       : "No scores yet for your campus."
+                    : scope === 'country'
+                    ? universityInfo?.country
+                      ? `No scores yet from ${universityInfo.country}.`
+                      : "No scores yet for your country."
                     : "No scores yet."}
                 </p>
                 <p className="text-gray-500">
                   {scope === 'campus'
                     ? "You're the first from your university. Play now to set a record!"
+                    : scope === 'country'
+                    ? "You're the first from your country. Play now to set a record!"
                     : "Be the first! Play now to set a record."}
                 </p>
               </div>
@@ -362,11 +410,9 @@ export default function LeaderboardTestPage() {
                       <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-gray-700">
                         Player
                       </th>
-                      {scope === 'global' && (
-                        <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-gray-700">
-                          University
-                        </th>
-                      )}
+                      <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-gray-700">
+                        {(scope === 'global' || scope === 'country') ? 'University' : ''}
+                      </th>
                       <th className="px-6 py-4 text-right text-xs font-bold uppercase tracking-wider text-gray-700">
                         {testInfo?.unit === 'level' ? 'Level' : 'Score'}
                       </th>
@@ -409,13 +455,13 @@ export default function LeaderboardTestPage() {
                             </span>
                           </div>
                         </td>
-                        {scope === 'global' && (
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                            {entry.university_id && universityMap[entry.university_id]
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                          {(scope === 'global' || scope === 'country') && (
+                            entry.university_id && universityMap[entry.university_id]
                               ? universityMap[entry.university_id].name
-                              : <span className="text-gray-400">—</span>}
-                          </td>
-                        )}
+                              : <span className="text-gray-400">—</span>
+                          )}
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 text-right">
                           {formatScore(entry.best_score, testInfo?.unit || null)}
                         </td>
