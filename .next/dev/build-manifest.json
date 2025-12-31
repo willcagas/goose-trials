@@ -3,23 +3,10 @@
     "/_app": []
   },
   "devFiles": [],
-  "polyfillFiles": [
-    "static/chunks/8f630_next_dist_build_polyfills_polyfill-nomodule.js"
-  ],
+  "polyfillFiles": [],
   "lowPriorityFiles": [
     "static/development/_ssgManifest.js",
     "static/development/_buildManifest.js"
   ],
-  "rootMainFiles": [
-    "static/chunks/[turbopack]_browser_dev_hmr-client_hmr-client_ts_9bb02278._.js",
-    "static/chunks/8f630_next_dist_compiled_react-dom_746d7587._.js",
-    "static/chunks/8f630_next_dist_compiled_react-server-dom-turbopack_832bf23b._.js",
-    "static/chunks/8f630_next_dist_compiled_next-devtools_index_6db66a52.js",
-    "static/chunks/8f630_next_dist_compiled_5a97bc34._.js",
-    "static/chunks/8f630_next_dist_client_56f1ff89._.js",
-    "static/chunks/8f630_next_dist_27fb4b69._.js",
-    "static/chunks/8f630_@swc_helpers_cjs_e235502e._.js",
-    "static/chunks/goose-trials_a0ff3932._.js",
-    "static/chunks/turbopack-goose-trials_19cda672._.js"
-  ]
+  "rootMainFiles": []
 }
