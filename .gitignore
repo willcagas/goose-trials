@@ -42,3 +42,20 @@ next-env.d.ts
 
 # supabase
 /supabase/scripts/data
+
+# patches and diffs
+*.patch
+*.diff
+*.orig
+*.rej
+
+# IDEs and editors
+.cursor/
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
