@@ -1,11 +1,8 @@
 {
-  "/api/leaderboard/route": "app/api/leaderboard/route.js",
   "/api/me/route": "app/api/me/route.js",
   "/api/onboarding/route": "app/api/onboarding/route.js",
-  "/api/tests/route": "app/api/tests/route.js",
-  "/api/universities/route": "app/api/universities/route.js",
-  "/leaderboard/[testSlug]/page": "app/leaderboard/[testSlug]/page.js",
-  "/leaderboard/page": "app/leaderboard/page.js",
-  "/page": "app/page.js",
-  "/profile/page": "app/profile/page.js"
+  "/games/chimp/page": "app/games/chimp/page.js",
+  "/games/pathfinding/page": "app/games/pathfinding/page.js",
+  "/games/reaction-time/page": "app/games/reaction-time/page.js",
+  "/page": "app/page.js"
 }

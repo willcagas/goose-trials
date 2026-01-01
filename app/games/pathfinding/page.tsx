@@ -1,2 +1,361 @@
 // Pathfinding game
+// Description:
+// A maze will appear on the user's screen for one second, it will then dissapear and
+// the user will have to navigate the maze from memory. The maze should only have one solution.
+// After each attempt, the maze becomes 1 square bigger horizontally and veriticaly. The test
+// ends once the user fails to navigate the maze and the ammount of rounds becomes the score.
+// The user navigates the maze using their mouse by either dragging it accross the squares or 
+// by tapping squares on at a time. The user will finally submit their answer by reaching the 
+// final tile.
 
+'use client';
+
+import { useEffect, useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
+import { submitScore } from '@/lib/db/scores';
+import PathfindingBoard from './PathfindingBoard';
+import type { Cell, Direction, GamePhase, Position } from './types';
+
+const BASE_SIZE = 3;
+const WALL_COLOR = 'rgb(8, 8, 8)';
+
+const directions = [
+  { dr: -1, dc: 0, direction: 'top', opposite: 'bottom' },
+  { dr: 0, dc: 1, direction: 'right', opposite: 'left' },
+  { dr: 1, dc: 0, direction: 'bottom', opposite: 'top' },
+  { dr: 0, dc: -1, direction: 'left', opposite: 'right' },
+] as const;
+
+const createGrid = (size: number): Cell[][] => {
+  return Array.from({ length: size }, (_, row) =>
+    Array.from({ length: size }, (_, col) => ({
+      row,
+      col,
+      walls: {
+        top: true,
+        right: true,
+        bottom: true,
+        left: true,
+      },
+    }))
+  );
+};
+
+const generateMaze = (size: number): Cell[][] => {
+  const grid = createGrid(size);
+  const visited = Array.from({ length: size }, () => Array(size).fill(false));
+  const stack: Position[] = [{ row: 0, col: 0 }];
+  visited[0][0] = true;
+
+  while (stack.length > 0) {
+    const current = stack[stack.length - 1];
+    const neighbors = directions
+      .map((dir) => ({
+        row: current.row + dir.dr,
+        col: current.col + dir.dc,
+        dir,
+      }))
+      .filter(
+        (next) =>
+          next.row >= 0 &&
+          next.row < size &&
+          next.col >= 0 &&
+          next.col < size &&
+          !visited[next.row][next.col]
+      );
+
+    if (neighbors.length === 0) {
+      stack.pop();
+      continue;
+    }
+
+    const next = neighbors[Math.floor(Math.random() * neighbors.length)];
+    grid[current.row][current.col].walls[next.dir.direction] = false;
+    grid[next.row][next.col].walls[next.dir.opposite] = false;
+    visited[next.row][next.col] = true;
+    stack.push({ row: next.row, col: next.col });
+  }
+
+  return grid;
+};
+
+const getDirection = (from: Position, to: Position): Direction | null => {
+  if (to.row === from.row - 1 && to.col === from.col) return 'top';
+  if (to.row === from.row + 1 && to.col === from.col) return 'bottom';
+  if (to.row === from.row && to.col === from.col + 1) return 'right';
+  if (to.row === from.row && to.col === from.col - 1) return 'left';
+  return null;
+};
+
+const canMove = (maze: Cell[][], from: Position, to: Position): boolean => {
+  const direction = getDirection(from, to);
+  if (!direction) return false;
+  return !maze[from.row][from.col].walls[direction];
+};
+
+export default function PathfindingGame() {
+  const [phase, setPhase] = useState<GamePhase>('idle');
+  const [round, setRound] = useState(1);
+  const [score, setScore] = useState(0);
+  const [mazeSize, setMazeSize] = useState(BASE_SIZE);
+  const [maze, setMaze] = useState<Cell[][]>(() => generateMaze(BASE_SIZE));
+  const [playerPath, setPlayerPath] = useState<Position[]>([]);
+  const [showMaze, setShowMaze] = useState(false);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [failReason, setFailReason] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitState, setSubmitState] = useState<'idle' | 'success' | 'error'>(
+    'idle'
+  );
+  const pathRef = useRef<Position[]>([]);
+
+  const lastPosition = playerPath[playerPath.length - 1];
+  const pathSet = useMemo(() => {
+    return new Set(playerPath.map((pos) => `${pos.row}-${pos.col}`));
+  }, [playerPath]);
+  const pathSegments = useMemo(() => {
+    if (playerPath.length < 2) return [];
+    return playerPath.slice(1).map((point, index) => ({
+      from: playerPath[index],
+      to: point,
+    }));
+  }, [playerPath]);
+  const wallSegments = useMemo(() => {
+    const segments: { x1: number; y1: number; x2: number; y2: number }[] = [];
+
+    maze.forEach((row, rowIndex) => {
+      row.forEach((cell, colIndex) => {
+        if (cell.walls.top) {
+          segments.push({
+            x1: colIndex,
+            y1: rowIndex,
+            x2: colIndex + 1,
+            y2: rowIndex,
+          });
+        }
+        if (cell.walls.left) {
+          segments.push({
+            x1: colIndex,
+            y1: rowIndex,
+            x2: colIndex,
+            y2: rowIndex + 1,
+          });
+        }
+        if (rowIndex === mazeSize - 1 && cell.walls.bottom) {
+          segments.push({
+            x1: colIndex,
+            y1: rowIndex + 1,
+            x2: colIndex + 1,
+            y2: rowIndex + 1,
+          });
+        }
+        if (colIndex === mazeSize - 1 && cell.walls.right) {
+          segments.push({
+            x1: colIndex + 1,
+            y1: rowIndex,
+            x2: colIndex + 1,
+            y2: rowIndex + 1,
+          });
+        }
+      });
+    });
+
+    return segments;
+  }, [maze, mazeSize]);
+
+  useEffect(() => {
+    const stopDrawing = () => setIsDrawing(false);
+    window.addEventListener('pointerup', stopDrawing);
+    window.addEventListener('pointercancel', stopDrawing);
+    return () => {
+      window.removeEventListener('pointerup', stopDrawing);
+      window.removeEventListener('pointercancel', stopDrawing);
+    };
+  }, []);
+
+  useEffect(() => {
+    pathRef.current = playerPath;
+  }, [playerPath]);
+
+  const beginRound = (nextRound: number) => {
+    const size = BASE_SIZE + nextRound - 1;
+    setMazeSize(size);
+    setMaze(generateMaze(size));
+    const startingPath = [{ row: 0, col: 0 }];
+    pathRef.current = startingPath;
+    setPlayerPath(startingPath);
+    setFailReason(null);
+    setSubmitState('idle');
+    setShowMaze(true);
+    setPhase('input');
+  };
+
+  const startGame = () => {
+    setScore(0);
+    setRound(1);
+    beginRound(1);
+  };
+
+  const handleSuccess = () => {
+    const nextRound = round + 1;
+    setIsDrawing(false);
+    setScore((prev) => prev + 1);
+    setRound(nextRound);
+    beginRound(nextRound);
+  };
+
+  const handleFail = async (reason: string) => {
+    if (phase !== 'input') return;
+    setIsDrawing(false);
+    setFailReason(reason);
+    setShowMaze(true);
+    setPhase('failed');
+    setSubmitting(true);
+    setSubmitState('idle');
+    const result = await submitScore('pathfinding', score);
+    setSubmitting(false);
+    setSubmitState(result.success ? 'success' : 'error');
+  };
+
+  const attemptStep = (row: number, col: number) => {
+    if (phase !== 'input') return;
+    const currentPath = pathRef.current;
+    const last = currentPath[currentPath.length - 1];
+    if (!last) return;
+    if (last.row === row && last.col === col) return;
+
+    const next = { row, col };
+    if (!canMove(maze, last, next)) {
+      void handleFail('Wrong move - you hit a wall.');
+      return;
+    }
+
+    const nextPath = [...currentPath, next];
+    pathRef.current = nextPath;
+    setPlayerPath(nextPath);
+
+    if (row === mazeSize - 1 && col === mazeSize - 1) {
+      handleSuccess();
+    }
+  };
+
+  const handlePointerDown = (row: number, col: number) => {
+    if (phase !== 'input') return;
+    if (showMaze) {
+      setShowMaze(false);
+    }
+    setIsDrawing(true);
+    attemptStep(row, col);
+  };
+
+  const handlePointerEnter = (row: number, col: number) => {
+    if (!isDrawing || phase !== 'input') return;
+    attemptStep(row, col);
+  };
+
+  const resetGame = () => {
+    setPhase('idle');
+    setScore(0);
+    setRound(1);
+    setMazeSize(BASE_SIZE);
+    setMaze(generateMaze(BASE_SIZE));
+    pathRef.current = [];
+    setPlayerPath([]);
+    setShowMaze(false);
+    setFailReason(null);
+    setSubmitState('idle');
+  };
+
+  const phaseLabel =
+    phase === 'memorize'
+      ? 'Memorize'
+      : phase === 'input'
+      ? 'Navigate'
+      : phase === 'failed'
+      ? 'Ended'
+      : 'Ready';
+
+  const showPath = phase === 'input' || phase === 'failed';
+
+  return (
+    <div className="min-h-screen text-slate-900 relative overflow-hidden">
+      <div className="absolute -top-16 -right-24 h-64 w-64 rounded-full" />
+      <div className="absolute -bottom-24 -left-20 h-72 w-72 rounded-full" />
+
+      <Link
+        href="/"
+        className="absolute top-6 left-6 px-4 py-2 rounded-full bg-white/80 backdrop-blur border border-white/60 shadow-sm text-sm font-semibold hover:bg-white transition"
+      >
+        &lt;- Back Home
+      </Link>
+
+      <main className="relative z-10 max-w-5xl mx-auto px-6 py-16 flex flex-col items-center gap-10">
+        <header className="text-center space-y-4 fade-up">
+          <div className="inline-flex items-center gap-2 rounded-full bg-white/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-600">
+            Memory Maze
+          </div>
+          <h1 className="text-4xl md:text-5xl font-semibold leading-tight text-slate-900">
+            Trace the invisible path.
+          </h1>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <div className="rounded-full bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 shadow-sm border border-white/70">
+              Score {score}
+            </div>
+            <div className="rounded-full bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 shadow-sm border border-white/70">
+              Round {round}
+            </div>
+            <div className="rounded-full bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 shadow-sm border border-white/70">
+              {mazeSize} x {mazeSize}
+            </div>
+          </div>
+        </header>
+
+        <PathfindingBoard
+          phaseLabel={phaseLabel}
+          phase={phase}
+          mazeSize={mazeSize}
+          maze={maze}
+          showMaze={showMaze}
+          showPath={showPath}
+          wallColor={WALL_COLOR}
+          wallSegments={wallSegments}
+          pathSegments={pathSegments}
+          pathSet={pathSet}
+          lastPosition={lastPosition}
+          failReason={failReason}
+          submitting={submitting}
+          submitState={submitState}
+          onStart={startGame}
+          onReset={resetGame}
+          onPointerDown={handlePointerDown}
+          onPointerEnter={handlePointerEnter}
+        />
+      </main>
+
+      <style jsx>{`
+        .fade-up {
+          animation: fadeUp 0.6s ease-out both;
+        }
+        .stagger > * {
+          animation: fadeUp 0.6s ease-out both;
+        }
+        .stagger > *:nth-child(2) {
+          animation-delay: 0.08s;
+        }
+        .stagger > *:nth-child(3) {
+          animation-delay: 0.16s;
+        }
+        @keyframes fadeUp {
+          from {
+            opacity: 0;
+            transform: translateY(12px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
+    </div>
+  );
+}

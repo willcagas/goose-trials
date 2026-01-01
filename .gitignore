@@ -42,3 +42,6 @@ next-env.d.ts
 
 # supabase
 /supabase/scripts/data
+.env.local
+.vscode
+/.next/dev
