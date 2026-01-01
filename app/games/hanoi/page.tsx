@@ -15,33 +15,20 @@ const CONFIG = {
   GAME_SLUG: 'hanoi',
 } as const;
 
-// Optimal moves for n disks = 2^n - 1
-function getOptimalMoves(disks: number): number {
-  return Math.pow(2, disks) - 1;
-}
-
-// Calculate final score
-function calculateScore(elapsedMs: number, moves: number, disks: number): number {
-  const optimal = getOptimalMoves(disks);
-  const extraMoves = Math.max(0, moves - optimal);
-  return elapsedMs + extraMoves * CONFIG.EXTRA_MOVE_PENALTY_MS;
-}
-
-// Format milliseconds as mm:ss.ms
-function formatTime(ms: number): string {
-  const totalSeconds = Math.floor(ms / 1000);
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  const centiseconds = Math.floor((ms % 1000) / 10);
-  return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${centiseconds.toString().padStart(2, '0')}`;
-}
-
 // ============================================================================
 // TYPES
 // ============================================================================
 type GameState = 'intro' | 'playing' | 'results';
 type GameMode = 'practice' | 'ranked';
-type Rod = number[]; // Array of disk sizes, bottom to top
+
+/**
+ * Rod representation convention:
+ * - Each rod is a number[] where disk sizes are integers (1 = smallest)
+ * - Index 0 is the BOTTOM of the stack, last index is the TOP
+ * - Example: [5, 4, 3, 2, 1] means disk 5 on bottom, disk 1 on top
+ * - Initial state for n disks: [[n, n-1, ..., 2, 1], [], []]
+ */
+type Rod = number[];
 
 interface GameResult {
   elapsedMs: number;
@@ -52,6 +39,94 @@ interface GameResult {
   mode: GameMode;
   disks: number;
   completed: boolean; // Did they actually solve it?
+}
+
+// ============================================================================
+// GAME LOGIC HELPERS
+// ============================================================================
+
+/**
+ * Returns optimal number of moves for n disks: 2^n - 1
+ */
+function optimalMoves(n: number): number {
+  return Math.pow(2, n) - 1;
+}
+
+/**
+ * Computes final score in milliseconds.
+ * Score = elapsedMs + max(0, moves - optimalMoves) * EXTRA_MOVE_PENALTY_MS
+ */
+function computeScoreMs(elapsedMs: number, moves: number, n: number): number {
+  const optimal = optimalMoves(n);
+  const extraMoves = Math.max(0, moves - optimal);
+  return elapsedMs + extraMoves * CONFIG.EXTRA_MOVE_PENALTY_MS;
+}
+
+/**
+ * Checks if a move from one rod to another is legal.
+ * Rules:
+ * - Source rod must not be empty
+ * - Destination must be empty OR its top disk must be larger than the moving disk
+ */
+function canMove(rods: [Rod, Rod, Rod], fromRod: number, toRod: number): boolean {
+  const source = rods[fromRod];
+  const target = rods[toRod];
+  
+  // Can't move from empty rod
+  if (source.length === 0) {
+    return false;
+  }
+  
+  // Can always move to empty rod
+  if (target.length === 0) {
+    return true;
+  }
+  
+  // Can only place smaller disk on larger disk
+  const movingDisk = source[source.length - 1]; // Top of source (smallest = 1)
+  const targetTop = target[target.length - 1];   // Top of target
+  return movingDisk < targetTop;
+}
+
+/**
+ * Performs a disk move immutably. Returns new rods state if move is legal, null otherwise.
+ * Does NOT increment move count - caller is responsible for that.
+ */
+function moveDisk(
+  rods: [Rod, Rod, Rod],
+  fromRod: number,
+  toRod: number
+): [Rod, Rod, Rod] | null {
+  if (!canMove(rods, fromRod, toRod)) {
+    return null;
+  }
+  
+  const newRods: [Rod, Rod, Rod] = [
+    [...rods[0]],
+    [...rods[1]],
+    [...rods[2]],
+  ];
+  
+  const disk = newRods[fromRod].pop()!;
+  newRods[toRod].push(disk);
+  
+  return newRods;
+}
+
+/**
+ * Checks if the puzzle is solved (all disks on rod index 2)
+ */
+function isWin(rods: [Rod, Rod, Rod], nDisks: number): boolean {
+  return rods[2].length === nDisks;
+}
+
+// Format milliseconds as mm:ss.ms
+function formatTime(ms: number): string {
+  const totalSeconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  const centiseconds = Math.floor((ms % 1000) / 10);
+  return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${centiseconds.toString().padStart(2, '0')}`;
 }
 
 // ============================================================================
@@ -71,6 +146,9 @@ export default function HanoiGame() {
   const [elapsedMs, setElapsedMs] = useState(0);
   const [selectedRod, setSelectedRod] = useState<number | null>(null);
   const [result, setResult] = useState<GameResult | null>(null);
+  
+  // Error feedback for illegal moves
+  const [errorRod, setErrorRod] = useState<number | null>(null);
   
   // Timer refs
   const startTimeRef = useRef<number>(0);
@@ -97,6 +175,7 @@ export default function HanoiGame() {
     setMoves(0);
     setElapsedMs(0);
     setSelectedRod(null);
+    setErrorRod(null);
   }, []);
 
   // Start the game
@@ -136,9 +215,9 @@ export default function HanoiGame() {
     const currentGameMode = gameModeRef.current;
     
     const finalElapsed = completed ? Date.now() - startTimeRef.current : CONFIG.MAX_RUN_MS;
-    const optimal = getOptimalMoves(currentDiskCount);
+    const optimal = optimalMoves(currentDiskCount);
     const extra = Math.max(0, currentMoves - optimal);
-    const score = calculateScore(finalElapsed, currentMoves, currentDiskCount);
+    const score = computeScoreMs(finalElapsed, currentMoves, currentDiskCount);
     
     setResult({
       elapsedMs: finalElapsed,
@@ -156,8 +235,8 @@ export default function HanoiGame() {
   // Check for win condition
   useEffect(() => {
     if (gameState === 'playing') {
-      // Win: all disks on the rightmost rod
-      if (rods[2].length === diskCount) {
+      // Win: all disks on the rightmost rod (index 2)
+      if (isWin(rods, diskCount)) {
         endGame(true); // true = completed successfully
       }
     }
@@ -171,42 +250,37 @@ export default function HanoiGame() {
     };
   }, []);
 
-  // Handle rod click
+  // Handle rod click - uses canMove/moveDisk helpers for game logic
   const handleRodClick = (rodIndex: number) => {
     if (gameState !== 'playing') return;
     
+    // Clear any existing error
+    setErrorRod(null);
+    
     if (selectedRod === null) {
-      // Select a rod (must have disks)
+      // Select a rod (must have disks to select)
       if (rods[rodIndex].length > 0) {
         setSelectedRod(rodIndex);
       }
     } else {
       // Try to move disk
       if (selectedRod === rodIndex) {
-        // Deselect
+        // Deselect (clicked same rod)
         setSelectedRod(null);
       } else {
-        // Attempt move
-        const sourceRod = rods[selectedRod];
-        const targetRod = rods[rodIndex];
-        const diskToMove = sourceRod[sourceRod.length - 1];
-        const topOfTarget = targetRod[targetRod.length - 1];
-        
-        // Valid move: target is empty OR disk is smaller than top of target
-        if (targetRod.length === 0 || diskToMove < topOfTarget) {
-          setRods(prev => {
-            const newRods: [Rod, Rod, Rod] = [
-              [...prev[0]],
-              [...prev[1]],
-              [...prev[2]],
-            ];
-            newRods[selectedRod].pop();
-            newRods[rodIndex].push(diskToMove);
-            return newRods;
-          });
+        // Attempt move using helper - only increment moves if legal
+        const newRods = moveDisk(rods, selectedRod, rodIndex);
+        if (newRods !== null) {
+          // Legal move - update state and deselect
+          setRods(newRods);
           setMoves(m => m + 1);
+          setSelectedRod(null);
+        } else {
+          // Illegal move - keep selection and show error feedback
+          setErrorRod(rodIndex);
+          // Clear error after animation completes
+          setTimeout(() => setErrorRod(null), 400);
         }
-        setSelectedRod(null);
       }
     }
   };
@@ -257,14 +331,17 @@ export default function HanoiGame() {
   // Rod component
   const RodDisplay = ({ rodIndex, rod }: { rodIndex: number; rod: Rod }) => {
     const isSelected = selectedRod === rodIndex;
+    const isError = errorRod === rodIndex;
     const hasDisks = rod.length > 0;
     const rodLabels = ['A', 'B', 'C'];
     
     return (
       <button
         onClick={() => handleRodClick(rodIndex)}
-        className={`flex-1 flex flex-col items-center justify-end p-2 sm:p-4 rounded-xl transition-all duration-200 min-h-[200px] sm:min-h-[280px] ${
-          isSelected
+        className={`relative flex-1 flex flex-col items-center justify-end p-2 sm:p-4 rounded-xl transition-all duration-200 min-h-[200px] sm:min-h-[280px] ${
+          isError
+            ? 'bg-rose-900/40 ring-2 ring-rose-500 animate-shake'
+            : isSelected
             ? 'bg-zinc-700/80 ring-2 ring-amber-400'
             : hasDisks
             ? 'bg-zinc-800/60 hover:bg-zinc-700/60'
@@ -292,9 +369,18 @@ export default function HanoiGame() {
         <div className="w-full h-3 bg-zinc-600 rounded-sm mt-1" />
         
         {/* Label */}
-        <span className={`mt-2 font-bold text-sm ${isSelected ? 'text-amber-400' : 'text-zinc-500'}`}>
+        <span className={`mt-2 font-bold text-sm ${
+          isError ? 'text-rose-400' : isSelected ? 'text-amber-400' : 'text-zinc-500'
+        }`}>
           {rodLabels[rodIndex]}
         </span>
+        
+        {/* Error message */}
+        {isError && (
+          <span className="absolute -bottom-6 text-rose-400 text-xs font-medium animate-pulse">
+            Can't place here!
+          </span>
+        )}
       </button>
     );
   };
@@ -357,7 +443,7 @@ export default function HanoiGame() {
                 <span className="text-zinc-400 font-medium">Score</span> = Time + ({CONFIG.EXTRA_MOVE_PENALTY_MS}ms × extra moves)
               </p>
               <p className="text-zinc-500 text-xs mt-1">
-                Optimal: {getOptimalMoves(CONFIG.TUTORIAL_DISKS)} moves (3 disks) • {getOptimalMoves(CONFIG.RANKED_DISKS)} moves (5 disks)
+                Optimal: {optimalMoves(CONFIG.TUTORIAL_DISKS)} moves (3 disks) • {optimalMoves(CONFIG.RANKED_DISKS)} moves (5 disks)
               </p>
             </div>
             
@@ -414,7 +500,7 @@ export default function HanoiGame() {
                     {moves}
                   </div>
                   <div className="text-xs text-zinc-500 uppercase tracking-wide">
-                    Moves <span className="text-zinc-600">(opt: {getOptimalMoves(diskCount)})</span>
+                    Moves <span className="text-zinc-600">(opt: {optimalMoves(diskCount)})</span>
                   </div>
                 </div>
               </div>
