@@ -72,15 +72,30 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
         {/* Header */}
         <div className="text-center mb-6">
-          <div className="w-12 h-12 bg-[#FFD700] rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-gray-900 font-bold text-2xl">G</span>
+          <div className="flex items-center justify-center mb-4">
+            <div className="relative w-12 h-12 flex items-center justify-center">
+              <img 
+                src="/goosetrialspfp-removebg-preview.png" 
+                alt="Goose Trials Logo"
+                className="w-10 h-10 object-contain"
+                style={{ imageRendering: 'pixelated' }}
+              />
+            </div>
+            <div className="flex flex-col justify-center">
+              <span className="text-base font-bold text-white leading-[0.9] uppercase tracking-wider">
+                GOOSE
+              </span>
+              <span className="text-base font-bold text-amber-400 leading-[0.9] uppercase tracking-wider">
+                TRIALS
+              </span>
+            </div>
           </div>
           <h2 className="text-white text-2xl font-bold uppercase tracking-wide">
             {success ? 'Check Your Email' : 'Join the Trials'}
           </h2>
           <p className="text-white/60 mt-2">
             {success
-              ? "We've sent you a magic link to sign in"
+              ? "We've sent you a link to sign in"
               : 'Enter your email to receive a sign-in link'}
           </p>
         </div>
@@ -130,7 +145,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
               disabled={loading}
               className="w-full px-4 py-3 bg-[#FFD700] text-gray-900 font-bold uppercase tracking-wide rounded-lg hover:bg-[#FFD700]/90 transition-colors disabled:opacity-50"
             >
-              {loading ? 'Sending...' : 'Send Magic Link'}
+              {loading ? 'Sending...' : 'Send Sign-In Link'}
             </button>
 
             <p className="text-white/40 text-xs text-center">

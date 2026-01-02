@@ -77,10 +77,23 @@ export default function UsernameModal({ isOpen, onComplete }: UsernameModalProps
       <div className="relative bg-[#0a0a0a] border border-white/20 rounded-2xl p-8 w-full max-w-md shadow-2xl">
         {/* Header */}
         <div className="text-center mb-6">
-          <div className="w-16 h-16 bg-gradient-to-br from-[#FFD700] to-[#FFA500] rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-[#FFD700]/20">
-            <svg className="w-8 h-8 text-gray-900" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <div className="relative w-12 h-12 flex items-center justify-center">
+              <img 
+                src="/goosetrialspfp-removebg-preview.png" 
+                alt="Goose Trials Logo"
+                className="w-10 h-10 object-contain"
+                style={{ imageRendering: 'pixelated' }}
+              />
+            </div>
+            <div className="flex flex-col justify-center">
+              <span className="text-base font-bold text-white leading-[0.9] uppercase tracking-wider">
+                GOOSE
+              </span>
+              <span className="text-base font-bold text-amber-400 leading-[0.9] uppercase tracking-wider">
+                TRIALS
+              </span>
+            </div>
           </div>
           <h2 className="text-white text-2xl font-bold uppercase tracking-wide">
             Choose Your Username
