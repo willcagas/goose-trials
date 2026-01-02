@@ -264,7 +264,7 @@ export default function HomePage() {
               { href: "/games/reaction-time", tag: "REACTION", icon: Zap, title: "Reaction Time", desc: "Test your reflexes." },
               { href: "#", tag: "MEMORY", icon: Hash, title: "Number Memory", desc: "Recall number sequences." },
               { href: "/games/chimp", tag: "VISUAL", icon: Eye, title: "Chimp Test", desc: "Master pattern recognition." },
-              { href: "#", tag: "SPATIAL", icon: Layers, title: "Tower of Hanoi", desc: "Solve the classic puzzle." },
+              { href: "/games/hanoi", tag: "SPATIAL", icon: Layers, title: "Tower of Hanoi", desc: "Solve the classic puzzle." },
               { href: "/games/pathfinding", tag: "SPATIAL", icon: Route, title: "Pathfinding", desc: "Navigate mazes." },
               { href: "/games/aim-trainer", tag: "VISUAL", icon: ArrowUpDown, title: "Sorting", desc: "Organize elements quickly." }
             ].map((trial, idx) => (
