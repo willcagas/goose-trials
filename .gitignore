@@ -43,6 +43,9 @@ next-env.d.ts
 # supabase
 /supabase/scripts/data
 
+# username ban list (server-only, contains profanity list)
+lib/username/banlist.server.ts
+
 # patches and diffs
 *.patch
 *.diff
@@ -59,3 +62,4 @@ next-env.d.ts
 .project
 .classpath
 .settings/
+./next/dev
