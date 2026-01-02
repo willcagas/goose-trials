@@ -55,14 +55,14 @@ function ProtocolCard({number, title, desc, delay, isVisible}: ProtocolCardProps
           transform: `perspective(1000px) rotateX(${rotate.x}deg) rotateY(${rotate.y}deg)`,
           transition: rotate.x === 0 && rotate.y === 0 ? 'transform 0.5s ease-out' : 'transform 0.1s ease-out'
         }}
-        className="relative group p-8 rounded-lg bg-white border border-gray-200 shadow-sm hover:border-amber-400 hover:shadow-lg active:scale-[0.98] transition-all duration-500 overflow-hidden cursor-pointer h-full flex flex-col"
+        className="relative group p-8 rounded-lg bg-white border border-gray-200 shadow-sm hover:border-[#c9a504] hover:shadow-lg transition-all duration-500 overflow-hidden cursor-pointer h-full flex flex-col"
       >
         <div className="relative z-10 flex-1 flex flex-col">
           <div className="flex justify-between items-start mb-6">
-            <div className="text-6xl font-bold text-gray-200 group-hover:text-amber-400/70 transition-all duration-500 leading-none">
+            <div className="text-6xl font-bold text-gray-200 group-hover:text-[#c9a504]/70 transition-all duration-500 leading-none">
               {number}
             </div>
-            <div className="w-8 h-8 border-t-2 border-r-2 border-gray-200 group-hover:border-amber-400/50 transition-colors duration-300" />
+            <div className="w-8 h-8 border-t-2 border-r-2 border-gray-200 group-hover:border-[#c9a504]/50 transition-colors duration-300" />
           </div>
           
           <h3 className="text-2xl font-bold mb-3 text-gray-900 group-hover:translate-x-2 transition-transform duration-300 relative z-10">
@@ -73,7 +73,7 @@ function ProtocolCard({number, title, desc, delay, isVisible}: ProtocolCardProps
             {desc}
           </p>
         </div>
-        <div className="absolute bottom-0 right-0 w-16 h-16 bg-gradient-to-br from-transparent to-amber-400/5 rounded-br-lg" />
+        <div className="absolute bottom-0 right-0 w-16 h-16 bg-gradient-to-br from-transparent to-[#c9a504]/5 rounded-br-lg" />
       </div>
     </div>
   );
@@ -111,13 +111,12 @@ function ProtocolSection() {
       <div className="max-w-6xl mx-auto">
         <div className={`text-center mb-12 md:mb-16 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
           <h2 className="text-4xl md:text-5xl font-bold uppercase tracking-tighter mb-2 text-gray-900">
-            The <span className="text-amber-400">Protocol</span>
+            The <span className="text-[#c9a504]">Protocol</span>
           </h2>
           <p className="text-gray-500 text-sm md:text-base">
             Fastest cognitive benchmark. Optimized for quick breaks between classes.
           </p>
         </div>
-
         <div className="grid md:grid-cols-3 gap-6">
           {steps.map((step, i) => (
             <ProtocolCard key={i} {...step} isVisible={isVisible} />
@@ -153,13 +152,39 @@ export default function HomePage() {
     const side = Math.floor(Math.random() * 4);
     let startX, startY, angle;
     const speed = 8 + Math.random() * 7;
+
     switch(side) {
-      case 0: startX = Math.random() * window.innerWidth; startY = -200; angle = Math.PI / 2 + (Math.random() - 0.5) * Math.PI / 2; break;
-      case 1: startX = window.innerWidth + 200; startY = Math.random() * window.innerHeight; angle = Math.PI + (Math.random() - 0.5) * Math.PI / 2; break;
-      case 2: startX = Math.random() * window.innerWidth; startY = window.innerHeight + 200; angle = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI / 2; break;
-      default: startX = -200; startY = Math.random() * window.innerHeight; angle = (Math.random() - 0.5) * Math.PI / 2; break;
+      case 0: // Top
+        startX = Math.random() * window.innerWidth;
+        startY = -200;
+        angle = Math.PI / 2 + (Math.random() - 0.5) * Math.PI / 2;
+        break;
+      case 1: // Right
+        startX = window.innerWidth + 200;
+        startY = Math.random() * window.innerHeight;
+        angle = Math.PI + (Math.random() - 0.5) * Math.PI / 2;
+        break;
+      case 2: // Bottom
+        startX = Math.random() * window.innerWidth;
+        startY = window.innerHeight + 200;
+        angle = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI / 2;
+        break;
+      default: // Left
+        startX = -200;
+        startY = Math.random() * window.innerHeight;
+        angle = (Math.random() - 0.5) * Math.PI / 2;
+        break;
     }
-    const newGoose: FlyingGoose = { id: gooseIdRef.current++, x: startX, y: startY, angle: angle, velocityX: Math.cos(angle) * speed, velocityY: Math.sin(angle) * speed };
+
+    const newGoose: FlyingGoose = {
+      id: gooseIdRef.current++,
+      x: startX,
+      y: startY,
+      angle: angle,
+      velocityX: Math.cos(angle) * speed,
+      velocityY: Math.sin(angle) * speed
+    };
+
     setGeese(prev => [...prev, newGoose]);
   };
 
@@ -167,33 +192,55 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 relative overflow-hidden" onClick={handleClick}>
+      {/* SpriteSheet Flying Geese */}
+      {geese.map(goose => (
+        <div
+          key={goose.id}
+          className="FlyingGoose pointer-events-none absolute z-[5]"
+          style={{
+            left: `${goose.x}px`,
+            top: `${goose.y}px`,
+            transform: `rotate(${goose.angle}rad)`,
+          }}
+        >
+          <img className="Goose_spritesheet" src="/newSpriteSheet.png" alt="Flying Goose" />
+        </div>
+      ))}
+
+      {/* Grid Pattern Background */}
+      <div
+        className="absolute inset-0 opacity-[0.08] pointer-events-none"
+        style={{
+          backgroundImage: 'radial-gradient(circle, rgba(0,0,0,0.15) 1px, transparent 1px)',
+          backgroundSize: '32px 32px',
+        }}
+      />
+
       <Navbar />
       
       {/* Hero Section */}
-      <section className="relative z-10 px-6 py-12 md:py-20 bg-[#0a0a0a] text-white min-h-[85vh] md:min-h-[calc(100vh-4rem)] flex items-center justify-center">
-        <div className="max-w-4xl mx-auto w-full text-center">
-          <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold mb-6 tracking-tight leading-[1.1] flex flex-col items-center">
-            <span className="block text-white mb-2">Think You're Smart?</span>
-            <span className="text-amber-400">Prove It.</span>
+      <section className="relative z-10 px-4 py-8 md:py-12 text-center bg-[#0a0a0a] text-white min-h-[calc(100vh-4rem)] flex items-center">
+        <div className="max-w-4xl mx-auto w-full">
+          <h1 className="text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold mb-4 md:mb-6 tracking-tight leading-[1.1] text-center flex flex-col items-center">
+            <span className="block text-white mb-1">Think You're Smart? Prove It.</span>
+            <span className="text-[#FFD700] whitespace-nowrap">Battle your campus. Benchmark the world.</span>
           </h1>
-          <div className="flex flex-col items-center mb-10 md:mb-14 text-center">
-            <h2 className="text-lg sm:text-xl md:text-2xl text-white/90 font-semibold mb-3 max-w-2xl">
-              Battle your campus. Benchmark the world.
-            </h2>
-            <p className="text-sm sm:text-base md:text-lg text-white/60 font-medium">
-              Six quick games. One leaderboard. See where you rank.
-            </p>
-          </div>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center w-full max-w-xs sm:max-w-none mx-auto">
+          <p className="text-base md:text-lg lg:text-xl mb-5 text-white/90 font-medium">
+            Six quick games. One leaderboard. See where you rank.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <button
-              onClick={(e) => { e.stopPropagation(); document.getElementById('trials')?.scrollIntoView({ behavior: 'smooth' }); }}
-              className="w-full sm:w-auto px-10 py-4 bg-amber-400 hover:bg-amber-300 text-black font-bold text-sm md:text-base uppercase tracking-widest rounded-full shadow-lg active:scale-95 transition-all cursor-pointer min-w-[200px]"
+              onClick={(e) => {
+                e.stopPropagation();
+                document.getElementById('trials')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="px-8 md:px-10 py-3 md:py-4 bg-[#FFD700] text-black font-bold text-base md:text-lg uppercase tracking-wide rounded-lg hover:opacity-90 hover:scale-105 transition-all min-w-[160px] text-center cursor-pointer"
             >
               Play Now
             </button>
             <Link 
               href="/leaderboard"
-              className="w-full sm:w-auto px-10 py-4 bg-white/5 border border-amber-400/30 text-white font-bold text-sm md:text-base uppercase tracking-widest rounded-full backdrop-blur-sm hover:bg-amber-400/10 hover:border-amber-400 active:scale-95 transition-all min-w-[200px] text-center cursor-pointer"
+              className="px-8 md:px-10 py-3 md:py-4 bg-transparent border-2 border-white text-white font-bold text-base md:text-lg uppercase tracking-wide rounded-lg hover:bg-white/10 transition-all min-w-[160px] text-center"
             >
               View Rankings
             </Link>
@@ -203,38 +250,38 @@ export default function HomePage() {
 
       <ProtocolSection />
 
-      {/* The Trials Section */}
+      {/* Trials Section */}
       <section id="trials" className="relative z-10 px-4 py-16 md:py-24 bg-gray-50">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12 md:mb-16">
             <h2 className="text-4xl md:text-5xl font-bold uppercase tracking-tighter mb-4 text-gray-900">
-              The <span className="text-amber-400">Trials</span>
+              The <span className="text-[#c9a504]">Trials</span>
             </h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
-              { href: "/games/reaction-time", tag: "REACTION", icon: Zap, title: "Reaction Time", desc: "Test your reflexes with split-second timing challenges." },
-              { href: "#", tag: "MEMORY", icon: Hash, title: "Number Memory", desc: "Remember and recall increasingly long number sequences." },
-              { href: "/games/chimp", tag: "VISUAL", icon: Eye, title: "Chimp Test", desc: "Master pattern recognition and working memory." },
-              { href: "#", tag: "SPATIAL", icon: Layers, title: "Tower of Hanoi", desc: "Solve the classic puzzle with optimal moves." },
-              { href: "/games/pathfinding", tag: "SPATIAL", icon: Route, title: "Pathfinding", desc: "Navigate mazes and find the shortest route." },
-              { href: "/games/aim-trainer", tag: "ACCURACY", icon: ArrowUpDown, title: "Aim Trainer", desc: "Hit targets as quick as possible." }
+              { href: "/games/reaction-time", tag: "REACTION", icon: Zap, title: "Reaction Time", desc: "Test your reflexes." },
+              { href: "#", tag: "MEMORY", icon: Hash, title: "Number Memory", desc: "Recall number sequences." },
+              { href: "/games/chimp", tag: "VISUAL", icon: Eye, title: "Chimp Test", desc: "Master pattern recognition." },
+              { href: "#", tag: "SPATIAL", icon: Layers, title: "Tower of Hanoi", desc: "Solve the classic puzzle." },
+              { href: "/games/pathfinding", tag: "SPATIAL", icon: Route, title: "Pathfinding", desc: "Navigate mazes." },
+              { href: "/games/aim-trainer", tag: "VISUAL", icon: ArrowUpDown, title: "Sorting", desc: "Organize elements quickly." }
             ].map((trial, idx) => (
-              <a key={idx} href={trial.href} onClick={(e) => e.stopPropagation()} className="cursor-pointer">
-                <div className="relative overflow-hidden group p-8 rounded-3xl bg-white border-2 border-gray-200 hover:border-amber-400 active:scale-[0.98] transition-all shadow-sm hover:shadow-md h-full flex flex-col">
+              <a key={idx} href={trial.href} onClick={(e) => e.stopPropagation()}>
+                <div className="relative overflow-hidden group p-8 rounded-3xl bg-white border-2 border-gray-200 hover:border-[#c9a504] transition-all shadow-sm hover:shadow-md h-full">
                   <div className="absolute top-0 right-0 p-4">
-                    <span className="px-3 py-1 bg-amber-400/10 text-amber-500 text-[10px] font-bold uppercase rounded-full border border-amber-400/30">
+                    <span className="px-3 py-1 bg-[#c9a504]/10 text-[#E6C200] text-[10px] font-bold uppercase rounded-full border border-[#c9a504]/30">
                       {trial.tag}
                     </span>
                   </div>
                   <div className="mb-4">
-                    <trial.icon className="w-8 h-8 text-amber-400" />
+                    <trial.icon className="w-8 h-8 text-[#c9a504]" />
                   </div>
                   <h3 className="text-2xl font-bold mb-3 text-gray-900 uppercase pr-20">{trial.title}</h3>
-                  <p className="text-gray-600 text-sm leading-relaxed mb-6 flex-1">{trial.desc}</p>
+                  <p className="text-gray-600 text-sm leading-relaxed mb-6">{trial.desc}</p>
                   <div className="w-full h-1 bg-gray-200 rounded-full overflow-hidden">
-                    <div className="h-full bg-amber-400 w-0 group-hover:w-full transition-all duration-700"></div>
+                    <div className="h-full bg-[#c9a504] w-0 group-hover:w-full transition-all duration-700"></div>
                   </div>
                 </div>
               </a>
@@ -243,17 +290,14 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Leaderboard Preview */}
       <section className="relative z-10 px-4 py-16 md:py-20 bg-white/50">
         <div className="max-w-4xl mx-auto text-center">
-          <div className="mb-8">
-            <h2 className="text-4xl md:text-5xl font-bold uppercase tracking-tighter mb-4 text-gray-900">
-              The <span className="text-amber-400">Rankings</span>
-            </h2>
-          </div>
+          <h2 className="text-4xl md:text-5xl font-bold uppercase tracking-tighter mb-8 text-gray-900">
+            The <span className="text-[#c9a504]">Rankings</span>
+          </h2>
           <Link 
             href="/leaderboard"
-            className="inline-flex items-center gap-2 px-8 py-4 bg-amber-400 hover:bg-amber-500 text-black uppercase font-bold tracking-widest rounded-full active:scale-95 transition-all shadow-lg cursor-pointer"
+            className="inline-flex items-center gap-2 px-6 py-3 border-2 border-gray-900 text-gray-900 uppercase font-bold tracking-wide rounded-lg hover:bg-gray-100 transition-colors shadow-sm"
           >
             View Leaderboard
           </Link>
