@@ -14,9 +14,16 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { submitScore } from '@/lib/db/scores';
 import PathfindingBoard from './PathfindingBoard';
-import type { Cell, Direction, GamePhase, Position } from './types';
+import type {
+  Cell,
+  Direction,
+  GamePhase,
+  Position,
+  WallSegment,
+} from './types';
 
 const BASE_SIZE = 3;
+const EXTRA_LIVES_PER_MAZE = 1;
 const WALL_COLOR = 'rgb(8, 8, 8)';
 
 const directions = [
@@ -87,10 +94,38 @@ const getDirection = (from: Position, to: Position): Direction | null => {
   return null;
 };
 
-const canMove = (maze: Cell[][], from: Position, to: Position): boolean => {
-  const direction = getDirection(from, to);
-  if (!direction) return false;
-  return !maze[from.row][from.col].walls[direction];
+const getWallSegment = (from: Position, direction: Direction): WallSegment => {
+  switch (direction) {
+    case 'top':
+      return {
+        x1: from.col,
+        y1: from.row,
+        x2: from.col + 1,
+        y2: from.row,
+      };
+    case 'right':
+      return {
+        x1: from.col + 1,
+        y1: from.row,
+        x2: from.col + 1,
+        y2: from.row + 1,
+      };
+    case 'bottom':
+      return {
+        x1: from.col,
+        y1: from.row + 1,
+        x2: from.col + 1,
+        y2: from.row + 1,
+      };
+    case 'left':
+    default:
+      return {
+        x1: from.col,
+        y1: from.row,
+        x2: from.col,
+        y2: from.row + 1,
+      };
+  }
 };
 
 export default function PathfindingGame() {
@@ -103,11 +138,18 @@ export default function PathfindingGame() {
   const [showMaze, setShowMaze] = useState(false);
   const [isDrawing, setIsDrawing] = useState(false);
   const [failReason, setFailReason] = useState<string | null>(null);
+  const [revealedWallSegments, setRevealedWallSegments] = useState<
+    WallSegment[]
+  >([]);
+  const [shakeTick, setShakeTick] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [submitState, setSubmitState] = useState<'idle' | 'success' | 'error'>(
     'idle'
   );
   const pathRef = useRef<Position[]>([]);
+  const extraLivesRef = useRef(EXTRA_LIVES_PER_MAZE);
+  const revealedWallKeysRef = useRef<Set<string>>(new Set());
+  const blockedMoveKeysRef = useRef<Set<string>>(new Set());
 
   const lastPosition = playerPath[playerPath.length - 1];
   const pathSet = useMemo(() => {
@@ -186,6 +228,10 @@ export default function PathfindingGame() {
     setPlayerPath(startingPath);
     setFailReason(null);
     setSubmitState('idle');
+    extraLivesRef.current = EXTRA_LIVES_PER_MAZE;
+    revealedWallKeysRef.current = new Set();
+    setRevealedWallSegments([]);
+    blockedMoveKeysRef.current = new Set();
     setShowMaze(true);
     setPhase('input');
   };
@@ -217,6 +263,26 @@ export default function PathfindingGame() {
     setSubmitState(result.success ? 'success' : 'error');
   };
 
+  const revealWall = (segment: WallSegment) => {
+    const key = `${segment.x1}-${segment.y1}-${segment.x2}-${segment.y2}`;
+    if (revealedWallKeysRef.current.has(key)) return false;
+    revealedWallKeysRef.current.add(key);
+    setRevealedWallSegments((prev) => [...prev, segment]);
+    return true;
+  };
+
+  const triggerShake = () => {
+    setShakeTick((prev) => prev + 1);
+  };
+
+  const consumeExtraLife = () => {
+    if (extraLivesRef.current > 0) {
+      extraLivesRef.current -= 1;
+      return true;
+    }
+    return false;
+  };
+
   const attemptStep = (row: number, col: number) => {
     if (phase !== 'input') return;
     const currentPath = pathRef.current;
@@ -225,8 +291,20 @@ export default function PathfindingGame() {
     if (last.row === row && last.col === col) return;
 
     const next = { row, col };
-    if (!canMove(maze, last, next)) {
-      void handleFail('Wrong move - you hit a wall.');
+    const direction = getDirection(last, next);
+    if (!direction) return;
+    const moveKey = `${last.row}-${last.col}-${row}-${col}`;
+    if (blockedMoveKeysRef.current.has(moveKey)) return;
+    if (maze[last.row][last.col].walls[direction]) {
+      const didReveal = revealWall(getWallSegment(last, direction));
+      blockedMoveKeysRef.current.add(moveKey);
+      const canContinue = consumeExtraLife();
+      if (didReveal) {
+        triggerShake();
+      }
+      if (!canContinue) {
+        void handleFail('You failed.');
+      }
       return;
     }
 
@@ -257,12 +335,16 @@ export default function PathfindingGame() {
     setPhase('idle');
     setScore(0);
     setRound(1);
+    extraLivesRef.current = EXTRA_LIVES_PER_MAZE;
     setMazeSize(BASE_SIZE);
     setMaze(generateMaze(BASE_SIZE));
     pathRef.current = [];
     setPlayerPath([]);
     setShowMaze(false);
     setFailReason(null);
+    revealedWallKeysRef.current = new Set();
+    setRevealedWallSegments([]);
+    blockedMoveKeysRef.current = new Set();
     setSubmitState('idle');
   };
 
@@ -270,10 +352,10 @@ export default function PathfindingGame() {
     phase === 'memorize'
       ? 'Memorize'
       : phase === 'input'
-      ? 'Navigate'
-      : phase === 'failed'
-      ? 'Ended'
-      : 'Ready';
+        ? 'Navigate'
+        : phase === 'failed'
+          ? 'Ended'
+          : 'Ready';
 
   const showPath = phase === 'input' || phase === 'failed';
 
@@ -319,12 +401,14 @@ export default function PathfindingGame() {
           showPath={showPath}
           wallColor={WALL_COLOR}
           wallSegments={wallSegments}
+          revealedWallSegments={revealedWallSegments}
           pathSegments={pathSegments}
           pathSet={pathSet}
           lastPosition={lastPosition}
           failReason={failReason}
           submitting={submitting}
           submitState={submitState}
+          shakeTick={shakeTick}
           onStart={startGame}
           onReset={resetGame}
           onPointerDown={handlePointerDown}
