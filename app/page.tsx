@@ -231,7 +231,7 @@ export default function HomePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
               { href: "/games/reaction-time", tag: "REACTION", icon: Zap, title: "Reaction Time", desc: "Test your reflexes with split-second timing challenges." },
-              { href: "#", tag: "MEMORY", icon: Hash, title: "Number Memory", desc: "Remember and recall increasingly long number sequences." },
+              { href: "/games/number-memory", tag: "MEMORY", icon: Hash, title: "Number Memory", desc: "Remember and recall increasingly long number sequences." },
               { href: "/games/chimp", tag: "VISUAL", icon: Eye, title: "Chimp Test", desc: "Master pattern recognition and working memory." },
               { href: "/games/hanoi", tag: "SPATIAL", icon: Layers, title: "Tower of Hanoi", desc: "Solve the classic puzzle with optimal moves." },
               { href: "/games/pathfinding", tag: "SPATIAL", icon: Route, title: "Pathfinding", desc: "Navigate mazes and find the shortest route." },
