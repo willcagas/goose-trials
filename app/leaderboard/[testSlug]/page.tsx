@@ -289,30 +289,30 @@ export default function LeaderboardTestPage() {
   const canViewCountry = me?.universityId !== null && universityInfo?.country !== null;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 overflow-x-hidden">
       <Navbar />
       <div className="max-w-7xl mx-auto px-4 py-8 md:py-12">
         {/* Header */}
-        <div className="mb-8">
-          <Link 
+        <div className="mb-6 md:mb-8">
+          <Link
             href="/leaderboard"
-            className="text-gray-600 hover:text-gray-900 mb-4 inline-block"
+            className="text-gray-600 hover:text-gray-900 mb-3 md:mb-4 inline-block text-sm md:text-base"
           >
             ← Back to Leaderboards
           </Link>
-          <div className="flex items-start justify-between">
+          <div className="flex flex-col md:flex-row items-start md:items-start justify-between gap-4">
             <div>
-              <h1 className="text-4xl md:text-5xl font-bold uppercase tracking-tighter mb-2 text-gray-900">
+              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold uppercase tracking-tighter mb-2 text-gray-900">
                 {testInfo?.name || testSlug}
               </h1>
               {testInfo?.description && (
-                <p className="text-gray-600 text-lg">{testInfo.description}</p>
+                <p className="text-gray-600 text-base md:text-lg">{testInfo.description}</p>
               )}
             </div>
             <button
               onClick={loadLeaderboards}
               disabled={loading}
-              className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-3 md:px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm md:text-base font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap"
               title="Refresh leaderboard"
             >
               <svg
@@ -336,10 +336,10 @@ export default function LeaderboardTestPage() {
 
         {/* Scope Toggle */}
         <div className="mb-6">
-          <div className="flex gap-4 border-b border-gray-200">
+          <div className="flex gap-2 md:gap-4 border-b border-gray-200 overflow-x-auto">
             <button
               onClick={() => setScope('global')}
-              className={`px-6 py-3 font-bold text-sm uppercase tracking-wide transition-colors ${
+              className={`px-4 md:px-6 py-3 font-bold text-xs md:text-sm uppercase tracking-wide transition-colors whitespace-nowrap ${
                 scope === 'global'
                   ? 'border-b-2 border-[#c9a504] text-gray-900'
                   : 'text-gray-500 hover:text-gray-700'
@@ -350,7 +350,7 @@ export default function LeaderboardTestPage() {
             <button
               onClick={() => setScope('country')}
               disabled={!canViewCountry}
-              className={`px-6 py-3 font-bold text-sm uppercase tracking-wide transition-colors ${
+              className={`px-4 md:px-6 py-3 font-bold text-xs md:text-sm uppercase tracking-wide transition-colors whitespace-nowrap ${
                 !canViewCountry
                   ? 'text-gray-300 cursor-not-allowed'
                   : scope === 'country'
@@ -359,13 +359,13 @@ export default function LeaderboardTestPage() {
               }`}
             >
               {me?.isLoggedIn && universityInfo?.country
-                ? <>{getFlagEmoji(universityInfo.alpha_two_code)}&nbsp;&nbsp;{universityInfo.country}</>
+                ? <><span className="hidden sm:inline">{getFlagEmoji(universityInfo.alpha_two_code)}&nbsp;&nbsp;</span>{universityInfo.country}</>
                 : 'Your Country'}
             </button>
             <button
               onClick={() => setScope('campus')}
               disabled={!canViewCampus}
-              className={`px-6 py-3 font-bold text-sm uppercase tracking-wide transition-colors ${
+              className={`px-4 md:px-6 py-3 font-bold text-xs md:text-sm uppercase tracking-wide transition-colors whitespace-nowrap ${
                 !canViewCampus
                   ? 'text-gray-300 cursor-not-allowed'
                   : scope === 'campus'
@@ -373,9 +373,10 @@ export default function LeaderboardTestPage() {
                   : 'text-gray-500 hover:text-gray-700'
               }`}
             >
-              {me?.isLoggedIn && universityInfo?.name
+              <span className="hidden sm:inline">{me?.isLoggedIn && universityInfo?.name
                 ? universityInfo.name
-                : 'Your University'}
+                : 'Your University'}</span>
+              <span className="sm:hidden">Campus</span>
             </button>
           </div>
           {/* Messages for campus access */}
@@ -438,26 +439,26 @@ export default function LeaderboardTestPage() {
                 </p>
               </div>
             ) : (
-              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                <table className="w-full">
+              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden overflow-x-auto">
+                <table className="w-full min-w-[640px]">
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
-                      <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-gray-700">
+                      <th className="px-3 md:px-6 py-3 md:py-4 text-left text-xs font-bold uppercase tracking-wider text-gray-700">
                         Rank
                       </th>
-                      <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-gray-700">
+                      <th className="px-3 md:px-6 py-3 md:py-4 text-left text-xs font-bold uppercase tracking-wider text-gray-700">
                         Player
                       </th>
-                      <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-gray-700">
+                      <th className="px-3 md:px-6 py-3 md:py-4 text-left text-xs font-bold uppercase tracking-wider text-gray-700">
                         {(scope === 'global' || scope === 'country') ? 'University' : ''}
                       </th>
-                      <th className="px-6 py-4 text-right text-xs font-bold uppercase tracking-wider text-gray-700">
+                      <th className="px-3 md:px-6 py-3 md:py-4 text-right text-xs font-bold uppercase tracking-wider text-gray-700">
                         {testInfo?.unit === 'level' ? 'Level' : 'Score'}
                       </th>
-                      <th className="px-6 py-4 text-right text-xs font-bold uppercase tracking-wider text-gray-700">
+                      <th className="px-3 md:px-6 py-3 md:py-4 text-right text-xs font-bold uppercase tracking-wider text-gray-700">
                         Achieved
                       </th>
-                      <th className="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider text-gray-700">
+                      <th className="px-3 md:px-6 py-3 md:py-4 text-center text-xs font-bold uppercase tracking-wider text-gray-700">
                         Details
                       </th>
                     </tr>
@@ -474,44 +475,44 @@ export default function LeaderboardTestPage() {
                               : 'hover:bg-gray-50'
                           } transition-colors cursor-pointer`}
                         >
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td className="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-sm text-gray-900">
                           {entry.rank}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center gap-3">
+                        <td className="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap">
+                          <div className="flex items-center gap-2 md:gap-3">
                             {entry.avatar_url ? (
                               <img
                                 src={entry.avatar_url}
                                 alt={entry.username || 'User'}
-                                className="w-8 h-8 rounded-full"
+                                className="w-7 h-7 md:w-8 md:h-8 rounded-full"
                               />
                             ) : (
-                              <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-xs font-bold text-gray-600">
+                              <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-gray-300 flex items-center justify-center text-xs font-bold text-gray-600">
                                 {(entry.username || 'U')[0].toUpperCase()}
                               </div>
                             )}
-                            <span className="text-sm text-gray-900">
+                            <span className="text-xs md:text-sm text-gray-900">
                               {entry.username || 'Anonymous'}
                               {entry.is_you && (
-                                <span className="ml-2 text-xs text-[#c9a504]">(You)</span>
+                                <span className="ml-1 md:ml-2 text-xs text-[#c9a504]">(You)</span>
                               )}
                             </span>
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        <td className="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-xs md:text-sm text-gray-600">
                           {(scope === 'global' || scope === 'country') && (
                             entry.university_id && universityMap[entry.university_id]
                               ? universityMap[entry.university_id].name
                               : <span className="text-gray-400">—</span>
                           )}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 text-right">
+                        <td className="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-sm md:text-base font-bold text-gray-900 text-right">
                           {formatScore(entry.best_score, testInfo?.unit || null)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">
+                        <td className="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-xs md:text-sm text-gray-500 text-right">
                           {formatDate(entry.achieved_at)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                        <td className="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-center">
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
                             fill="none"
@@ -530,20 +531,20 @@ export default function LeaderboardTestPage() {
                       {/* Expanded Row - Top 5 Scores */}
                       {expandedUserId === entry.user_id && (
                         <tr className="animate-slideDown">
-                          <td colSpan={6} className="px-6 bg-gray-50 overflow-hidden">
-                            <div className="py-4 animate-fadeIn">
+                          <td colSpan={6} className="px-3 md:px-6 bg-gray-50 overflow-hidden">
+                            <div className="py-3 md:py-4 animate-fadeIn">
                               <div className="max-w-3xl">
-                                <h4 className="text-sm font-bold text-gray-700 mb-3">
+                                <h4 className="text-xs md:text-sm font-bold text-gray-700 mb-2 md:mb-3">
                                   {entry.username || 'Anonymous'}'s Top 5 Best Scores
                                 </h4>
                                 {loadingScores ? (
-                                  <p className="text-sm text-gray-500">Loading scores...</p>
+                                  <p className="text-xs md:text-sm text-gray-500">Loading scores...</p>
                                 ) : (
-                                  <div className="grid grid-cols-5 gap-3">
+                                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 md:gap-3">
                                     {expandedScores.map((score, index) => (
                                       <div
                                         key={index}
-                                        className={`p-3 rounded-lg border transform transition-all duration-300 ease-out ${
+                                        className={`p-2 md:p-3 rounded-lg border transform transition-all duration-300 ease-out ${
                                           score
                                             ? 'bg-white border-gray-200'
                                             : 'bg-gray-100 border-gray-300 border-dashed'
@@ -558,7 +559,7 @@ export default function LeaderboardTestPage() {
                                         <div className="text-xs text-gray-500 mb-1">
                                           #{index + 1}
                                         </div>
-                                        <div className="text-lg font-bold text-gray-900">
+                                        <div className="text-base md:text-lg font-bold text-gray-900">
                                           {score
                                             ? formatScore(score.score_value, testInfo?.unit || null)
                                             : '—'}
