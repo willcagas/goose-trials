@@ -25,14 +25,9 @@ async function fetchUniversityInfo(universityId: string): Promise<UniversityInfo
 
 export default function ProfilePage() {
   const { user, loading: sessionLoading } = useSession();
-  const { me, loading: meLoading, refetch } = useMe();
+  const { me, loading: meLoading } = useMe();
   const router = useRouter();
   
-  const [username, setUsername] = useState('');
-  const [isEditing, setIsEditing] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [universityInfo, setUniversityInfo] = useState<UniversityInfo | null>(null);
 
   // Redirect if not logged in
@@ -41,13 +36,6 @@ export default function ProfilePage() {
       router.push('/');
     }
   }, [user, sessionLoading, router]);
-
-  // Initialize username from me data
-  useEffect(() => {
-    if (me?.username) {
-      setUsername(me.username);
-    }
-  }, [me]);
 
   // Fetch university info when user has universityId
   useEffect(() => {
@@ -63,63 +51,6 @@ export default function ProfilePage() {
       loadUniversityInfo();
     }
   }, [me?.universityId, meLoading]);
-
-  const validateUsername = (value: string): string | null => {
-    if (value.length < 3) {
-      return 'Username must be at least 3 characters';
-    }
-    if (value.length > 20) {
-      return 'Username must be 20 characters or less';
-    }
-    if (!/^[a-zA-Z0-9_]+$/.test(value)) {
-      return 'Username can only contain letters, numbers, and underscores';
-    }
-    return null;
-  };
-
-  const handleSave = async () => {
-    const trimmedUsername = username.trim();
-    const validationError = validateUsername(trimmedUsername);
-    
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
-
-    setSaving(true);
-    setError('');
-    setSuccess('');
-
-    try {
-      const response = await fetch('/api/profile/username', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username: trimmedUsername }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to update username');
-      }
-
-      setSuccess('Username updated successfully!');
-      setIsEditing(false);
-      await refetch();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update username');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleCancel = () => {
-    setUsername(me?.username || '');
-    setIsEditing(false);
-    setError('');
-  };
 
   if (sessionLoading || meLoading) {
     return (
@@ -145,7 +76,7 @@ export default function ProfilePage() {
               Profile
             </h1>
             <p className="text-white/60 mt-2">
-              Manage your account settings
+              Your account information
             </p>
           </div>
 
@@ -156,65 +87,9 @@ export default function ProfilePage() {
               <label className="block text-white/60 text-sm uppercase tracking-wide mb-2">
                 Username
               </label>
-              {isEditing ? (
-                <div className="space-y-3">
-                  <input
-                    type="text"
-                    value={username}
-                    onChange={(e) => {
-                      setUsername(e.target.value);
-                      setError('');
-                      setSuccess('');
-                    }}
-                    className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#FFD700] transition-colors font-mono"
-                    maxLength={20}
-                    autoFocus
-                  />
-                  <p className="text-white/40 text-xs">
-                    3-20 characters, letters, numbers, and underscores only
-                  </p>
-                  <div className="flex gap-3">
-                    <button
-                      onClick={handleSave}
-                      disabled={saving}
-                      className="px-4 py-2 bg-[#FFD700] text-gray-900 font-bold text-sm uppercase tracking-wide rounded-lg hover:bg-[#FFD700]/90 transition-colors disabled:opacity-50"
-                    >
-                      {saving ? 'Saving...' : 'Save'}
-                    </button>
-                    <button
-                      onClick={handleCancel}
-                      disabled={saving}
-                      className="px-4 py-2 bg-white/10 text-white font-bold text-sm uppercase tracking-wide rounded-lg hover:bg-white/20 transition-colors disabled:opacity-50"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-center justify-between">
-                  <span className="text-white text-lg font-mono">
-                    {me?.username || <span className="text-white/40 italic">Not set</span>}
-                  </span>
-                  <button
-                    onClick={() => setIsEditing(true)}
-                    className="text-[#FFD700] hover:text-[#FFD700]/80 text-sm font-medium uppercase tracking-wide transition-colors"
-                  >
-                    Edit
-                  </button>
-                </div>
-              )}
-              
-              {error && (
-                <div className="mt-3 bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-3">
-                  <p className="text-red-400 text-sm">{error}</p>
-                </div>
-              )}
-              
-              {success && (
-                <div className="mt-3 bg-green-500/10 border border-green-500/30 rounded-lg px-4 py-3">
-                  <p className="text-green-400 text-sm">{success}</p>
-                </div>
-              )}
+              <span className="text-white text-lg font-mono">
+                {me?.username || <span className="text-white/40 italic">Not set</span>}
+              </span>
             </div>
 
             {/* Divider */}
@@ -243,22 +118,20 @@ export default function ProfilePage() {
               <label className="block text-white/60 text-sm uppercase tracking-wide mb-2">
                 University
               </label>
-              <div className="flex items-center justify-between">
-                <span className="text-white text-lg">
-                  {universityInfo ? (
-                    <>
-                      {universityInfo.name}
-                      {universityInfo.country && (
-                        <span className="text-white/50 ml-2 text-base">• {universityInfo.country}</span>
-                      )}
-                    </>
-                  ) : me?.universityId ? (
-                    <span className="text-white/40 italic">Loading...</span>
-                  ) : (
-                    <span className="text-white/40 italic">No university detected</span>
-                  )}
-                </span>
-              </div>
+              <span className="text-white text-lg">
+                {universityInfo ? (
+                  <>
+                    {universityInfo.name}
+                    {universityInfo.country && (
+                      <span className="text-white/50 ml-2 text-base">• {universityInfo.country}</span>
+                    )}
+                  </>
+                ) : me?.universityId ? (
+                  <span className="text-white/40 italic">Loading...</span>
+                ) : (
+                  <span className="text-white/40 italic">No university detected</span>
+                )}
+              </span>
             </div>
           </div>
         </div>
