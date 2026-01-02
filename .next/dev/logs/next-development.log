@@ -1,13 +1,520 @@
-[00:00:00.914] Server  LOG     ✓ Ready in 721ms
-[00:00:10.549] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[00:00:11.132] Browser LOG     Starting onboarding for user: 8078722e-c82f-43b1-b186-4a761e977719
-[00:00:12.312] Browser LOG     Onboarding completed successfully
-[00:00:12.312] Browser LOG     University assigned: 94d88840-67ac-47d3-a98c-411cf50d5653
-[00:00:12.312] Browser LOG     Onboarding completed successfully
-[00:00:39.053] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[00:00:46.898] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
-[00:00:55.423] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
-[00:01:03.241] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
-[00:01:10.624] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
-[00:01:15.004] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
-[00:01:18.590] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:00:00.846] Server  LOG     ✓ Ready in 684ms
+[00:00:16.381] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:03:48.389] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:03:51.961] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:04:02.301] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:04:05.720] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:04:15.790] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:04:29.458] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:04:34.838] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:04:36.656] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:08:39.672] Server  LOG     ✓ Compiled in 311ms
+[00:11:55.883] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:11:58.931] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:12:08.325] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:12:25.380] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:14:55.843] Server  LOG     ✓ Compiled in 86ms
+[00:15:03.920] Server  LOG     ○ Compiling /games/aim-trainer ...
+[00:15:40.194] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:16:39.425] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:17:29.504] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:17:41.361] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:18:23.187] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:18:40.143] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:19:44.718] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:19:49.516] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:19:56.110] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:19:59.386] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:20:04.062] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:20:08.588] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:20:14.141] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:20:23.806] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:20:34.538] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:20:39.248] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:20:53.247] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:21:05.193] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:21:11.785] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:21:21.471] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:21:25.816] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:21:27.994] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:21:31.976] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:21:50.777] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:21:55.115] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:21:58.146] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:22:02.741] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:22:14.639] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:22:18.578] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:22:23.900] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:22:30.728] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:22:36.082] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:22:41.568] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:22:46.141] Server  LOG     ✓ Compiled in 97ms
+[00:23:23.351] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:23:27.436] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:24:08.940] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:24:15.398] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:24:19.029] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:24:35.093] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:24:57.407] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:25:40.752] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:25:58.713] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:27:29.164] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:27:47.161] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:28:07.100] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:28:36.963] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:28:55.882] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:29:09.854] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:29:18.057] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:29:26.716] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:29:34.219] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:29:37.159] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:29:40.979] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:29:48.937] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:29:50.328] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:29:54.273] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:30:44.119] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:31:03.573] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:31:04.352] Server  LOG     ✓ Compiled in 83ms
+[00:31:21.491] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:31:39.606] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:32:42.357] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:33:11.635] Browser LOG     Score submitted successfully!
+[00:33:25.546] Browser ERROR   ./app/games/aim-trainer/page.tsx:5:1
+Export MISS_PENALTY_MS doesn't exist in target module
+  3 | import Link from 'next/link';
+  4 | import AimTrainerBoard from './AimTrainerBoard';
+> 5 | import { MISS_PENALTY_MS, TOTAL_TARGETS } from './constants';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  6 | import { useAimTrainer } from './useAimTrainer';
+  7 |
+  8 | const formatMs = (value: number | null) => {
+
+The export MISS_PENALTY_MS was not found in module [project]/app/games/aim-trainer/constants.ts [app-client] (ecmascript).
+Did you mean to import MIN_TARGET?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./app/games/aim-trainer/page.tsx [Client Component Browser]
+    ./app/games/aim-trainer/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./app/games/aim-trainer/page.tsx [Client Component SSR]
+    ./app/games/aim-trainer/page.tsx [Server Component]
+[00:33:25.546] Browser ERROR   ./app/games/aim-trainer/page.tsx:5:1
+Export MISS_PENALTY_MS doesn't exist in target module
+  3 | import Link from 'next/link';
+  4 | import AimTrainerBoard from './AimTrainerBoard';
+> 5 | import { MISS_PENALTY_MS, TOTAL_TARGETS } from './constants';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  6 | import { useAimTrainer } from './useAimTrainer';
+  7 |
+  8 | const formatMs = (value: number | null) => {
+
+The export MISS_PENALTY_MS was not found in module [project]/app/games/aim-trainer/constants.ts [app-ssr] (ecmascript).
+Did you mean to import MIN_TARGET?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./app/games/aim-trainer/page.tsx [Client Component Browser]
+    ./app/games/aim-trainer/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./app/games/aim-trainer/page.tsx [Client Component SSR]
+    ./app/games/aim-trainer/page.tsx [Server Component]
+[00:33:25.546] Browser ERROR   ./app/games/aim-trainer/useAimTrainer.ts:4:1
+Export MISS_PENALTY_MS doesn't exist in target module
+   2 | import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+   3 | import { submitScore } from '@/lib/db/scores';
+>  4 | import {
+     | ^^^^^^^^
+>  5 |   MAX_TARGET,
+     | ^^^^^^^^^^^^^
+>  6 |   MIN_TARGET,
+     | ^^^^^^^^^^^^^
+>  7 |   MISS_PENALTY_MS,
+     | ^^^^^^^^^^^^^
+>  8 |   TOTAL_TARGETS,
+     | ^^^^^^^^^^^^^
+>  9 | } from './constants';
+     | ^^^^^^^^^^^^^^^^^^^^^^
+  10 | import type { Phase, Target } from './types';
+  11 |
+  12 | const clamp = (min: number, value: number, max: number) =>
+
+The export MISS_PENALTY_MS was not found in module [project]/app/games/aim-trainer/constants.ts [app-client] (ecmascript).
+Did you mean to import MIN_TARGET?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./app/games/aim-trainer/useAimTrainer.ts [Client Component Browser]
+    ./app/games/aim-trainer/page.tsx [Client Component Browser]
+    ./app/games/aim-trainer/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./app/games/aim-trainer/useAimTrainer.ts [Client Component SSR]
+    ./app/games/aim-trainer/page.tsx [Client Component SSR]
+    ./app/games/aim-trainer/page.tsx [Server Component]
+[00:33:25.546] Browser ERROR   ./app/games/aim-trainer/useAimTrainer.ts:4:1
+Export MISS_PENALTY_MS doesn't exist in target module
+   2 | import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+   3 | import { submitScore } from '@/lib/db/scores';
+>  4 | import {
+     | ^^^^^^^^
+>  5 |   MAX_TARGET,
+     | ^^^^^^^^^^^^^
+>  6 |   MIN_TARGET,
+     | ^^^^^^^^^^^^^
+>  7 |   MISS_PENALTY_MS,
+     | ^^^^^^^^^^^^^
+>  8 |   TOTAL_TARGETS,
+     | ^^^^^^^^^^^^^
+>  9 | } from './constants';
+     | ^^^^^^^^^^^^^^^^^^^^^^
+  10 | import type { Phase, Target } from './types';
+  11 |
+  12 | const clamp = (min: number, value: number, max: number) =>
+
+The export MISS_PENALTY_MS was not found in module [project]/app/games/aim-trainer/constants.ts [app-ssr] (ecmascript).
+Did you mean to import MIN_TARGET?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./app/games/aim-trainer/useAimTrainer.ts [Client Component Browser]
+    ./app/games/aim-trainer/page.tsx [Client Component Browser]
+    ./app/games/aim-trainer/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./app/games/aim-trainer/useAimTrainer.ts [Client Component SSR]
+    ./app/games/aim-trainer/page.tsx [Client Component SSR]
+    ./app/games/aim-trainer/page.tsx [Server Component]
+[00:33:25.546] Browser ERROR   ./app/games/aim-trainer/page.tsx:5:1
+Export TOTAL_TARGETS doesn't exist in target module
+  3 | import Link from 'next/link';
+  4 | import AimTrainerBoard from './AimTrainerBoard';
+> 5 | import { MISS_PENALTY_MS, TOTAL_TARGETS } from './constants';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  6 | import { useAimTrainer } from './useAimTrainer';
+  7 |
+  8 | const formatMs = (value: number | null) => {
+
+The export TOTAL_TARGETS was not found in module [project]/app/games/aim-trainer/constants.ts [app-client] (ecmascript).
+Did you mean to import MAX_TARGET?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./app/games/aim-trainer/page.tsx [Client Component Browser]
+    ./app/games/aim-trainer/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./app/games/aim-trainer/page.tsx [Client Component SSR]
+    ./app/games/aim-trainer/page.tsx [Server Component]
+[00:33:25.546] Browser ERROR   ./app/games/aim-trainer/page.tsx:5:1
+Export TOTAL_TARGETS doesn't exist in target module
+  3 | import Link from 'next/link';
+  4 | import AimTrainerBoard from './AimTrainerBoard';
+> 5 | import { MISS_PENALTY_MS, TOTAL_TARGETS } from './constants';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  6 | import { useAimTrainer } from './useAimTrainer';
+  7 |
+  8 | const formatMs = (value: number | null) => {
+
+The export TOTAL_TARGETS was not found in module [project]/app/games/aim-trainer/constants.ts [app-ssr] (ecmascript).
+Did you mean to import MAX_TARGET?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./app/games/aim-trainer/page.tsx [Client Component Browser]
+    ./app/games/aim-trainer/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./app/games/aim-trainer/page.tsx [Client Component SSR]
+    ./app/games/aim-trainer/page.tsx [Server Component]
+[00:33:25.546] Browser ERROR   ./app/games/aim-trainer/useAimTrainer.ts:4:1
+Export TOTAL_TARGETS doesn't exist in target module
+   2 | import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+   3 | import { submitScore } from '@/lib/db/scores';
+>  4 | import {
+     | ^^^^^^^^
+>  5 |   MAX_TARGET,
+     | ^^^^^^^^^^^^^
+>  6 |   MIN_TARGET,
+     | ^^^^^^^^^^^^^
+>  7 |   MISS_PENALTY_MS,
+     | ^^^^^^^^^^^^^
+>  8 |   TOTAL_TARGETS,
+     | ^^^^^^^^^^^^^
+>  9 | } from './constants';
+     | ^^^^^^^^^^^^^^^^^^^^^^
+  10 | import type { Phase, Target } from './types';
+  11 |
+  12 | const clamp = (min: number, value: number, max: number) =>
+
+The export TOTAL_TARGETS was not found in module [project]/app/games/aim-trainer/constants.ts [app-client] (ecmascript).
+Did you mean to import MAX_TARGET?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./app/games/aim-trainer/useAimTrainer.ts [Client Component Browser]
+    ./app/games/aim-trainer/page.tsx [Client Component Browser]
+    ./app/games/aim-trainer/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./app/games/aim-trainer/useAimTrainer.ts [Client Component SSR]
+    ./app/games/aim-trainer/page.tsx [Client Component SSR]
+    ./app/games/aim-trainer/page.tsx [Server Component]
+[00:33:25.546] Browser ERROR   ./app/games/aim-trainer/useAimTrainer.ts:4:1
+Export TOTAL_TARGETS doesn't exist in target module
+   2 | import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+   3 | import { submitScore } from '@/lib/db/scores';
+>  4 | import {
+     | ^^^^^^^^
+>  5 |   MAX_TARGET,
+     | ^^^^^^^^^^^^^
+>  6 |   MIN_TARGET,
+     | ^^^^^^^^^^^^^
+>  7 |   MISS_PENALTY_MS,
+     | ^^^^^^^^^^^^^
+>  8 |   TOTAL_TARGETS,
+     | ^^^^^^^^^^^^^
+>  9 | } from './constants';
+     | ^^^^^^^^^^^^^^^^^^^^^^
+  10 | import type { Phase, Target } from './types';
+  11 |
+  12 | const clamp = (min: number, value: number, max: number) =>
+
+The export TOTAL_TARGETS was not found in module [project]/app/games/aim-trainer/constants.ts [app-ssr] (ecmascript).
+Did you mean to import MAX_TARGET?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./app/games/aim-trainer/useAimTrainer.ts [Client Component Browser]
+    ./app/games/aim-trainer/page.tsx [Client Component Browser]
+    ./app/games/aim-trainer/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./app/games/aim-trainer/useAimTrainer.ts [Client Component SSR]
+    ./app/games/aim-trainer/page.tsx [Client Component SSR]
+    ./app/games/aim-trainer/page.tsx [Server Component]
+[00:33:54.546] Browser ERROR   ./app/games/aim-trainer/page.tsx:5:1
+Export MISS_PENALTY_MS doesn't exist in target module
+  3 | import Link from 'next/link';
+  4 | import AimTrainerBoard from './AimTrainerBoard';
+> 5 | import { MISS_PENALTY_MS, TOTAL_TARGETS } from './constants';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  6 | import { useAimTrainer } from './useAimTrainer';
+  7 |
+  8 | const formatMs = (value: number | null) => {
+
+The export MISS_PENALTY_MS was not found in module [project]/app/games/aim-trainer/constants.ts [app-client] (ecmascript).
+Did you mean to import MIN_TARGET?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./app/games/aim-trainer/page.tsx [Client Component Browser]
+    ./app/games/aim-trainer/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./app/games/aim-trainer/page.tsx [Client Component SSR]
+    ./app/games/aim-trainer/page.tsx [Server Component]
+[00:33:54.546] Browser ERROR   ./app/games/aim-trainer/page.tsx:5:1
+Export MISS_PENALTY_MS doesn't exist in target module
+  3 | import Link from 'next/link';
+  4 | import AimTrainerBoard from './AimTrainerBoard';
+> 5 | import { MISS_PENALTY_MS, TOTAL_TARGETS } from './constants';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  6 | import { useAimTrainer } from './useAimTrainer';
+  7 |
+  8 | const formatMs = (value: number | null) => {
+
+The export MISS_PENALTY_MS was not found in module [project]/app/games/aim-trainer/constants.ts [app-ssr] (ecmascript).
+Did you mean to import MIN_TARGET?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./app/games/aim-trainer/page.tsx [Client Component Browser]
+    ./app/games/aim-trainer/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./app/games/aim-trainer/page.tsx [Client Component SSR]
+    ./app/games/aim-trainer/page.tsx [Server Component]
+[00:33:54.546] Browser ERROR   ./app/games/aim-trainer/page.tsx:5:1
+Export TOTAL_TARGETS doesn't exist in target module
+  3 | import Link from 'next/link';
+  4 | import AimTrainerBoard from './AimTrainerBoard';
+> 5 | import { MISS_PENALTY_MS, TOTAL_TARGETS } from './constants';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  6 | import { useAimTrainer } from './useAimTrainer';
+  7 |
+  8 | const formatMs = (value: number | null) => {
+
+The export TOTAL_TARGETS was not found in module [project]/app/games/aim-trainer/constants.ts [app-client] (ecmascript).
+Did you mean to import MAX_TARGET?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./app/games/aim-trainer/page.tsx [Client Component Browser]
+    ./app/games/aim-trainer/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./app/games/aim-trainer/page.tsx [Client Component SSR]
+    ./app/games/aim-trainer/page.tsx [Server Component]
+[00:33:54.546] Browser ERROR   ./app/games/aim-trainer/page.tsx:5:1
+Export TOTAL_TARGETS doesn't exist in target module
+  3 | import Link from 'next/link';
+  4 | import AimTrainerBoard from './AimTrainerBoard';
+> 5 | import { MISS_PENALTY_MS, TOTAL_TARGETS } from './constants';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  6 | import { useAimTrainer } from './useAimTrainer';
+  7 |
+  8 | const formatMs = (value: number | null) => {
+
+The export TOTAL_TARGETS was not found in module [project]/app/games/aim-trainer/constants.ts [app-ssr] (ecmascript).
+Did you mean to import MAX_TARGET?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./app/games/aim-trainer/page.tsx [Client Component Browser]
+    ./app/games/aim-trainer/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./app/games/aim-trainer/page.tsx [Client Component SSR]
+    ./app/games/aim-trainer/page.tsx [Server Component]
+[00:34:15.547] Browser ERROR   ./app/games/aim-trainer/page.tsx:5:1
+Export MISS_PENALTY_MS doesn't exist in target module
+  3 | import Link from 'next/link';
+  4 | import AimTrainerBoard from './AimTrainerBoard';
+> 5 | import { MISS_PENALTY_MS, TOTAL_TARGETS } from './constants';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  6 | import { useAimTrainer } from './useAimTrainer';
+  7 |
+  8 | const formatMs = (value: number | null) => {
+
+The export MISS_PENALTY_MS was not found in module [project]/app/games/aim-trainer/constants.ts [app-client] (ecmascript).
+Did you mean to import MIN_TARGET?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./app/games/aim-trainer/page.tsx [Client Component Browser]
+    ./app/games/aim-trainer/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./app/games/aim-trainer/page.tsx [Client Component SSR]
+    ./app/games/aim-trainer/page.tsx [Server Component]
+[00:34:15.547] Browser ERROR   ./app/games/aim-trainer/page.tsx:5:1
+Export MISS_PENALTY_MS doesn't exist in target module
+  3 | import Link from 'next/link';
+  4 | import AimTrainerBoard from './AimTrainerBoard';
+> 5 | import { MISS_PENALTY_MS, TOTAL_TARGETS } from './constants';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  6 | import { useAimTrainer } from './useAimTrainer';
+  7 |
+  8 | const formatMs = (value: number | null) => {
+
+The export MISS_PENALTY_MS was not found in module [project]/app/games/aim-trainer/constants.ts [app-ssr] (ecmascript).
+Did you mean to import MIN_TARGET?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./app/games/aim-trainer/page.tsx [Client Component Browser]
+    ./app/games/aim-trainer/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./app/games/aim-trainer/page.tsx [Client Component SSR]
+    ./app/games/aim-trainer/page.tsx [Server Component]
+[00:34:15.547] Browser ERROR   ./app/games/aim-trainer/page.tsx:5:1
+Export TOTAL_TARGETS doesn't exist in target module
+  3 | import Link from 'next/link';
+  4 | import AimTrainerBoard from './AimTrainerBoard';
+> 5 | import { MISS_PENALTY_MS, TOTAL_TARGETS } from './constants';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  6 | import { useAimTrainer } from './useAimTrainer';
+  7 |
+  8 | const formatMs = (value: number | null) => {
+
+The export TOTAL_TARGETS was not found in module [project]/app/games/aim-trainer/constants.ts [app-client] (ecmascript).
+Did you mean to import MAX_TARGET?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./app/games/aim-trainer/page.tsx [Client Component Browser]
+    ./app/games/aim-trainer/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./app/games/aim-trainer/page.tsx [Client Component SSR]
+    ./app/games/aim-trainer/page.tsx [Server Component]
+[00:34:15.547] Browser ERROR   ./app/games/aim-trainer/page.tsx:5:1
+Export TOTAL_TARGETS doesn't exist in target module
+  3 | import Link from 'next/link';
+  4 | import AimTrainerBoard from './AimTrainerBoard';
+> 5 | import { MISS_PENALTY_MS, TOTAL_TARGETS } from './constants';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  6 | import { useAimTrainer } from './useAimTrainer';
+  7 |
+  8 | const formatMs = (value: number | null) => {
+
+The export TOTAL_TARGETS was not found in module [project]/app/games/aim-trainer/constants.ts [app-ssr] (ecmascript).
+Did you mean to import MAX_TARGET?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./app/games/aim-trainer/page.tsx [Client Component Browser]
+    ./app/games/aim-trainer/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./app/games/aim-trainer/page.tsx [Client Component SSR]
+    ./app/games/aim-trainer/page.tsx [Server Component]
+[00:34:29.355] Server  LOG     ✓ Compiled in 64ms
+[00:34:37.624] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:35:14.547] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:37:29.935] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:39:00.281] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:42:00.880] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:45:51.725] Server  LOG       Reload env: .env.local
+[00:49:23.151] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:49:55.720] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:51:32.844] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:51:44.579] Server  LOG     ✓ Compiled in 58ms
+[00:51:54.802] Server  LOG     ✓ Compiled in 73ms
+[00:51:59.279] Server  LOG     ✓ Compiled in 29ms
+[00:53:03.548] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:54:14.889] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:54:18.208] Server  LOG     ✓ Compiled in 114ms
+[00:54:26.765] Server  LOG     ✓ Compiled in 52ms
+[00:54:49.534] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:55:21.547] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:55:49.129] Server  LOG     ✓ Compiled in 51ms
+[00:56:21.929] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:56:53.908] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:57:49.188] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[01:07:13.248] Server  LOG     ✓ Compiled in 101ms
+[01:07:24.308] Server  LOG     ✓ Compiled in 65ms
+[01:07:54.715] Server  LOG     ✓ Compiled in 43ms
+[01:07:58.921] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:08:04.745] Server  LOG     ✓ Compiled in 41ms
+[01:08:10.802] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:08:42.523] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[01:29:06.095] Server  LOG     ○ Compiling /leaderboard ...
+[01:29:17.174] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:29:23.865] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:29:38.532] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:30:12.577] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[01:30:28.269] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:30:45.335] Server  LOG     ✓ Compiled in 64ms
+[01:30:49.291] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:31:20.608] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
