@@ -55,14 +55,14 @@ function ProtocolCard({number, title, desc, delay, isVisible}: ProtocolCardProps
           transform: `perspective(1000px) rotateX(${rotate.x}deg) rotateY(${rotate.y}deg)`,
           transition: rotate.x === 0 && rotate.y === 0 ? 'transform 0.5s ease-out' : 'transform 0.1s ease-out'
         }}
-        className="relative group p-8 rounded-lg bg-white border border-gray-200 shadow-sm hover:border-[#FFD700] hover:shadow-lg active:scale-[0.98] transition-all duration-500 overflow-hidden cursor-pointer h-full flex flex-col"
+        className="relative group p-8 rounded-lg bg-white border border-gray-200 shadow-sm hover:border-amber-400 hover:shadow-lg active:scale-[0.98] transition-all duration-500 overflow-hidden cursor-pointer h-full flex flex-col"
       >
         <div className="relative z-10 flex-1 flex flex-col">
           <div className="flex justify-between items-start mb-6">
             <div className="text-6xl font-bold text-gray-200 group-hover:text-amber-400/70 transition-all duration-500 leading-none">
               {number}
             </div>
-            <div className="w-8 h-8 border-t-2 border-r-2 border-gray-200 group-hover:border-[#FFD700]/50 transition-colors duration-300" />
+            <div className="w-8 h-8 border-t-2 border-r-2 border-gray-200 group-hover:border-amber-400/50 transition-colors duration-300" />
           </div>
           
           <h3 className="text-2xl font-bold mb-3 text-gray-900 group-hover:translate-x-2 transition-transform duration-300 relative z-10">
@@ -73,7 +73,7 @@ function ProtocolCard({number, title, desc, delay, isVisible}: ProtocolCardProps
             {desc}
           </p>
         </div>
-        <div className="absolute bottom-0 right-0 w-16 h-16 bg-gradient-to-br from-transparent to-[#FFD700]/5 rounded-br-lg" />
+        <div className="absolute bottom-0 right-0 w-16 h-16 bg-gradient-to-br from-transparent to-amber-400/5 rounded-br-lg" />
       </div>
     </div>
   );
@@ -167,7 +167,6 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 relative overflow-hidden" onClick={handleClick}>
-      {/* Geese & Grid Background Logic... */}
       <Navbar />
       
       {/* Hero Section */}
@@ -194,7 +193,7 @@ export default function HomePage() {
             </button>
             <Link 
               href="/leaderboard"
-              className="w-full sm:w-auto px-10 py-4 bg-white/5 border border-amber-400/30 text-white font-bold text-sm md:text-base uppercase tracking-widest rounded-full backdrop-blur-sm hover:bg-amber-400/10 hover:border-[#FFD700] active:scale-95 transition-all min-w-[200px] text-center cursor-pointer"
+              className="w-full sm:w-auto px-10 py-4 bg-white/5 border border-amber-400/30 text-white font-bold text-sm md:text-base uppercase tracking-widest rounded-full backdrop-blur-sm hover:bg-amber-400/10 hover:border-amber-400 active:scale-95 transition-all min-w-[200px] text-center cursor-pointer"
             >
               View Rankings
             </Link>
@@ -220,12 +219,12 @@ export default function HomePage() {
               { href: "/games/chimp", tag: "VISUAL", icon: Eye, title: "Chimp Test", desc: "Master pattern recognition and working memory." },
               { href: "#", tag: "SPATIAL", icon: Layers, title: "Tower of Hanoi", desc: "Solve the classic puzzle with optimal moves." },
               { href: "/games/pathfinding", tag: "SPATIAL", icon: Route, title: "Pathfinding", desc: "Navigate mazes and find the shortest route." },
-              { href: "#", tag: "ACCURACY", icon: ArrowUpDown, title: "Aim Trainer", desc: "Hit targets as quick as possible." }
+              { href: "/games/aim-trainer", tag: "ACCURACY", icon: ArrowUpDown, title: "Aim Trainer", desc: "Hit targets as quick as possible." }
             ].map((trial, idx) => (
               <a key={idx} href={trial.href} onClick={(e) => e.stopPropagation()} className="cursor-pointer">
-                <div className="relative overflow-hidden group p-8 rounded-3xl bg-white border-2 border-gray-200 hover:border-[#FFD700] active:scale-[0.98] transition-all shadow-sm hover:shadow-md h-full">
+                <div className="relative overflow-hidden group p-8 rounded-3xl bg-white border-2 border-gray-200 hover:border-amber-400 active:scale-[0.98] transition-all shadow-sm hover:shadow-md h-full flex flex-col">
                   <div className="absolute top-0 right-0 p-4">
-                    <span className="px-3 py-1 bg-amber-400/10 text-amber-400 text-[10px] font-bold uppercase rounded-full border border-[#FFD700]/30">
+                    <span className="px-3 py-1 bg-amber-400/10 text-amber-500 text-[10px] font-bold uppercase rounded-full border border-amber-400/30">
                       {trial.tag}
                     </span>
                   </div>
@@ -233,7 +232,7 @@ export default function HomePage() {
                     <trial.icon className="w-8 h-8 text-amber-400" />
                   </div>
                   <h3 className="text-2xl font-bold mb-3 text-gray-900 uppercase pr-20">{trial.title}</h3>
-                  <p className="text-gray-600 text-sm leading-relaxed mb-6">{trial.desc}</p>
+                  <p className="text-gray-600 text-sm leading-relaxed mb-6 flex-1">{trial.desc}</p>
                   <div className="w-full h-1 bg-gray-200 rounded-full overflow-hidden">
                     <div className="h-full bg-amber-400 w-0 group-hover:w-full transition-all duration-700"></div>
                   </div>
@@ -254,7 +253,7 @@ export default function HomePage() {
           </div>
           <Link 
             href="/leaderboard"
-            className="inline-flex items-center gap-2 px-8 py-4 bg-amber-400 hover:bg-[#e6c200] text-black uppercase font-bold tracking-widest rounded-full active:scale-95 transition-all shadow-lg cursor-pointer"
+            className="inline-flex items-center gap-2 px-8 py-4 bg-amber-400 hover:bg-amber-500 text-black uppercase font-bold tracking-widest rounded-full active:scale-95 transition-all shadow-lg cursor-pointer"
           >
             View Leaderboard
           </Link>
