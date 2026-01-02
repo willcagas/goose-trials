@@ -223,7 +223,7 @@ export default function HomePage() {
   if (loading) return <div className="flex items-center justify-center min-h-screen bg-gray-50 text-gray-900">Loading...</div>;
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900 relative overflow-hidden" onClick={handleClick}>
+    <div className="min-h-screen bg-gray-60 text-gray-900 relative overflow-hidden" onClick={handleClick}>
       
       {/* SPRITESHEET GEESE LAYER */}
       {geese.map(goose => (

@@ -24,7 +24,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
       const { error } = await supabase.auth.signInWithOtp({
         email: email,
         options: {
-          emailRedirectTo: window.location.origin,
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       });
 
@@ -51,7 +51,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/70 backdrop-blur-sm"
@@ -59,7 +59,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
       />
 
       {/* Modal */}
-      <div className="relative bg-[#0a0a0a] border border-white/20 rounded-2xl p-8 w-full max-w-md shadow-2xl">
+      <div className="relative bg-[#0a0a0a] border border-white/20 rounded-2xl p-8 w-full max-w-md shadow-2xl" onClick={(e) => e.stopPropagation()}>
         {/* Close button */}
         <button
           onClick={handleClose}
