@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { useMe } from '@/app/providers/MeContext';
 import Navbar from '@/components/Navbar';
@@ -134,6 +134,11 @@ function getFlagEmoji(countryCode: string | null): string {
   return String.fromCodePoint(...codePoints);
 }
 
+interface TopScore {
+  score_value: number;
+  created_at: string;
+}
+
 export default function LeaderboardTestPage() {
   const params = useParams();
   const testSlug = params.testSlug as string;
@@ -149,6 +154,11 @@ export default function LeaderboardTestPage() {
   const [scopeInitialized, setScopeInitialized] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // NEW STATE: Track expanded rows
+  const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
+  const [expandedScores, setExpandedScores] = useState<(TopScore | null)[]>([]);
+  const [loadingScores, setLoadingScores] = useState(false);
 
   // Determine default scope (only once when me data first loads)
   useEffect(() => {
@@ -245,6 +255,34 @@ export default function LeaderboardTestPage() {
       loadLeaderboards();
     }
   }, [meLoading, loadLeaderboards]);
+
+  // NEW FUNCTION: Handle row expansion
+  const handleRowClick = async (userId: string) => {
+    if (expandedUserId === userId) {
+      // Close instantly without animation
+      setExpandedUserId(null);
+      setExpandedScores([]);
+      return;
+    }
+
+    setExpandedUserId(userId);
+    setLoadingScores(true);
+
+    try {
+      const response = await fetch(`/api/user-top-scores?test_slug=${testSlug}&user_id=${userId}`);
+      if (response.ok) {
+        const { data } = await response.json();
+        setExpandedScores(data || Array(5).fill(null));
+      } else {
+        setExpandedScores(Array(5).fill(null));
+      }
+    } catch (error) {
+      console.error('Error loading top scores:', error);
+      setExpandedScores(Array(5).fill(null));
+    } finally {
+      setLoadingScores(false);
+    }
+  };
 
   const currentData = scope === 'campus' ? campusData : scope === 'country' ? countryData : globalData;
   const canViewCampus = me?.universityId !== null;
@@ -419,18 +457,23 @@ export default function LeaderboardTestPage() {
                       <th className="px-6 py-4 text-right text-xs font-bold uppercase tracking-wider text-gray-700">
                         Achieved
                       </th>
+                      <th className="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider text-gray-700">
+                        Details
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
                     {currentData.map((entry) => (
-                      <tr
-                        key={entry.user_id}
-                        className={`${
-                          entry.is_you
-                            ? 'bg-[#c9a504]/10 font-semibold'
-                            : 'hover:bg-gray-50'
-                        } transition-colors`}
-                      >
+                      <React.Fragment key={entry.user_id}>
+                        {/* Main Row */}
+                        <tr
+                          onClick={() => handleRowClick(entry.user_id)}
+                          className={`${
+                            entry.is_you
+                              ? 'bg-[#c9a504]/10 font-semibold'
+                              : 'hover:bg-gray-50'
+                          } transition-colors cursor-pointer`}
+                        >
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {entry.rank}
                         </td>
@@ -468,7 +511,73 @@ export default function LeaderboardTestPage() {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">
                           {formatDate(entry.achieved_at)}
                         </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            strokeWidth={2}
+                            stroke="currentColor"
+                            className={`w-5 h-5 mx-auto transition-transform ${
+                              expandedUserId === entry.user_id ? 'rotate-180' : ''
+                            }`}
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                          </svg>
+                        </td>
                       </tr>
+
+                      {/* Expanded Row - Top 5 Scores */}
+                      {expandedUserId === entry.user_id && (
+                        <tr className="animate-slideDown">
+                          <td colSpan={6} className="px-6 bg-gray-50 overflow-hidden">
+                            <div className="py-4 animate-fadeIn">
+                              <div className="max-w-3xl">
+                                <h4 className="text-sm font-bold text-gray-700 mb-3">
+                                  {entry.username || 'Anonymous'}'s Top 5 Best Scores
+                                </h4>
+                                {loadingScores ? (
+                                  <p className="text-sm text-gray-500">Loading scores...</p>
+                                ) : (
+                                  <div className="grid grid-cols-5 gap-3">
+                                    {expandedScores.map((score, index) => (
+                                      <div
+                                        key={index}
+                                        className={`p-3 rounded-lg border transform transition-all duration-300 ease-out ${
+                                          score
+                                            ? 'bg-white border-gray-200'
+                                            : 'bg-gray-100 border-gray-300 border-dashed'
+                                        }`}
+                                        style={{
+                                          animationDelay: `${index * 50}ms`,
+                                          animation: 'cardSlideUp 0.3s ease-out forwards',
+                                          opacity: 0,
+                                          transform: 'translateY(10px)'
+                                        }}
+                                      >
+                                        <div className="text-xs text-gray-500 mb-1">
+                                          #{index + 1}
+                                        </div>
+                                        <div className="text-lg font-bold text-gray-900">
+                                          {score
+                                            ? formatScore(score.score_value, testInfo?.unit || null)
+                                            : '—'}
+                                        </div>
+                                        {score && (
+                                          <div className="text-xs text-gray-400 mt-1">
+                                            {formatDate(score.created_at)}
+                                          </div>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                      </React.Fragment>
                     ))}
                   </tbody>
                 </table>
