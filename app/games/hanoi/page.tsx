@@ -260,7 +260,9 @@ export default function HanoiGame() {
 
   // Handle rod interaction (click or keyboard)
   const handleRodAction = useCallback((rodIndex: number) => {
-    if (gameState !== 'playing') return;
+    if (gameState !== 'playing') {
+      return;
+    }
     
     // Clear any previous error state
     setErrorRod(null);
@@ -270,6 +272,7 @@ export default function HanoiGame() {
       if (rods[rodIndex].length > 0) {
         setSelectedRod(rodIndex);
         triggerHaptic('light');
+        return;
       }
     } else {
       // Try to move disk
@@ -413,12 +416,32 @@ export default function HanoiGame() {
     
     return (
       <button
-        onClick={() => handleRodClick(rodIndex)}
+        type="button"
+        onClick={() => {
+          if (gameState === 'playing') {
+            handleRodClick(rodIndex);
+          }
+        }}
+        onPointerDown={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (gameState === 'playing') {
+            handleRodClick(rodIndex);
+          }
+        }}
+        onMouseDown={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (gameState === 'playing') {
+            handleRodClick(rodIndex);
+          }
+        }}
         className={`
           relative flex-1 flex flex-col items-center justify-end p-2 sm:p-4 rounded-xl 
           min-h-[200px] sm:min-h-[280px]
           transition-all duration-200 ease-out
           focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2
+          ${gameState !== 'playing' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
           ${isError
             ? 'bg-rose-100/80 ring-2 ring-rose-400 animate-shake'
             : isSelected
@@ -432,10 +455,10 @@ export default function HanoiGame() {
         disabled={gameState !== 'playing'}
       >
         {/* Rod structure - pole behind disks */}
-        <div className="relative w-full flex flex-col items-center pointer-events-none" style={{ height: `${poleHeight + 16}px` }}>
+        <div className="relative w-full flex flex-col items-center" style={{ height: `${poleHeight + 16}px` }}>
           {/* Vertical pole (behind disks) */}
           <div 
-            className={`absolute bottom-3 left-1/2 -translate-x-1/2 w-2 rounded-t-full transition-colors duration-200 ${
+            className={`absolute bottom-3 left-1/2 -translate-x-1/2 w-2 rounded-t-full transition-colors duration-200 pointer-events-none ${
               isSelected ? 'bg-amber-400' : 'bg-slate-400'
             }`} 
             style={{ height: `${poleHeight}px` }} 
@@ -443,7 +466,7 @@ export default function HanoiGame() {
           
           {/* Disks stack - positioned at bottom, above base */}
           <div 
-            className="absolute bottom-3 left-0 right-0 flex flex-col-reverse items-center gap-0.5 z-10"
+            className="absolute bottom-3 left-0 right-0 flex flex-col-reverse items-center gap-0.5 z-10 pointer-events-none"
           >
             {rod.map((diskSize, idx) => (
               <Disk
@@ -458,7 +481,7 @@ export default function HanoiGame() {
           </div>
           
           {/* Base platform */}
-          <div className={`absolute bottom-0 w-full h-3 rounded-sm transition-colors duration-200 ${
+          <div className={`absolute bottom-0 w-full h-3 rounded-sm transition-colors duration-200 pointer-events-none ${
             isSelected ? 'bg-amber-400' : 'bg-slate-400'
           }`} />
         </div>
