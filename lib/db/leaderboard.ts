@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { getUserTag } from '@/lib/user-tags.server';
 
 export interface LeaderboardEntry {
   test_slug: string;
@@ -10,6 +11,7 @@ export interface LeaderboardEntry {
   achieved_at: string;
   rank: number;
   is_you: boolean;
+  user_tag?: string | null; // UserTagType or null
 }
 
 export interface GetLeaderboardParams {
@@ -45,7 +47,13 @@ export async function getLeaderboard(
       return { data: [], error: error.message };
     }
 
-    return { data: data || [] };
+    // Add user tags server-side (secure - tags not exposed in client code)
+    const entriesWithTags = (data || []).map((entry: LeaderboardEntry) => ({
+      ...entry,
+      user_tag: getUserTag(entry.user_id) || null,
+    }));
+
+    return { data: entriesWithTags };
   } catch (error) {
     console.error('Unexpected error in getLeaderboard:', error);
     return {

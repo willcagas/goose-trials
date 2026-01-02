@@ -141,6 +141,7 @@ interface LeaderboardEntry {
   best_score: number;
   rank: number;
   is_you: boolean;
+  user_tag?: string | null; // UserTagType from server
 }
 
 export default function HomePage() {

@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { useMe } from '@/app/providers/MeContext';
 import Navbar from '@/components/Navbar';
 import LoginModal from '@/components/LoginModal';
+import UserTag from '@/components/UserTag';
 import Link from 'next/link';
 
 interface LeaderboardEntry {
@@ -17,6 +18,7 @@ interface LeaderboardEntry {
   achieved_at: string;
   rank: number;
   is_you: boolean;
+  user_tag?: string | null; // UserTagType from server
 }
 
 interface TestInfo {
@@ -508,12 +510,15 @@ export default function LeaderboardTestPage() {
                                 {(entry.username || 'U')[0].toUpperCase()}
                               </div>
                             )}
-                            <span className="text-xs md:text-sm text-gray-900">
-                              {entry.username || 'Anonymous'}
-                              {entry.is_you && (
-                                <span className="ml-1 md:ml-2 text-xs text-amber-400">(You)</span>
-                              )}
-                            </span>
+                            <div className="flex items-center gap-1.5 md:gap-2 flex-wrap">
+                              <span className="text-xs md:text-sm text-gray-900">
+                                {entry.username || 'Anonymous'}
+                                {entry.is_you && (
+                                  <span className="ml-1 md:ml-2 text-xs text-amber-400">(You)</span>
+                                )}
+                              </span>
+                              <UserTag tagType={entry.user_tag} />
+                            </div>
                           </div>
                         </td>
                         <td className="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-xs md:text-sm text-gray-600">

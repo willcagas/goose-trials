@@ -46,6 +46,9 @@ next-env.d.ts
 # username ban list (server-only, contains profanity list)
 lib/username/banlist.server.ts
 
+# user tags
+lib/user-tags.server.ts
+
 # patches and diffs
 *.patch
 *.diff
