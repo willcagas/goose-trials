@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import type {
   Cell,
   GamePhase,
@@ -19,12 +20,14 @@ interface PathfindingBoardProps {
   showPath: boolean;
   wallColor: string;
   wallSegments: WallSegment[];
+  revealedWallSegments: WallSegment[];
   pathSegments: PathSegment[];
   pathSet: Set<string>;
   lastPosition?: Position;
   failReason: string | null;
   submitting: boolean;
   submitState: 'idle' | 'success' | 'error';
+  shakeTick: number;
   onStart: () => void;
   onReset: () => void;
   onPointerDown: (row: number, col: number) => void;
@@ -40,22 +43,40 @@ export default function PathfindingBoard({
   showPath,
   wallColor,
   wallSegments,
+  revealedWallSegments,
   pathSegments,
   pathSet,
   lastPosition,
   failReason,
   submitting,
   submitState,
+  shakeTick,
   onStart,
   onReset,
   onPointerDown,
   onPointerEnter,
 }: PathfindingBoardProps) {
   const showControls = phase !== 'input';
+  const [isShaking, setIsShaking] = useState(false);
+
+  useEffect(() => {
+    if (shakeTick === 0) return;
+    setIsShaking(false);
+    const frame = window.requestAnimationFrame(() => setIsShaking(true));
+    const timeout = window.setTimeout(() => setIsShaking(false), 300);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.clearTimeout(timeout);
+    };
+  }, [shakeTick]);
 
   return (
     <section className="fade-up">
-      <div className="bg-white/80 border border-white/70 shadow-xl p-6">
+      <div
+        className={`bg-white/80 border border-white/70 shadow-xl p-6 ${
+          isShaking ? 'board-shake' : ''
+        }`}
+      >
         <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-slate-500">
           <span>{phaseLabel}</span>
           <span>{showMaze ? 'Preview' : 'Trace Mode'}</span>
@@ -86,6 +107,7 @@ export default function PathfindingBoard({
               showPath={showPath}
               wallColor={wallColor}
               wallSegments={wallSegments}
+              revealedWallSegments={revealedWallSegments}
               pathSegments={pathSegments}
             />
             {showControls && (
@@ -149,6 +171,28 @@ export default function PathfindingBoard({
           </div>
         </div>
       </div>
+      <style jsx>{`
+        .board-shake {
+          animation: shake 0.25s ease;
+        }
+        @keyframes shake {
+          0% {
+            transform: translateX(0);
+          }
+          25% {
+            transform: translateX(-6px);
+          }
+          50% {
+            transform: translateX(5px);
+          }
+          75% {
+            transform: translateX(-4px);
+          }
+          100% {
+            transform: translateX(0);
+          }
+        }
+      `}</style>
     </section>
   );
 }

@@ -8,6 +8,7 @@ interface PathfindingMazeOverlaysProps {
   showPath: boolean;
   wallColor: string;
   wallSegments: WallSegment[];
+  revealedWallSegments: WallSegment[];
   pathSegments: PathSegment[];
 }
 
@@ -17,18 +18,21 @@ export default function PathfindingMazeOverlays({
   showPath,
   wallColor,
   wallSegments,
+  revealedWallSegments,
   pathSegments,
 }: PathfindingMazeOverlaysProps) {
+  const visibleWallSegments = showMaze ? wallSegments : revealedWallSegments;
+
   return (
     <>
-      {showMaze && wallSegments.length > 0 && (
+      {visibleWallSegments.length > 0 && (
         <svg
           className="absolute inset-0 pointer-events-none z-20"
           viewBox={`0 0 ${mazeSize} ${mazeSize}`}
           preserveAspectRatio="none"
           shapeRendering="crispEdges"
         >
-          {wallSegments.map((segment, index) => (
+          {visibleWallSegments.map((segment, index) => (
             <line
               key={`wall-${index}`}
               x1={segment.x1}
