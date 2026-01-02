@@ -54,8 +54,8 @@ export default async function LeaderboardPage() {
                 href={`/leaderboard/${test.slug}`}
                 className="group block"
               >
-                <div className="p-6 bg-white border-2 border-gray-200 rounded-lg hover:border-[#c9a504] transition-all shadow-sm hover:shadow-md h-full">
-                  <h2 className="text-2xl font-bold mb-3 text-gray-900 group-hover:text-[#c9a504] transition-colors">
+                <div className="p-6 bg-white border-2 border-gray-200 rounded-lg hover:border-amber-400 transition-all shadow-sm hover:shadow-md h-full">
+                  <h2 className="text-2xl font-bold mb-3 text-gray-900 group-hover:text-amber-400 transition-colors">
                     {test.name}
                   </h2>
                   {test.description && (
@@ -64,7 +64,7 @@ export default async function LeaderboardPage() {
                     </p>
                   )}
                   <div className="mt-4 pt-4 border-t border-gray-200">
-                    <span className="text-sm text-gray-500 group-hover:text-[#c9a504] transition-colors">
+                    <span className="text-sm text-gray-500 group-hover:text-amber-400 transition-colors">
                       View Leaderboard →
                     </span>
                   </div>

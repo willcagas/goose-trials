@@ -327,14 +327,14 @@ export default function HanoiGame() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (gameState !== 'playing') return;
       
-      // Rod selection: 1, 2, 3 keys
-      if (e.key === '1' || e.key === 'a' || e.key === 'A') {
+      // Rod selection: 1, 2, 3 keys or 8, 9, 0 keys
+      if (e.key === '1' || e.key === 'a' || e.key === 'A' || e.key === '8') {
         e.preventDefault();
         handleRodAction(0);
-      } else if (e.key === '2' || e.key === 's' || e.key === 'S') {
+      } else if (e.key === '2' || e.key === 's' || e.key === 'S' || e.key === '9') {
         e.preventDefault();
         handleRodAction(1);
-      } else if (e.key === '3' || e.key === 'd' || e.key === 'D') {
+      } else if (e.key === '3' || e.key === 'd' || e.key === 'D' || e.key === '0') {
         e.preventDefault();
         handleRodAction(2);
       } else if (e.key === 'Escape') {

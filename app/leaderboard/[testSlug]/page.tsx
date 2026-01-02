@@ -292,6 +292,7 @@ export default function LeaderboardTestPage() {
   const currentData = scope === 'campus' ? campusData : scope === 'country' ? countryData : globalData;
   const canViewCampus = me?.universityId !== null;
   const canViewCountry = me?.universityId !== null && universityInfo?.country !== null;
+  const isReactionTime = testSlug === 'reaction-time';
 
   return (
     <div className="min-h-screen bg-gray-50 overflow-x-hidden">
@@ -346,8 +347,8 @@ export default function LeaderboardTestPage() {
               onClick={() => setScope('global')}
               className={`px-4 md:px-6 py-3 font-bold text-xs md:text-sm uppercase tracking-wide transition-colors whitespace-nowrap ${
                 scope === 'global'
-                  ? 'border-b-2 border-[#c9a504] text-gray-900'
-                  : 'text-gray-500 hover:text-gray-700'
+                  ? 'border-b-2 border-amber-400 text-gray-900'
+                  : 'text-gray-500 hover:text-amber-400'
               }`}
             >
               Global
@@ -359,8 +360,8 @@ export default function LeaderboardTestPage() {
                 !canViewCountry
                   ? 'text-gray-300 cursor-not-allowed'
                   : scope === 'country'
-                  ? 'border-b-2 border-[#c9a504] text-gray-900'
-                  : 'text-gray-500 hover:text-gray-700'
+                  ? 'border-b-2 border-amber-400 text-gray-900'
+                  : 'text-gray-500 hover:text-amber-400'
               }`}
             >
               {me?.isLoggedIn && universityInfo?.country
@@ -374,8 +375,8 @@ export default function LeaderboardTestPage() {
                 !canViewCampus
                   ? 'text-gray-300 cursor-not-allowed'
                   : scope === 'campus'
-                  ? 'border-b-2 border-[#c9a504] text-gray-900'
-                  : 'text-gray-500 hover:text-gray-700'
+                  ? 'border-b-2 border-amber-400 text-gray-900'
+                  : 'text-gray-500 hover:text-amber-400'
               }`}
             >
               <span className="hidden sm:inline">{me?.isLoggedIn && universityInfo?.name
@@ -386,18 +387,18 @@ export default function LeaderboardTestPage() {
           </div>
           {/* Messages for campus access */}
           {!canViewCampus && me?.isLoggedIn && (
-            <div className="mt-4 px-6 py-3 bg-yellow-50 rounded-lg border border-yellow-200">
+            <div className="mt-4 px-6 py-3 bg-amber-50 rounded-lg border border-amber-200">
               <p className="text-sm text-gray-700">
                 We couldn't match your email domain to a university yet. Campus leaderboard unavailable.
               </p>
             </div>
           )}
           {!me?.isLoggedIn && (
-            <div className="mt-4 px-6 py-3 bg-blue-50 rounded-lg border border-blue-200">
+            <div className="mt-4 px-6 py-3 bg-amber-50 rounded-lg border border-amber-200">
               <p className="text-sm text-gray-700">
                 <span className="font-semibold">Sign in to appear on leaderboards.</span>
                 {' '}
-                <Link href="/" className="text-blue-600 hover:text-blue-800 underline">
+                <Link href="/" className="text-amber-600 hover:text-amber-700 underline">
                   Sign in with your university email
                 </Link>
               </p>
@@ -463,9 +464,11 @@ export default function LeaderboardTestPage() {
                       <th className="px-3 md:px-6 py-3 md:py-4 text-right text-xs font-bold uppercase tracking-wider text-gray-700">
                         Achieved
                       </th>
-                      <th className="px-3 md:px-6 py-3 md:py-4 text-center text-xs font-bold uppercase tracking-wider text-gray-700">
-                        Details
-                      </th>
+                      {isReactionTime && (
+                        <th className="px-3 md:px-6 py-3 md:py-4 text-center text-xs font-bold uppercase tracking-wider text-gray-700">
+                          Details
+                        </th>
+                      )}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
@@ -473,12 +476,12 @@ export default function LeaderboardTestPage() {
                       <React.Fragment key={entry.user_id}>
                         {/* Main Row */}
                         <tr
-                          onClick={() => handleRowClick(entry.user_id)}
+                          onClick={isReactionTime ? () => handleRowClick(entry.user_id) : undefined}
                           className={`${
                             entry.is_you
-                              ? 'bg-[#c9a504]/10 font-semibold'
-                              : 'hover:bg-gray-50'
-                          } transition-colors cursor-pointer`}
+                              ? 'bg-amber-400/10 font-semibold'
+                              : 'hover:bg-amber-400/5'
+                          } transition-colors ${isReactionTime ? 'cursor-pointer' : ''}`}
                         >
                         <td className="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-sm text-gray-900">
                           {entry.rank}
@@ -499,7 +502,7 @@ export default function LeaderboardTestPage() {
                             <span className="text-xs md:text-sm text-gray-900">
                               {entry.username || 'Anonymous'}
                               {entry.is_you && (
-                                <span className="ml-1 md:ml-2 text-xs text-[#c9a504]">(You)</span>
+                                <span className="ml-1 md:ml-2 text-xs text-amber-400">(You)</span>
                               )}
                             </span>
                           </div>
@@ -517,26 +520,28 @@ export default function LeaderboardTestPage() {
                         <td className="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-xs md:text-sm text-gray-500 text-right">
                           {formatDate(entry.achieved_at)}
                         </td>
-                        <td className="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-center">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            strokeWidth={2}
-                            stroke="currentColor"
-                            className={`w-5 h-5 mx-auto transition-transform ${
-                              expandedUserId === entry.user_id ? 'rotate-180' : ''
-                            }`}
-                          >
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                          </svg>
-                        </td>
+                        {isReactionTime && (
+                          <td className="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-center">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              strokeWidth={2}
+                              stroke="currentColor"
+                              className={`w-5 h-5 mx-auto transition-transform ${
+                                expandedUserId === entry.user_id ? 'rotate-180' : ''
+                              }`}
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                            </svg>
+                          </td>
+                        )}
                       </tr>
 
-                      {/* Expanded Row - Top 5 Scores */}
-                      {expandedUserId === entry.user_id && (
+                      {/* Expanded Row - Top 5 Scores (only for reaction-time) */}
+                      {isReactionTime && expandedUserId === entry.user_id && (
                         <tr className="animate-slideDown">
-                          <td colSpan={6} className="px-3 md:px-6 bg-gray-50 overflow-hidden">
+                          <td colSpan={(scope === 'global' || scope === 'country') ? 6 : 5} className="px-3 md:px-6 bg-gray-50 overflow-hidden">
                             <div className="py-3 md:py-4 animate-fadeIn">
                               <div className="max-w-3xl">
                                 <h4 className="text-xs md:text-sm font-bold text-gray-700 mb-2 md:mb-3">

@@ -102,7 +102,7 @@ function ProtocolSection() {
 
   const steps = [
     { number: "01", title: "Play Instantly", desc: "No sign-up required. Jump in as a guest and start playing.", delay: "delay-150" },
-    { number: "02", title: "Complete 6 Games", desc: "Finish all mini-games in under 2 minutes total.", delay: "delay-300" },
+    { number: "02", title: "Complete 6 Games", desc: "Finish all mini-games in under 3 minutes total.", delay: "delay-300" },
     { number: "03", title: "See Your Rank", desc: "Check your campus leaderboard. Also see how you rank globally.", delay: "delay-450" }
   ];
 
@@ -113,9 +113,6 @@ function ProtocolSection() {
           <h2 className="text-4xl md:text-5xl font-bold uppercase tracking-tighter mb-2 text-gray-900">
             The <span className="text-amber-400">Protocol</span>
           </h2>
-          <p className="text-gray-500 text-sm md:text-base">
-            Fastest cognitive benchmark. Optimized for quick breaks between classes.
-          </p>
         </div>
 
         <div className="grid md:grid-cols-3 gap-6">
@@ -203,7 +200,7 @@ export default function HomePage() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center w-full max-w-xs sm:max-w-none mx-auto">
             <button
               onClick={(e) => { e.stopPropagation(); document.getElementById('trials')?.scrollIntoView({ behavior: 'smooth' }); }}
-              className="w-full sm:w-auto px-10 py-4 bg-amber-400 hover:bg-amber-300 text-black font-bold text-sm md:text-base uppercase tracking-widest rounded-full shadow-lg active:scale-95 transition-all cursor-pointer min-w-[200px]"
+              className="w-full sm:w-auto px-10 py-4 bg-amber-400 hover:bg-amber-300 hover:scale-105 text-black font-bold text-sm md:text-base uppercase tracking-widest rounded-full shadow-lg active:scale-95 transition-all cursor-pointer min-w-[200px]"
             >
               Play Now
             </button>
@@ -261,6 +258,9 @@ export default function HomePage() {
 
       <footer className="relative z-10 px-4 py-8 text-center border-t border-gray-200">
         <p className="text-sm text-gray-500 tracking-wide">Built by students at the University of Waterloo.</p>
+        <p className="text-sm text-gray-500 tracking-wide mt-4">
+          Questions? Contact <a href="mailto:goosetrials@gmail.com" className="text-amber-400 hover:text-amber-300 underline">goosetrials@gmail.com</a>
+        </p>
       </footer>
     </div>
   );

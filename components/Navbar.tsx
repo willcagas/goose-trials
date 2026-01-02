@@ -38,7 +38,7 @@ export default function Navbar() {
   return (
     <>
       {/* Changed relative to fixed, added top-0, left-0, and w-full */}
-      <nav className="fixed top-0 left-0 w-full z-50 px-4 md:px-8 bg-[#0a0a0a]/90 backdrop-blur-md border-b border-white/10 h-20 md:h-24 flex items-center justify-between">
+      <nav className="fixed top-0 left-0 w-full z-50 px-4 md:px-8 bg-[#0a0a0a]/90 backdrop-blur-md border-b border-white/10 h-16 md:h-20 flex items-center justify-between">
         
         {/* Logo Section */}
         <Link href="/" className="flex items-center gap-3 group shrink-0 cursor-pointer">
@@ -114,7 +114,7 @@ export default function Navbar() {
 
       {/* Mobile Menu Dropdown - Updated to fixed to stay with the navbar */}
       {mobileMenuOpen && (
-        <div className="fixed top-20 md:top-24 left-0 w-full bg-[#0a0a0a] border-b border-white/10 z-40 py-8 px-6 flex flex-col gap-6 animate-in fade-in slide-in-from-top-4">
+        <div className="fixed top-16 md:top-20 left-0 w-full bg-[#0a0a0a]/95 backdrop-blur-md border-b border-white/10 z-40 py-8 px-6 flex flex-col gap-6 animate-in fade-in slide-in-from-top-4">
           <button onClick={handleGamesClick} className="text-white uppercase text-sm font-bold tracking-widest text-left">Games</button>
           <Link href="/leaderboard" onClick={() => setMobileMenuOpen(false)} className="text-white uppercase text-sm font-bold tracking-widest">Rankings</Link>
           {user && <Link href="/profile" onClick={() => setMobileMenuOpen(false)} className="text-white uppercase text-sm font-bold tracking-widest">Profile</Link>}
@@ -129,7 +129,7 @@ export default function Navbar() {
       )}
 
       {/* Spacer to prevent content from going under the fixed navbar */}
-      <div className="h-20 md:h-24" />
+      <div className="h-16 md:h-20" />
 
       <LoginModal isOpen={showLogin} onClose={() => setShowLogin(false)} />
     </>
