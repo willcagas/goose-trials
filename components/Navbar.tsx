@@ -14,7 +14,7 @@ export default function Navbar() {
 
   const handleGamesClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    setMobileMenuOpen(false); // Close menu on click
+    setMobileMenuOpen(false); 
     
     if (pathname === '/') {
       const trialsSection = document.getElementById('trials');
@@ -32,13 +32,13 @@ export default function Navbar() {
     }
   };
 
-  // Shared styles for desktop links
   const navLinkStyles = "relative text-white/70 uppercase text-xs font-bold tracking-widest hover:text-amber-400 transition-colors whitespace-nowrap group/link active:scale-95 cursor-pointer";
   const underlineStyles = "absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-400 transition-all duration-300 group-hover/link:w-full";
 
   return (
     <>
-      <nav className="relative z-30 px-4 md:px-8 bg-[#0a0a0a] border-b border-white/10 h-20 md:h-24 flex items-center justify-between">
+      {/* Changed relative to fixed, added top-0, left-0, and w-full */}
+      <nav className="fixed top-0 left-0 w-full z-50 px-4 md:px-8 bg-[#0a0a0a]/90 backdrop-blur-md border-b border-white/10 h-20 md:h-24 flex items-center justify-between">
         
         {/* Logo Section */}
         <Link href="/" className="flex items-center gap-3 group shrink-0 cursor-pointer">
@@ -112,9 +112,9 @@ export default function Navbar() {
         </button>
       </nav>
 
-      {/* Mobile Menu Dropdown */}
+      {/* Mobile Menu Dropdown - Updated to fixed to stay with the navbar */}
       {mobileMenuOpen && (
-        <div className="md:hidden absolute top-20 left-0 w-full bg-[#0a0a0a] border-b border-white/10 z-20 py-8 px-6 flex flex-col gap-6 animate-in fade-in slide-in-from-top-4">
+        <div className="fixed top-20 md:top-24 left-0 w-full bg-[#0a0a0a] border-b border-white/10 z-40 py-8 px-6 flex flex-col gap-6 animate-in fade-in slide-in-from-top-4">
           <button onClick={handleGamesClick} className="text-white uppercase text-sm font-bold tracking-widest text-left">Games</button>
           <Link href="/leaderboard" onClick={() => setMobileMenuOpen(false)} className="text-white uppercase text-sm font-bold tracking-widest">Rankings</Link>
           {user && <Link href="/profile" onClick={() => setMobileMenuOpen(false)} className="text-white uppercase text-sm font-bold tracking-widest">Profile</Link>}
@@ -127,6 +127,9 @@ export default function Navbar() {
           </div>
         </div>
       )}
+
+      {/* Spacer to prevent content from going under the fixed navbar */}
+      <div className="h-20 md:h-24" />
 
       <LoginModal isOpen={showLogin} onClose={() => setShowLogin(false)} />
     </>
