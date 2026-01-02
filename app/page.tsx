@@ -385,21 +385,23 @@ export default function HomePage() {
             </div>
 
             <div className="relative overflow-hidden group p-8 rounded-3xl bg-white border-2 border-gray-200 hover:border-[#c9a504] transition-all shadow-sm hover:shadow-md">
-              <div className="absolute top-0 right-0 p-4">
-                <span className="px-3 py-1 bg-[#c9a504]/10 text-[#E6C200] text-[10px] font-bold uppercase rounded-full border border-[#c9a504]/30">
-                  SPATIAL
-                </span>
-              </div>
-              <div className="mb-4">
-                <Route className="w-8 h-8 text-[#c9a504]" />
-              </div>
-              <h3 className="text-2xl font-bold mb-3 text-gray-900 uppercase pr-20">Pathfinding</h3>
-              <p className="text-gray-600 text-sm leading-relaxed mb-6">
-                Navigate mazes and find the shortest route.
-              </p>
-              <div className="w-full h-1 bg-gray-200 rounded-full overflow-hidden">
-                <div className="h-full bg-[#c9a504] w-0 group-hover:w-full transition-all duration-700"></div>
-              </div>
+              <a href="/games/pathfinding" onClick={(e) => e.stopPropagation()}>
+                <div className="absolute top-0 right-0 p-4">
+                  <span className="px-3 py-1 bg-[#c9a504]/10 text-[#E6C200] text-[10px] font-bold uppercase rounded-full border border-[#c9a504]/30">
+                    SPATIAL
+                  </span>
+                </div>
+                <div className="mb-4">
+                  <Route className="w-8 h-8 text-[#c9a504]" />
+                </div>
+                <h3 className="text-2xl font-bold mb-3 text-gray-900 uppercase pr-20">Pathfinding</h3>
+                <p className="text-gray-600 text-sm leading-relaxed mb-6">
+                  Navigate mazes and find the shortest route.
+                </p>
+                <div className="w-full h-1 bg-gray-200 rounded-full overflow-hidden">
+                  <div className="h-full bg-[#c9a504] w-0 group-hover:w-full transition-all duration-700"></div>
+                </div>
+              </a>
             </div>
 
             <div className="relative overflow-hidden group p-8 rounded-3xl bg-white border-2 border-gray-200 hover:border-[#c9a504] transition-all shadow-sm hover:shadow-md">
