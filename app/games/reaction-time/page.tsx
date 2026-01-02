@@ -154,11 +154,11 @@ export default function ReactionTimeGame() {
       case 'idle':
         return (
           <div className="text-center">
-            <h2 className="text-4xl font-bold mb-4">Reaction Time Test</h2>
-            <p className="text-xl mb-6">Click when the screen turns green!</p>
+            <h2 className="text-2xl md:text-4xl font-bold mb-4">Reaction Time Test</h2>
+            <p className="text-lg md:text-xl mb-6">Click when the screen turns green!</p>
             <button
               onClick={startGame}
-              className="px-8 py-4 bg-white text-blue-600 font-bold text-xl rounded-lg hover:bg-gray-100 transition"
+              className="px-6 md:px-8 py-3 md:py-4 bg-white text-blue-600 font-bold text-lg md:text-xl rounded-lg hover:bg-gray-100 transition"
             >
               Start Game
             </button>
@@ -167,24 +167,24 @@ export default function ReactionTimeGame() {
       case 'waiting':
         return (
           <div className="text-center">
-            <h2 className="text-4xl font-bold mb-4">Wait for Green...</h2>
-            <p className="text-xl">Don't click yet!</p>
+            <h2 className="text-2xl md:text-4xl font-bold mb-4">Wait for Green...</h2>
+            <p className="text-lg md:text-xl">Don't click yet!</p>
           </div>
         );
       case 'ready':
         return (
           <div className="text-center">
-            <h2 className="text-6xl font-bold animate-pulse">CLICK NOW!</h2>
+            <h2 className="text-4xl md:text-6xl font-bold animate-pulse">CLICK NOW!</h2>
           </div>
         );
       case 'tooEarly':
         return (
           <div className="text-center">
-            <h2 className="text-4xl font-bold mb-4">Too Early!</h2>
-            <p className="text-xl mb-6">Wait for the green screen</p>
+            <h2 className="text-2xl md:text-4xl font-bold mb-4">Too Early!</h2>
+            <p className="text-lg md:text-xl mb-6">Wait for the green screen</p>
             <button
               onClick={reset}
-              className="px-8 py-4 bg-white text-orange-600 font-bold text-xl rounded-lg hover:bg-gray-100 transition"
+              className="px-6 md:px-8 py-3 md:py-4 bg-white text-orange-600 font-bold text-lg md:text-xl rounded-lg hover:bg-gray-100 transition"
             >
               Try Again
             </button>
@@ -193,25 +193,25 @@ export default function ReactionTimeGame() {
       case 'clicked':
         return (
           <div className="text-center">
-            <h2 className="text-4xl font-bold mb-4">Reaction Time</h2>
-            <div className="text-8xl font-bold mb-4">{reactionTime}ms</div>
-            {submitting && <p className="text-lg mb-2 text-blue-200">Saving score...</p>}
-            {!submitting && <p className="text-lg mb-2 text-green-200">✓ Score saved!</p>}
+            <h2 className="text-2xl md:text-4xl font-bold mb-4">Reaction Time</h2>
+            <div className="text-6xl md:text-8xl font-bold mb-4">{reactionTime}ms</div>
+            {submitting && <p className="text-base md:text-lg mb-2 text-blue-200">Saving score...</p>}
+            {!submitting && <p className="text-base md:text-lg mb-2 text-green-200">✓ Score saved!</p>}
             {bestTime && (
-              <p className="text-xl mb-6">
+              <p className="text-lg md:text-xl mb-6">
                 Best: {bestTime}ms | Attempts: {attempts}
               </p>
             )}
-            <div className="space-x-4">
+            <div className="space-x-2 md:space-x-4">
               <button
                 onClick={startGame}
-                className="px-6 py-3 bg-white text-blue-600 font-bold text-lg rounded-lg hover:bg-gray-100 transition"
+                className="px-4 md:px-6 py-2 md:py-3 bg-white text-blue-600 font-bold text-base md:text-lg rounded-lg hover:bg-gray-100 transition"
               >
                 Play Again
               </button>
               <button
                 onClick={reset}
-                className="px-6 py-3 bg-white/20 text-white font-bold text-lg rounded-lg hover:bg-white/30 transition"
+                className="px-4 md:px-6 py-2 md:py-3 bg-white/20 text-white font-bold text-base md:text-lg rounded-lg hover:bg-white/30 transition"
               >
                 Back
               </button>
@@ -222,16 +222,16 @@ export default function ReactionTimeGame() {
   };
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex flex-col md:flex-row">
       {/* Main Game Area */}
       <div
-        className={`flex-1 ${getBackgroundColor()} transition-colors duration-300 flex items-center justify-center text-white cursor-pointer select-none relative`}
+        className={`flex-1 ${getBackgroundColor()} transition-colors duration-300 flex items-center justify-center text-white cursor-pointer select-none relative min-h-[60vh] md:min-h-screen`}
         onClick={handleClick}
       >
         {/* Back Home Button */}
         <Link
           href="/"
-          className="absolute top-4 left-4 px-4 py-2 bg-white/20 hover:bg-white/30 text-white font-semibold rounded-lg transition z-10"
+          className="absolute top-4 left-4 px-3 py-2 md:px-4 md:py-2 bg-white/20 hover:bg-white/30 text-white text-sm md:text-base font-semibold rounded-lg transition z-10"
           onClick={(e) => e.stopPropagation()}
         >
           ← Back Home
@@ -243,8 +243,8 @@ export default function ReactionTimeGame() {
       </div>
 
       {/* Top 5 Scores Sidebar */}
-      <div className="w-80 bg-white border-l border-gray-200 p-6 overflow-y-auto">
-        <h3 className="text-xl font-bold text-gray-900 mb-2">Your Top 5 Scores</h3>
+      <div className="w-full md:w-80 bg-white border-t md:border-t-0 md:border-l border-gray-200 p-4 md:p-6 overflow-y-auto">
+        <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-2">Your Top 5 Scores</h3>
 
         {!me?.isLoggedIn ? (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
