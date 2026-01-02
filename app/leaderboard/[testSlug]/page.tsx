@@ -110,6 +110,11 @@ function formatScore(score: number, unit: string | null): string {
   if (unit === 'ms') {
     return `${score.toFixed(0)} ms`;
   }
+  if (unit === 'time') {
+    // Format milliseconds as minutes (e.g., 0.25 min)
+    const minutes = score / 60000;
+    return `${minutes.toFixed(2)} min`;
+  }
   if (unit === 'level') {
     return `${score.toFixed(0)}`;
   }

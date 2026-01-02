@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
+import { submitScore } from '@/lib/db/scores';
 
 // ============================================================================
 // CONFIGURATION - All tunables in one place
@@ -15,20 +16,64 @@ const CONFIG = {
   GAME_SLUG: 'hanoi',
 } as const;
 
+// Optimal moves for n disks = 2^n - 1
+function getOptimalMoves(disks: number): number {
+  return Math.pow(2, disks) - 1;
+}
+
+// Calculate final score
+function calculateScore(elapsedMs: number, moves: number, disks: number): number {
+  const optimal = getOptimalMoves(disks);
+  const extraMoves = Math.max(0, moves - optimal);
+  return elapsedMs + extraMoves * CONFIG.EXTRA_MOVE_PENALTY_MS;
+}
+
+// Format milliseconds as mm:ss.ms
+function formatTime(ms: number): string {
+  const totalSeconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  const centiseconds = Math.floor((ms % 1000) / 10);
+  return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${centiseconds.toString().padStart(2, '0')}`;
+}
+
+// Move a disk from one rod to another (immutably)
+// Returns new rods state if move is legal, null otherwise
+function moveDisk(
+  rods: [number[], number[], number[]],
+  fromRod: number,
+  toRod: number
+): [number[], number[], number[]] | null {
+  const source = rods[fromRod];
+  const target = rods[toRod];
+  
+  // Can't move from empty rod
+  if (source.length === 0) return null;
+  
+  const movingDisk = source[source.length - 1];
+  const targetTop = target.length > 0 ? target[target.length - 1] : Infinity;
+  
+  // Can't place larger disk on smaller disk
+  if (movingDisk > targetTop) return null;
+  
+  // Perform the move immutably
+  const newRods: [number[], number[], number[]] = [
+    [...rods[0]],
+    [...rods[1]],
+    [...rods[2]],
+  ];
+  const disk = newRods[fromRod].pop()!;
+  newRods[toRod].push(disk);
+  
+  return newRods;
+}
+
 // ============================================================================
 // TYPES
 // ============================================================================
 type GameState = 'intro' | 'playing' | 'results';
 type GameMode = 'practice' | 'ranked';
-
-/**
- * Rod representation convention:
- * - Each rod is a number[] where disk sizes are integers (1 = smallest)
- * - Index 0 is the BOTTOM of the stack, last index is the TOP
- * - Example: [5, 4, 3, 2, 1] means disk 5 on bottom, disk 1 on top
- * - Initial state for n disks: [[n, n-1, ..., 2, 1], [], []]
- */
-type Rod = number[];
+type Rod = number[]; // Array of disk sizes, bottom to top
 
 interface GameResult {
   elapsedMs: number;
@@ -39,94 +84,6 @@ interface GameResult {
   mode: GameMode;
   disks: number;
   completed: boolean; // Did they actually solve it?
-}
-
-// ============================================================================
-// GAME LOGIC HELPERS
-// ============================================================================
-
-/**
- * Returns optimal number of moves for n disks: 2^n - 1
- */
-function optimalMoves(n: number): number {
-  return Math.pow(2, n) - 1;
-}
-
-/**
- * Computes final score in milliseconds.
- * Score = elapsedMs + max(0, moves - optimalMoves) * EXTRA_MOVE_PENALTY_MS
- */
-function computeScoreMs(elapsedMs: number, moves: number, n: number): number {
-  const optimal = optimalMoves(n);
-  const extraMoves = Math.max(0, moves - optimal);
-  return elapsedMs + extraMoves * CONFIG.EXTRA_MOVE_PENALTY_MS;
-}
-
-/**
- * Checks if a move from one rod to another is legal.
- * Rules:
- * - Source rod must not be empty
- * - Destination must be empty OR its top disk must be larger than the moving disk
- */
-function canMove(rods: [Rod, Rod, Rod], fromRod: number, toRod: number): boolean {
-  const source = rods[fromRod];
-  const target = rods[toRod];
-  
-  // Can't move from empty rod
-  if (source.length === 0) {
-    return false;
-  }
-  
-  // Can always move to empty rod
-  if (target.length === 0) {
-    return true;
-  }
-  
-  // Can only place smaller disk on larger disk
-  const movingDisk = source[source.length - 1]; // Top of source (smallest = 1)
-  const targetTop = target[target.length - 1];   // Top of target
-  return movingDisk < targetTop;
-}
-
-/**
- * Performs a disk move immutably. Returns new rods state if move is legal, null otherwise.
- * Does NOT increment move count - caller is responsible for that.
- */
-function moveDisk(
-  rods: [Rod, Rod, Rod],
-  fromRod: number,
-  toRod: number
-): [Rod, Rod, Rod] | null {
-  if (!canMove(rods, fromRod, toRod)) {
-    return null;
-  }
-  
-  const newRods: [Rod, Rod, Rod] = [
-    [...rods[0]],
-    [...rods[1]],
-    [...rods[2]],
-  ];
-  
-  const disk = newRods[fromRod].pop()!;
-  newRods[toRod].push(disk);
-  
-  return newRods;
-}
-
-/**
- * Checks if the puzzle is solved (all disks on rod index 2)
- */
-function isWin(rods: [Rod, Rod, Rod], nDisks: number): boolean {
-  return rods[2].length === nDisks;
-}
-
-// Format milliseconds as mm:ss.ms
-function formatTime(ms: number): string {
-  const totalSeconds = Math.floor(ms / 1000);
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  const centiseconds = Math.floor((ms % 1000) / 10);
-  return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${centiseconds.toString().padStart(2, '0')}`;
 }
 
 // ============================================================================
@@ -147,8 +104,14 @@ export default function HanoiGame() {
   const [selectedRod, setSelectedRod] = useState<number | null>(null);
   const [result, setResult] = useState<GameResult | null>(null);
   
-  // Error feedback for illegal moves
+  // Score submission state (ranked mode only)
+  const [submitting, setSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  
+  // Animation state
   const [errorRod, setErrorRod] = useState<number | null>(null);
+  const [lastMovedDisk, setLastMovedDisk] = useState<{ rod: number; disk: number } | null>(null);
   
   // Timer refs
   const startTimeRef = useRef<number>(0);
@@ -165,6 +128,18 @@ export default function HanoiGame() {
   useEffect(() => { diskCountRef.current = diskCount; }, [diskCount]);
   useEffect(() => { movesRef.current = moves; }, [moves]);
 
+  // Haptic feedback helper (mobile only, optional)
+  const triggerHaptic = useCallback((type: 'light' | 'medium' | 'error') => {
+    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+      const patterns = {
+        light: [10],
+        medium: [20],
+        error: [50, 30, 50],
+      };
+      navigator.vibrate(patterns[type]);
+    }
+  }, []);
+
   // Initialize rods with disks on the first rod
   const initializeGame = useCallback((disks: number) => {
     const initialRod: Rod = [];
@@ -175,7 +150,6 @@ export default function HanoiGame() {
     setMoves(0);
     setElapsedMs(0);
     setSelectedRod(null);
-    setErrorRod(null);
   }, []);
 
   // Start the game
@@ -186,6 +160,11 @@ export default function HanoiGame() {
     initializeGame(disks);
     setGameState('playing');
     startTimeRef.current = Date.now();
+    
+    // Reset submission state
+    setSubmitting(false);
+    setSubmitStatus('idle');
+    setSubmitError(null);
     
     // Start timer
     timerRef.current = setInterval(() => {
@@ -215,9 +194,9 @@ export default function HanoiGame() {
     const currentGameMode = gameModeRef.current;
     
     const finalElapsed = completed ? Date.now() - startTimeRef.current : CONFIG.MAX_RUN_MS;
-    const optimal = optimalMoves(currentDiskCount);
+    const optimal = getOptimalMoves(currentDiskCount);
     const extra = Math.max(0, currentMoves - optimal);
-    const score = computeScoreMs(finalElapsed, currentMoves, currentDiskCount);
+    const score = calculateScore(finalElapsed, currentMoves, currentDiskCount);
     
     setResult({
       elapsedMs: finalElapsed,
@@ -235,12 +214,41 @@ export default function HanoiGame() {
   // Check for win condition
   useEffect(() => {
     if (gameState === 'playing') {
-      // Win: all disks on the rightmost rod (index 2)
-      if (isWin(rods, diskCount)) {
+      // Win: all disks on the rightmost rod
+      if (rods[2].length === diskCount) {
         endGame(true); // true = completed successfully
       }
     }
   }, [rods, gameState, diskCount, endGame]);
+
+  // Auto-submit score when results are reached in ranked mode
+  useEffect(() => {
+    if (gameState === 'results' && result && result.mode === 'ranked' && result.completed) {
+      const doSubmit = async () => {
+        setSubmitting(true);
+        setSubmitStatus('idle');
+        setSubmitError(null);
+        
+        try {
+          const response = await submitScore(CONFIG.GAME_SLUG, result.scoreMs);
+          
+          if (response.success) {
+            setSubmitStatus('success');
+          } else {
+            setSubmitStatus('error');
+            setSubmitError(response.error || 'Failed to submit score');
+          }
+        } catch (err) {
+          setSubmitStatus('error');
+          setSubmitError(err instanceof Error ? err.message : 'Failed to submit score');
+        } finally {
+          setSubmitting(false);
+        }
+      };
+      
+      doSubmit();
+    }
+  }, [gameState, result]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -250,135 +258,231 @@ export default function HanoiGame() {
     };
   }, []);
 
-  // Handle rod click - uses canMove/moveDisk helpers for game logic
-  const handleRodClick = (rodIndex: number) => {
+  // Handle rod interaction (click or keyboard)
+  const handleRodAction = useCallback((rodIndex: number) => {
     if (gameState !== 'playing') return;
     
-    // Clear any existing error
+    // Clear any previous error state
     setErrorRod(null);
     
     if (selectedRod === null) {
-      // Select a rod (must have disks to select)
+      // Select a rod (must have disks)
       if (rods[rodIndex].length > 0) {
         setSelectedRod(rodIndex);
+        triggerHaptic('light');
       }
     } else {
       // Try to move disk
       if (selectedRod === rodIndex) {
-        // Deselect (clicked same rod)
+        // Deselect
         setSelectedRod(null);
+        triggerHaptic('light');
       } else {
         // Attempt move using helper - only increment moves if legal
         const newRods = moveDisk(rods, selectedRod, rodIndex);
         if (newRods !== null) {
-          // Legal move - update state and deselect
+          // Track which disk just moved for animation
+          const movedDisk = rods[selectedRod][rods[selectedRod].length - 1];
+          setLastMovedDisk({ rod: rodIndex, disk: movedDisk });
+          setTimeout(() => setLastMovedDisk(null), 300);
+          
           setRods(newRods);
           setMoves(m => m + 1);
           setSelectedRod(null);
+          triggerHaptic('medium');
         } else {
-          // Illegal move - keep selection and show error feedback
+          // Illegal move - show error feedback
           setErrorRod(rodIndex);
-          // Clear error after animation completes
+          triggerHaptic('error');
           setTimeout(() => setErrorRod(null), 400);
+          // Keep selection active so user can try another rod
         }
       }
     }
-  };
+  }, [gameState, selectedRod, rods, triggerHaptic]);
+
+  // Legacy click handler for backwards compatibility
+  const handleRodClick = (rodIndex: number) => handleRodAction(rodIndex);
 
   // Quit to intro
-  const quitGame = () => {
+  const quitGame = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
     if (maxTimeRef.current) clearTimeout(maxTimeRef.current);
     setGameState('intro');
     setResult(null);
-  };
+  }, []);
 
   // Restart current mode
-  const restartGame = () => {
+  const restartGame = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
     if (maxTimeRef.current) clearTimeout(maxTimeRef.current);
     startGame(gameMode);
-  };
+  }, [startGame, gameMode]);
+
+  // Keyboard controls
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (gameState !== 'playing') return;
+      
+      // Rod selection: 1, 2, 3 keys
+      if (e.key === '1' || e.key === 'a' || e.key === 'A') {
+        e.preventDefault();
+        handleRodAction(0);
+      } else if (e.key === '2' || e.key === 's' || e.key === 'S') {
+        e.preventDefault();
+        handleRodAction(1);
+      } else if (e.key === '3' || e.key === 'd' || e.key === 'D') {
+        e.preventDefault();
+        handleRodAction(2);
+      } else if (e.key === 'Escape') {
+        // Cancel selection
+        e.preventDefault();
+        setSelectedRod(null);
+        triggerHaptic('light');
+      } else if (e.key === 'r' || e.key === 'R') {
+        // Quick restart
+        e.preventDefault();
+        restartGame();
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [gameState, handleRodAction, triggerHaptic, restartGame]);
 
   // ============================================================================
   // RENDER
   // ============================================================================
   
-  // Disk component
-  const Disk = ({ size, maxDisks, isTop, isSelected }: { size: number; maxDisks: number; isTop: boolean; isSelected: boolean }) => {
+  // Disk component with animations
+  const Disk = ({ 
+    size, 
+    maxDisks, 
+    isTop, 
+    isSelected,
+    isJustMoved 
+  }: { 
+    size: number; 
+    maxDisks: number; 
+    isTop: boolean; 
+    isSelected: boolean;
+    isJustMoved: boolean;
+  }) => {
     const widthPercent = 30 + (size / maxDisks) * 60; // 30% to 90% width
     const colors = [
-      'bg-rose-500',
-      'bg-amber-500', 
-      'bg-emerald-500',
-      'bg-cyan-500',
-      'bg-violet-500',
-      'bg-pink-500',
-      'bg-lime-500',
+      'bg-gradient-to-b from-rose-400 to-rose-600',
+      'bg-gradient-to-b from-amber-400 to-amber-600', 
+      'bg-gradient-to-b from-emerald-400 to-emerald-600',
+      'bg-gradient-to-b from-cyan-400 to-cyan-600',
+      'bg-gradient-to-b from-violet-400 to-violet-600',
+      'bg-gradient-to-b from-pink-400 to-pink-600',
+      'bg-gradient-to-b from-lime-400 to-lime-600',
     ];
     const color = colors[(size - 1) % colors.length];
     
     return (
       <div
-        className={`h-6 sm:h-8 rounded-md ${color} transition-all duration-150 ${
-          isTop && isSelected ? 'ring-2 ring-white ring-offset-2 ring-offset-zinc-900 scale-105' : ''
-        }`}
-        style={{ width: `${widthPercent}%` }}
+        className={`
+          h-6 sm:h-8 rounded-md shadow-md border-b-2 border-black/20
+          ${color}
+          transition-all duration-200 ease-out
+          ${isTop && isSelected 
+            ? 'ring-2 ring-amber-400 ring-offset-2 ring-offset-white scale-110 -translate-y-2 shadow-lg shadow-amber-400/30' 
+            : ''
+          }
+          ${isJustMoved ? 'animate-bounce-once' : ''}
+        `}
+        style={{ 
+          width: `${widthPercent}%`,
+          animationDuration: isJustMoved ? '0.3s' : undefined,
+        }}
       />
     );
   };
 
-  // Rod component
+  // Rod component with animations
   const RodDisplay = ({ rodIndex, rod }: { rodIndex: number; rod: Rod }) => {
     const isSelected = selectedRod === rodIndex;
     const isError = errorRod === rodIndex;
     const hasDisks = rod.length > 0;
     const rodLabels = ['A', 'B', 'C'];
+    const keyHints = ['1', '2', '3'];
+    
+    // Calculate heights
+    const poleHeight = (diskCount + 1) * 32; // Height for pole
     
     return (
       <button
         onClick={() => handleRodClick(rodIndex)}
-        className={`relative flex-1 flex flex-col items-center justify-end p-2 sm:p-4 rounded-xl transition-all duration-200 min-h-[200px] sm:min-h-[280px] ${
-          isError
-            ? 'bg-rose-900/40 ring-2 ring-rose-500 animate-shake'
+        className={`
+          relative flex-1 flex flex-col items-center justify-end p-2 sm:p-4 rounded-xl 
+          min-h-[200px] sm:min-h-[280px]
+          transition-all duration-200 ease-out
+          focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2
+          ${isError
+            ? 'bg-rose-100/80 ring-2 ring-rose-400 animate-shake'
             : isSelected
-            ? 'bg-zinc-700/80 ring-2 ring-amber-400'
+            ? 'bg-amber-50/80 ring-2 ring-amber-400 shadow-lg shadow-amber-400/20'
             : hasDisks
-            ? 'bg-zinc-800/60 hover:bg-zinc-700/60'
-            : 'bg-zinc-800/40 hover:bg-zinc-700/40'
-        }`}
+            ? 'bg-white/60 hover:bg-white/80 hover:shadow-md backdrop-blur'
+            : 'bg-white/40 hover:bg-white/60 backdrop-blur'
+          }
+          border ${isError ? 'border-rose-300' : isSelected ? 'border-amber-300' : 'border-white/70'}
+        `}
         disabled={gameState !== 'playing'}
       >
-        {/* Disks stack */}
-        <div className="flex flex-col-reverse items-center gap-1 w-full mb-2">
-          {rod.map((diskSize, idx) => (
-            <Disk
-              key={idx}
-              size={diskSize}
-              maxDisks={diskCount}
-              isTop={idx === rod.length - 1}
-              isSelected={isSelected && idx === rod.length - 1}
-            />
-          ))}
+        {/* Rod structure - pole behind disks */}
+        <div className="relative w-full flex flex-col items-center pointer-events-none" style={{ height: `${poleHeight + 16}px` }}>
+          {/* Vertical pole (behind disks) */}
+          <div 
+            className={`absolute bottom-3 left-1/2 -translate-x-1/2 w-2 rounded-t-full transition-colors duration-200 ${
+              isSelected ? 'bg-amber-400' : 'bg-slate-400'
+            }`} 
+            style={{ height: `${poleHeight}px` }} 
+          />
+          
+          {/* Disks stack - positioned at bottom, above base */}
+          <div 
+            className="absolute bottom-3 left-0 right-0 flex flex-col-reverse items-center gap-0.5 z-10"
+          >
+            {rod.map((diskSize, idx) => (
+              <Disk
+                key={`${rodIndex}-${idx}-${diskSize}`}
+                size={diskSize}
+                maxDisks={diskCount}
+                isTop={idx === rod.length - 1}
+                isSelected={isSelected && idx === rod.length - 1}
+                isJustMoved={lastMovedDisk?.rod === rodIndex && lastMovedDisk?.disk === diskSize && idx === rod.length - 1}
+              />
+            ))}
+          </div>
+          
+          {/* Base platform */}
+          <div className={`absolute bottom-0 w-full h-3 rounded-sm transition-colors duration-200 ${
+            isSelected ? 'bg-amber-400' : 'bg-slate-400'
+          }`} />
         </div>
         
-        {/* Rod pole */}
-        <div className="w-2 bg-zinc-600 rounded-t-sm" style={{ height: `${(diskCount + 1) * 28}px` }} />
-        
-        {/* Base */}
-        <div className="w-full h-3 bg-zinc-600 rounded-sm mt-1" />
-        
-        {/* Label */}
-        <span className={`mt-2 font-bold text-sm ${
-          isError ? 'text-rose-400' : isSelected ? 'text-amber-400' : 'text-zinc-500'
-        }`}>
-          {rodLabels[rodIndex]}
-        </span>
+        {/* Label with keyboard hint */}
+        <div className="mt-3 flex items-center gap-1.5">
+          <span className={`font-bold text-sm transition-colors duration-150 ${
+            isError ? 'text-rose-500' : isSelected ? 'text-amber-600' : 'text-slate-500'
+          }`}>
+            {rodLabels[rodIndex]}
+          </span>
+          <kbd className={`hidden sm:inline-block text-xs px-1.5 py-0.5 rounded border transition-colors duration-150 ${
+            isSelected 
+              ? 'bg-amber-100 border-amber-300 text-amber-600' 
+              : 'bg-white/80 border-slate-200 text-slate-500'
+          }`}>
+            {keyHints[rodIndex]}
+          </kbd>
+        </div>
         
         {/* Error message */}
         {isError && (
-          <span className="absolute -bottom-6 text-rose-400 text-xs font-medium animate-pulse">
-            Can't place here!
+          <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap text-rose-500 text-xs font-medium">
+            Can&apos;t place here!
           </span>
         )}
       </button>
@@ -386,82 +490,84 @@ export default function HanoiGame() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-900 text-zinc-100 relative overflow-hidden">
+    <div className="min-h-screen text-slate-900 relative overflow-hidden">
       {/* Decorative background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900" />
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-amber-500/5 rounded-full blur-3xl" />
-      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-violet-500/5 rounded-full blur-3xl" />
+      <div className="absolute -top-16 -right-24 h-64 w-64 rounded-full bg-amber-200/30 blur-3xl" />
+      <div className="absolute -bottom-24 -left-20 h-72 w-72 rounded-full bg-violet-200/30 blur-3xl" />
       
       {/* Back Home Button */}
       <Link
         href="/"
-        className="absolute top-4 left-4 px-4 py-2 bg-zinc-800/80 hover:bg-zinc-700/80 text-zinc-300 font-medium rounded-lg transition z-10 border border-zinc-700"
+        className="absolute top-6 left-6 px-4 py-2 rounded-full bg-white/80 backdrop-blur border border-white/60 shadow-sm text-sm font-semibold hover:bg-white transition z-10"
       >
-        ← Games
+        ← Back Home
       </Link>
 
-      <div className="relative max-w-4xl mx-auto px-4 py-16 sm:py-20">
+      <main className="relative z-10 max-w-4xl mx-auto px-6 py-16">
         {/* ================================================================ */}
         {/* INTRO STATE */}
         {/* ================================================================ */}
         {gameState === 'intro' && (
-          <div className="text-center">
-            <h1 className="text-5xl sm:text-6xl font-black tracking-tight mb-4 bg-gradient-to-r from-amber-400 via-orange-400 to-rose-400 bg-clip-text text-transparent">
-              Tower of Hanoi
+          <div className="text-center space-y-6 fade-up">
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-600 shadow-sm border border-white/60">
+              Logic Puzzle
+            </div>
+            <h1 className="text-4xl md:text-5xl font-semibold leading-tight text-slate-900">
+              Move the tower.
             </h1>
-            <p className="text-zinc-400 text-lg mb-8 max-w-xl mx-auto">
-              Move all disks from rod A to rod C. Only move one disk at a time, 
+            <p className="text-slate-500 text-lg max-w-xl mx-auto">
+              Transfer all disks from rod A to rod C. Only move one disk at a time, 
               and never place a larger disk on a smaller one.
             </p>
             
             {/* Rules */}
-            <div className="bg-zinc-800/50 rounded-2xl p-6 mb-8 max-w-md mx-auto text-left border border-zinc-700/50">
-              <h3 className="font-bold text-amber-400 mb-3 text-center">Rules</h3>
-              <ul className="space-y-2 text-zinc-300 text-sm">
+            <div className="bg-white/80 backdrop-blur rounded-2xl p-6 max-w-md mx-auto text-left border border-white/70 shadow-sm">
+              <h3 className="font-bold text-slate-700 mb-3 text-center">Rules</h3>
+              <ul className="space-y-2 text-slate-600 text-sm">
                 <li className="flex items-start gap-2">
-                  <span className="text-amber-400">•</span>
+                  <span className="text-amber-500">•</span>
                   Click a rod to select the top disk
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-amber-400">•</span>
+                  <span className="text-amber-500">•</span>
                   Click another rod to move it there
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-amber-400">•</span>
+                  <span className="text-amber-500">•</span>
                   Can't place larger disks on smaller ones
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-amber-400">•</span>
+                  <span className="text-amber-500">•</span>
                   Goal: Move all disks to rod C
                 </li>
               </ul>
             </div>
 
             {/* Scoring info */}
-            <div className="bg-zinc-800/30 rounded-xl p-4 mb-8 max-w-md mx-auto border border-zinc-700/30">
-              <p className="text-zinc-500 text-sm">
-                <span className="text-zinc-400 font-medium">Score</span> = Time + ({CONFIG.EXTRA_MOVE_PENALTY_MS}ms × extra moves)
+            <div className="bg-white/60 backdrop-blur rounded-xl p-4 max-w-md mx-auto border border-white/50">
+              <p className="text-slate-500 text-sm">
+                <span className="text-slate-700 font-medium">Score</span> = Time + ({CONFIG.EXTRA_MOVE_PENALTY_MS}ms × extra moves)
               </p>
-              <p className="text-zinc-500 text-xs mt-1">
-                Optimal: {optimalMoves(CONFIG.TUTORIAL_DISKS)} moves (3 disks) • {optimalMoves(CONFIG.RANKED_DISKS)} moves (5 disks)
+              <p className="text-slate-400 text-xs mt-1">
+                Optimal: {getOptimalMoves(CONFIG.TUTORIAL_DISKS)} moves (3 disks) • {getOptimalMoves(CONFIG.RANKED_DISKS)} moves (5 disks)
               </p>
             </div>
             
             {/* Mode buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
               <button
                 onClick={() => startGame('practice')}
-                className="px-8 py-4 bg-zinc-700 hover:bg-zinc-600 text-zinc-100 font-bold text-lg rounded-xl transition border border-zinc-600"
+                className="px-8 py-4 bg-white/80 hover:bg-white backdrop-blur text-slate-700 font-bold text-lg rounded-xl transition border border-white/70 shadow-sm"
               >
                 Practice ({CONFIG.TUTORIAL_DISKS} disks)
-                <span className="block text-sm font-normal text-zinc-400">No leaderboard</span>
+                <span className="block text-sm font-normal text-slate-400">No leaderboard</span>
               </button>
               <button
                 onClick={() => startGame('ranked')}
-                className="px-8 py-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-zinc-900 font-bold text-lg rounded-xl transition shadow-lg shadow-amber-500/25"
+                className="px-8 py-4 bg-gradient-to-r from-amber-400 to-orange-400 hover:from-amber-300 hover:to-orange-300 text-slate-900 font-bold text-lg rounded-xl transition shadow-lg shadow-amber-400/25"
               >
                 Ranked Run ({CONFIG.RANKED_DISKS} disks)
-                <span className="block text-sm font-normal text-zinc-800">Compete on leaderboard</span>
+                <span className="block text-sm font-normal text-amber-900/70">Compete on leaderboard</span>
               </button>
             </div>
           </div>
@@ -471,40 +577,29 @@ export default function HanoiGame() {
         {/* PLAYING STATE */}
         {/* ================================================================ */}
         {gameState === 'playing' && (
-          <div>
+          <div className="fade-up">
             {/* Header with stats */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
-              <div className="flex items-center gap-4">
-                <span className={`px-3 py-1 rounded-full text-sm font-bold ${
-                  gameMode === 'ranked' 
-                    ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' 
-                    : 'bg-zinc-700 text-zinc-400 border border-zinc-600'
+            <header className="text-center space-y-4 mb-8">
+              <div className="inline-flex items-center gap-2 rounded-full bg-white/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-600 shadow-sm border border-white/60">
+                {gameMode === 'ranked' ? '⚡ Ranked' : '🎯 Practice'}
+              </div>
+              <h1 className="text-3xl md:text-4xl font-semibold leading-tight text-slate-900">
+                Move all disks to rod C.
+              </h1>
+              <div className="flex flex-wrap items-center justify-center gap-3">
+                <div className="rounded-full bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 shadow-sm border border-white/70">
+                  {formatTime(elapsedMs)}
+                </div>
+                <div className={`rounded-full bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] shadow-sm border border-white/70 ${
+                  moves <= getOptimalMoves(diskCount) ? 'text-emerald-600' : 'text-slate-500'
                 }`}>
-                  {gameMode === 'ranked' ? '⚡ Ranked' : '🎯 Practice'}
-                </span>
-                <span className="text-zinc-500">{diskCount} disks</span>
-              </div>
-              
-              <div className="flex items-center gap-6">
-                {/* Timer */}
-                <div className="text-center">
-                  <div className="text-3xl sm:text-4xl font-mono font-bold text-amber-400">
-                    {formatTime(elapsedMs)}
-                  </div>
-                  <div className="text-xs text-zinc-500 uppercase tracking-wide">Time</div>
+                  {moves} / {getOptimalMoves(diskCount)} moves
                 </div>
-                
-                {/* Moves */}
-                <div className="text-center">
-                  <div className="text-3xl sm:text-4xl font-mono font-bold text-zinc-100">
-                    {moves}
-                  </div>
-                  <div className="text-xs text-zinc-500 uppercase tracking-wide">
-                    Moves <span className="text-zinc-600">(opt: {optimalMoves(diskCount)})</span>
-                  </div>
+                <div className="rounded-full bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 shadow-sm border border-white/70">
+                  {diskCount} disks
                 </div>
               </div>
-            </div>
+            </header>
 
             {/* Game board */}
             <div className="flex gap-2 sm:gap-4 mb-8">
@@ -513,25 +608,37 @@ export default function HanoiGame() {
               ))}
             </div>
 
-            {/* Instructions */}
-            <p className="text-center text-zinc-500 text-sm mb-6">
-              {selectedRod !== null 
-                ? 'Click a rod to move the disk there, or click again to deselect'
-                : 'Click a rod to select its top disk'
-              }
-            </p>
+            {/* Instructions with keyboard hints */}
+            <div className="text-center text-slate-500 text-sm mb-6 space-y-1">
+              <p>
+                {selectedRod !== null 
+                  ? 'Click a rod to move the disk there, or click again to deselect'
+                  : 'Click a rod to select its top disk'
+                }
+              </p>
+              <p className="hidden sm:block text-xs text-slate-400">
+                <kbd className="px-1.5 py-0.5 bg-white/80 border border-white/60 rounded text-slate-500 shadow-sm">1</kbd>
+                <kbd className="px-1.5 py-0.5 bg-white/80 border border-white/60 rounded text-slate-500 shadow-sm ml-1">2</kbd>
+                <kbd className="px-1.5 py-0.5 bg-white/80 border border-white/60 rounded text-slate-500 shadow-sm ml-1">3</kbd>
+                {' '}select rods • 
+                <kbd className="px-1.5 py-0.5 bg-white/80 border border-white/60 rounded text-slate-500 shadow-sm ml-1">Esc</kbd>
+                {' '}cancel •
+                <kbd className="px-1.5 py-0.5 bg-white/80 border border-white/60 rounded text-slate-500 shadow-sm ml-1">R</kbd>
+                {' '}restart
+              </p>
+            </div>
 
             {/* Control buttons */}
             <div className="flex justify-center gap-4">
               <button
                 onClick={restartGame}
-                className="px-6 py-3 bg-zinc-700 hover:bg-zinc-600 text-zinc-100 font-bold rounded-xl transition border border-zinc-600"
+                className="px-6 py-3 bg-white/80 hover:bg-white backdrop-blur text-slate-700 font-bold rounded-xl transition border border-white/70 shadow-sm"
               >
                 Restart
               </button>
               <button
                 onClick={quitGame}
-                className="px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 font-bold rounded-xl transition border border-zinc-700"
+                className="px-6 py-3 bg-white/60 hover:bg-white/80 backdrop-blur text-slate-500 font-bold rounded-xl transition border border-white/50"
               >
                 Quit
               </button>
@@ -543,49 +650,52 @@ export default function HanoiGame() {
         {/* RESULTS STATE */}
         {/* ================================================================ */}
         {gameState === 'results' && result && (
-          <div className="text-center">
-            <h1 className={`text-4xl sm:text-5xl font-black mb-2 bg-gradient-to-r bg-clip-text text-transparent ${
+          <div className="text-center space-y-6 fade-up">
+            <div className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] shadow-sm border ${
               result.completed 
-                ? 'from-emerald-400 to-cyan-400' 
-                : 'from-rose-400 to-orange-400'
+                ? 'bg-emerald-100/80 text-emerald-700 border-emerald-200' 
+                : 'bg-rose-100/80 text-rose-700 border-rose-200'
             }`}>
               {result.completed 
-                ? (result.mode === 'ranked' ? '🏆 Run Complete!' : '✓ Practice Complete!')
-                : '⏱️ Time\'s Up!'
+                ? (result.mode === 'ranked' ? '🏆 Run Complete' : '✓ Practice Complete')
+                : '⏱️ Time\'s Up'
               }
+            </div>
+            <h1 className="text-4xl md:text-5xl font-semibold leading-tight text-slate-900">
+              {result.completed ? 'Well done!' : 'Keep practicing!'}
             </h1>
-            <p className="text-zinc-500 mb-8">
+            <p className="text-slate-500">
               {result.disks} disks • {result.mode === 'ranked' ? 'Ranked' : 'Practice'}
               {!result.completed && ' • Did Not Finish'}
             </p>
 
             {/* Results card */}
-            <div className="bg-zinc-800/60 rounded-2xl p-6 sm:p-8 max-w-md mx-auto mb-8 border border-zinc-700/50">
+            <div className="bg-white/80 backdrop-blur rounded-2xl p-6 sm:p-8 max-w-md mx-auto border border-white/70 shadow-sm">
               {/* Final score */}
               <div className="mb-6">
-                <div className="text-zinc-400 text-sm uppercase tracking-wide mb-1">Final Score</div>
-                <div className="text-5xl sm:text-6xl font-mono font-black text-amber-400">
+                <div className="text-slate-500 text-sm uppercase tracking-wide mb-1">Final Score</div>
+                <div className="text-5xl sm:text-6xl font-mono font-black text-amber-500">
                   {formatTime(result.scoreMs)}
                 </div>
               </div>
 
               {/* Stats grid */}
               <div className="grid grid-cols-2 gap-4 text-left">
-                <div className="bg-zinc-900/50 rounded-xl p-4">
-                  <div className="text-zinc-500 text-xs uppercase tracking-wide">Time</div>
-                  <div className="text-xl font-mono font-bold text-zinc-100">{formatTime(result.elapsedMs)}</div>
+                <div className="bg-slate-50/80 rounded-xl p-4 border border-slate-100">
+                  <div className="text-slate-400 text-xs uppercase tracking-wide">Time</div>
+                  <div className="text-xl font-mono font-bold text-slate-900">{formatTime(result.elapsedMs)}</div>
                 </div>
-                <div className="bg-zinc-900/50 rounded-xl p-4">
-                  <div className="text-zinc-500 text-xs uppercase tracking-wide">Moves</div>
-                  <div className="text-xl font-mono font-bold text-zinc-100">{result.moves}</div>
+                <div className="bg-slate-50/80 rounded-xl p-4 border border-slate-100">
+                  <div className="text-slate-400 text-xs uppercase tracking-wide">Moves</div>
+                  <div className="text-xl font-mono font-bold text-slate-900">{result.moves}</div>
                 </div>
-                <div className="bg-zinc-900/50 rounded-xl p-4">
-                  <div className="text-zinc-500 text-xs uppercase tracking-wide">Optimal</div>
-                  <div className="text-xl font-mono font-bold text-emerald-400">{result.optimalMoves}</div>
+                <div className="bg-slate-50/80 rounded-xl p-4 border border-slate-100">
+                  <div className="text-slate-400 text-xs uppercase tracking-wide">Optimal</div>
+                  <div className="text-xl font-mono font-bold text-emerald-600">{result.optimalMoves}</div>
                 </div>
-                <div className="bg-zinc-900/50 rounded-xl p-4">
-                  <div className="text-zinc-500 text-xs uppercase tracking-wide">Extra Moves</div>
-                  <div className={`text-xl font-mono font-bold ${result.extraMoves === 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                <div className="bg-slate-50/80 rounded-xl p-4 border border-slate-100">
+                  <div className="text-slate-400 text-xs uppercase tracking-wide">Extra Moves</div>
+                  <div className={`text-xl font-mono font-bold ${result.extraMoves === 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
                     {result.extraMoves === 0 ? '0 ★' : `+${result.extraMoves}`}
                   </div>
                 </div>
@@ -593,50 +703,97 @@ export default function HanoiGame() {
 
               {/* Score breakdown */}
               {result.completed && result.extraMoves > 0 && (
-                <div className="mt-4 pt-4 border-t border-zinc-700/50 text-sm text-zinc-500">
+                <div className="mt-4 pt-4 border-t border-slate-200 text-sm text-slate-500">
                   {formatTime(result.elapsedMs)} + ({result.extraMoves} × {CONFIG.EXTRA_MOVE_PENALTY_MS}ms) = {formatTime(result.scoreMs)}
                 </div>
               )}
               {result.completed && result.extraMoves === 0 && (
-                <div className="mt-4 pt-4 border-t border-zinc-700/50 text-sm text-emerald-400">
+                <div className="mt-4 pt-4 border-t border-slate-200 text-sm text-emerald-600">
                   ★ Perfect! Solved in optimal moves!
                 </div>
               )}
               {!result.completed && (
-                <div className="mt-4 pt-4 border-t border-zinc-700/50 text-sm text-rose-400">
+                <div className="mt-4 pt-4 border-t border-slate-200 text-sm text-rose-500">
                   Time ran out before completing the puzzle.
                 </div>
               )}
             </div>
 
             {/* Action buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
               <button
                 onClick={() => startGame(result.mode)}
                 className={`px-8 py-4 font-bold text-lg rounded-xl transition ${
                   result.mode === 'ranked'
-                    ? 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-zinc-900 shadow-lg shadow-amber-500/25'
-                    : 'bg-zinc-700 hover:bg-zinc-600 text-zinc-100 border border-zinc-600'
+                    ? 'bg-gradient-to-r from-amber-400 to-orange-400 hover:from-amber-300 hover:to-orange-300 text-slate-900 shadow-lg shadow-amber-400/25'
+                    : 'bg-white/80 hover:bg-white backdrop-blur text-slate-700 border border-white/70 shadow-sm'
                 }`}
               >
                 Play Again
               </button>
               <button
                 onClick={quitGame}
-                className="px-8 py-4 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold text-lg rounded-xl transition border border-zinc-700"
+                className="px-8 py-4 bg-white/60 hover:bg-white/80 backdrop-blur text-slate-500 font-bold text-lg rounded-xl transition border border-white/50"
               >
                 Back to Menu
               </button>
             </div>
 
+            {/* Practice mode disclaimer */}
             {result.mode === 'practice' && (
-              <p className="mt-6 text-zinc-500 text-sm">
+              <p className="text-slate-400 text-sm">
                 Practice runs are not submitted to the leaderboard.
+              </p>
+            )}
+            
+            {/* Ranked mode submission status */}
+            {result.mode === 'ranked' && result.completed && (
+              <div>
+                {submitting && (
+                  <p className="text-amber-600 text-sm flex items-center justify-center gap-2">
+                    <span className="inline-block w-4 h-4 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+                    Submitting score...
+                  </p>
+                )}
+                {!submitting && submitStatus === 'success' && (
+                  <p className="text-emerald-600 text-sm">
+                    ✓ Score submitted to leaderboard!
+                  </p>
+                )}
+                {!submitting && submitStatus === 'error' && (
+                  <p className="text-rose-500 text-sm">
+                    ✗ {submitError || 'Failed to submit score'}
+                  </p>
+                )}
+              </div>
+            )}
+            
+            {/* DNF - not submitted */}
+            {result.mode === 'ranked' && !result.completed && (
+              <p className="text-slate-400 text-sm">
+                Incomplete runs are not submitted to the leaderboard.
               </p>
             )}
           </div>
         )}
-      </div>
+      </main>
+
+      <style jsx>{`
+        .fade-up {
+          animation: fadeUp 0.6s ease-out both;
+        }
+        @keyframes fadeUp {
+          from {
+            opacity: 0;
+            transform: translateY(12px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </div>
   );
 }
+
