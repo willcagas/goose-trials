@@ -1,39 +1,13 @@
-[03:21:46.491] Server  ERROR   ⨯ Error: ENOENT: no such file or directory, open '/Users/natelamarche/Documents/Software Projects/goose-trials/.next/dev/static/development/_buildManifest.js.tmp.wkurm17vwf'
-[03:21:46.523] Server  ERROR   ⨯ Error: Cannot find module '../chunks/ssr/[turbopack]_runtime.js'
-Require stack:
-- /Users/natelamarche/Documents/Software Projects/goose-trials/.next/dev/server/pages/_document.js
-- /Users/natelamarche/Documents/Software Projects/goose-trials/node_modules/next/dist/server/require.js
-- /Users/natelamarche/Documents/Software Projects/goose-trials/node_modules/next/dist/server/load-components.js
-- /Users/natelamarche/Documents/Software Projects/goose-trials/node_modules/next/dist/build/utils.js
-- /Users/natelamarche/Documents/Software Projects/goose-trials/node_modules/next/dist/build/swc/options.js
-- /Users/natelamarche/Documents/Software Projects/goose-trials/node_modules/next/dist/build/swc/index.js
-- /Users/natelamarche/Documents/Software Projects/goose-trials/node_modules/next/dist/build/next-config-ts/transpile-config.js
-- /Users/natelamarche/Documents/Software Projects/goose-trials/node_modules/next/dist/server/config.js
-- /Users/natelamarche/Documents/Software Projects/goose-trials/node_modules/next/dist/server/next.js
-- /Users/natelamarche/Documents/Software Projects/goose-trials/node_modules/next/dist/server/lib/start-server.js
-[03:21:46.536] Server  ERROR   ⨯ Error: Cannot find module '../chunks/ssr/[turbopack]_runtime.js'
-Require stack:
-- /Users/natelamarche/Documents/Software Projects/goose-trials/.next/dev/server/pages/_document.js
-- /Users/natelamarche/Documents/Software Projects/goose-trials/node_modules/next/dist/server/require.js
-- /Users/natelamarche/Documents/Software Projects/goose-trials/node_modules/next/dist/server/load-components.js
-- /Users/natelamarche/Documents/Software Projects/goose-trials/node_modules/next/dist/build/utils.js
-- /Users/natelamarche/Documents/Software Projects/goose-trials/node_modules/next/dist/build/swc/options.js
-- /Users/natelamarche/Documents/Software Projects/goose-trials/node_modules/next/dist/build/swc/index.js
-- /Users/natelamarche/Documents/Software Projects/goose-trials/node_modules/next/dist/build/next-config-ts/transpile-config.js
-- /Users/natelamarche/Documents/Software Projects/goose-trials/node_modules/next/dist/server/config.js
-- /Users/natelamarche/Documents/Software Projects/goose-trials/node_modules/next/dist/server/next.js
-- /Users/natelamarche/Documents/Software Projects/goose-trials/node_modules/next/dist/server/lib/start-server.js
-[03:21:46.564] Server  ERROR   Error: ENOENT: no such file or directory, open '/Users/natelamarche/Documents/Software Projects/goose-trials/.next/dev/server/pages-manifest.json'
-[03:21:46.584] Server  ERROR   Error: ENOENT: no such file or directory, open '/Users/natelamarche/Documents/Software Projects/goose-trials/.next/dev/server/app-paths-manifest.json'
-[03:21:46.606] Server  ERROR   Error: ENOENT: no such file or directory, open '/Users/natelamarche/Documents/Software Projects/goose-trials/.next/dev/server/app-paths-manifest.json'
-[03:21:46.619] Server  ERROR   ⨯ Error: ENOENT: no such file or directory, open '/Users/natelamarche/Documents/Software Projects/goose-trials/.next/dev/server/pages/_app/build-manifest.json'
-[03:21:46.633] Server  ERROR   ⨯ Error: ENOENT: no such file or directory, open '/Users/natelamarche/Documents/Software Projects/goose-trials/.next/dev/server/pages/_app/build-manifest.json'
-[03:21:46.650] Server  ERROR   ⨯ Error: ENOENT: no such file or directory, open '/Users/natelamarche/Documents/Software Projects/goose-trials/.next/dev/server/pages/_app/build-manifest.json'
-[03:21:46.663] Server  ERROR   Error: ENOENT: no such file or directory, open '/Users/natelamarche/Documents/Software Projects/goose-trials/.next/dev/server/pages/_app/build-manifest.json'
-[03:21:46.692] Server  ERROR   Error: ENOENT: no such file or directory, open '/Users/natelamarche/Documents/Software Projects/goose-trials/.next/dev/server/pages/_app/build-manifest.json'
-[03:21:46.709] Server  ERROR   Error: ENOENT: no such file or directory, open '/Users/natelamarche/Documents/Software Projects/goose-trials/.next/dev/server/pages/_app/build-manifest.json'
-[03:21:46.763] Server  ERROR   ⨯ Error: ENOENT: no such file or directory, open '/Users/natelamarche/Documents/Software Projects/goose-trials/.next/dev/server/app/page/build-manifest.json'
-[03:21:46.782] Server  ERROR   ⨯ Error: ENOENT: no such file or directory, open '/Users/natelamarche/Documents/Software Projects/goose-trials/.next/dev/server/pages/_app/build-manifest.json'
-[03:21:46.803] Server  ERROR   Error: ENOENT: no such file or directory, open '/Users/natelamarche/Documents/Software Projects/goose-trials/.next/dev/server/app/page/build-manifest.json'
-[03:21:46.822] Server  ERROR   ⨯ Error: ENOENT: no such file or directory, open '/Users/natelamarche/Documents/Software Projects/goose-trials/.next/dev/server/pages/_app/build-manifest.json'
-[03:21:46.838] Server  ERROR   Error: ENOENT: no such file or directory, open '/Users/natelamarche/Documents/Software Projects/goose-trials/.next/dev/server/pages/_app/build-manifest.json'
+[00:00:00.914] Server  LOG     ✓ Ready in 721ms
+[00:00:10.549] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:00:11.132] Browser LOG     Starting onboarding for user: 8078722e-c82f-43b1-b186-4a761e977719
+[00:00:12.312] Browser LOG     Onboarding completed successfully
+[00:00:12.312] Browser LOG     University assigned: 94d88840-67ac-47d3-a98c-411cf50d5653
+[00:00:12.312] Browser LOG     Onboarding completed successfully
+[00:00:39.053] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:00:46.898] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:00:55.423] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:01:03.241] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:01:10.624] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:01:15.004] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
+[00:01:18.590] Browser ERROR   Error submitting score: {"code":"23503","details":"Key is not present in table \"tests\".","hint":null,"message":"insert or update on table \"scores\" violates foreign key constraint \"scores_test_slug_fkey\""}
