@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { normalizeUsername, validateUsernameClient } from '@/lib/username/client-validation';
 
 interface UsernameModalProps {
   isOpen: boolean;
@@ -11,25 +12,14 @@ export default function UsernameModal({ isOpen, onComplete }: UsernameModalProps
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const validateUsername = (value: string): string | null => {
-    if (value.length < 3) {
-      return 'Username must be at least 3 characters';
-    }
-    if (value.length > 20) {
-      return 'Username must be 20 characters or less';
-    }
-    if (!/^[a-zA-Z0-9_]+$/.test(value)) {
-      return 'Username can only contain letters, numbers, and underscores';
-    }
-    return null;
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const trimmedUsername = username.trim();
-    const validationError = validateUsername(trimmedUsername);
+    // Normalize to lowercase before validation and submission
+    const normalizedUsername = normalizeUsername(username);
     
+    // Client-side validation (UX only - server re-validates)
+    const validationError = validateUsernameClient(normalizedUsername);
     if (validationError) {
       setError(validationError);
       return;
@@ -44,20 +34,35 @@ export default function UsernameModal({ isOpen, onComplete }: UsernameModalProps
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ username: trimmedUsername }),
+        // Send normalized username - server will also normalize but this ensures consistency
+        body: JSON.stringify({ username: normalizedUsername }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
+        // Display server error message
         throw new Error(data.error || 'Failed to set username');
       }
 
-      onComplete(trimmedUsername);
+      onComplete(normalizedUsername);
     } catch (err) {
+      // Show server-returned error message
       setError(err instanceof Error ? err.message : 'Failed to set username');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Real-time validation feedback as user types
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setUsername(value);
+    
+    // Clear error on new input, let them type freely
+    // Validation happens on submit
+    if (error) {
+      setError('');
     }
   };
 
@@ -91,19 +96,18 @@ export default function UsernameModal({ isOpen, onComplete }: UsernameModalProps
               type="text"
               placeholder="Enter username"
               value={username}
-              onChange={(e) => {
-                setUsername(e.target.value);
-                setError('');
-              }}
-              className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#FFD700] transition-colors font-mono"
+              onChange={handleInputChange}
+              disabled={loading}
+              className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#FFD700] transition-colors font-mono disabled:opacity-50"
               autoFocus
               maxLength={20}
             />
             <p className="text-white/40 text-xs mt-2">
-              3-20 characters, letters, numbers, and underscores only
+              3-20 characters, letters, numbers, and underscores only. Will be lowercase.
             </p>
           </div>
 
+          {/* Inline error display */}
           {error && (
             <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-3">
               <p className="text-red-400 text-sm">{error}</p>
@@ -127,13 +131,8 @@ export default function UsernameModal({ isOpen, onComplete }: UsernameModalProps
               'Continue'
             )}
           </button>
-
-          <p className="text-white/30 text-xs text-center">
-            You can change this later in your profile settings
-          </p>
         </form>
       </div>
     </div>
   );
 }
-
