@@ -14,8 +14,8 @@ export default function Navbar() {
 
   const handleGamesClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    setMobileMenuOpen(false);
-
+    setMobileMenuOpen(false); // Close menu on click
+    
     if (pathname === '/') {
       const trialsSection = document.getElementById('trials');
       if (trialsSection) {
@@ -32,108 +32,101 @@ export default function Navbar() {
     }
   };
 
-  // Shared classes for Nav Links to include the animated underline
-  const navLinkStyles = "relative text-white/60 uppercase text-xs font-bold tracking-widest hover:text-amber-400 transition-colors whitespace-nowrap group/link active:scale-95";
+  // Shared styles for desktop links
+  const navLinkStyles = "relative text-white/70 uppercase text-xs font-bold tracking-widest hover:text-amber-400 transition-colors whitespace-nowrap group/link active:scale-95 cursor-pointer";
   const underlineStyles = "absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-400 transition-all duration-300 group-hover/link:w-full";
 
   return (
     <>
-      <nav className="relative z-20 bg-[#0a0a0a] border-b border-white/10 px-4 md:px-8">
-        <div className="max-w-7xl mx-auto flex items-center justify-between h-20 md:h-24">
+      <nav className="relative z-30 px-4 md:px-8 bg-[#0a0a0a] border-b border-white/10 h-20 md:h-24 flex items-center justify-between">
+        
+        {/* Logo Section */}
+        <Link href="/" className="flex items-center gap-3 group shrink-0 cursor-pointer">
+          <div className="relative w-12 h-12 md:w-14 md:h-14 flex items-center justify-center transition-transform duration-300 group-hover:scale-110">
+            <img 
+              src="/goosetrialspfp-removebg-preview.png" 
+              alt="Goose Trials Logo"
+              className="w-10 h-10 md:w-12 md:h-12 object-contain"
+              style={{ imageRendering: 'pixelated' }}
+            />
+          </div>
+          <div className="flex flex-col justify-center">
+            <span className="text-base md:text-xl font-bold text-white leading-[0.9] uppercase tracking-wider">
+              GOOSE
+            </span>
+            <span className="text-base md:text-xl font-bold text-amber-400 leading-[0.9] uppercase tracking-wider">
+              TRIALS
+            </span>
+          </div>
+        </Link>
+
+        {/* Desktop Navigation */}
+        <div className="hidden md:flex items-center gap-10">
+          <button onClick={handleGamesClick} className={navLinkStyles}>
+            Games
+            <span className={underlineStyles} />
+          </button>
           
-          {/* Logo Section - Large & Stacked */}
-          <Link href="/" className="flex items-center gap-3 group shrink-0 cursor-pointer">
-            <div className="relative w-14 h-14 flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-3">
-              <img 
-                src="/goosetrialspfp-removebg-preview.png" 
-                alt="Goose Trials Logo"
-                className="w-12 h-12 object-contain"
-                style={{ imageRendering: 'pixelated' }}
-              />
-            </div>
-            <div className="flex flex-col justify-center">
-              <span className="text-lg md:text-xl font-bold text-white leading-[0.9] uppercase tracking-wider">
-                GOOSE
-              </span>
-              <span className="text-lg md:text-xl font-bold text-amber-400 leading-[0.9] uppercase tracking-wider">
-                TRIALS
-              </span>
-            </div>
+          <Link href="/leaderboard" className={navLinkStyles}>
+            Rankings
+            <span className={underlineStyles} />
           </Link>
 
-          {/* Desktop Navigation Items */}
-          <div className="hidden md:flex items-center gap-10">
-            <button 
-              onClick={handleGamesClick} 
-              className={`${navLinkStyles} cursor-pointer`}
-            >
-              Games
-              <span className={underlineStyles} />
-            </button>
-            
-            <Link href="/leaderboard" className={`${navLinkStyles} cursor-pointer`}>
-              Rankings
-              <span className={underlineStyles} />
-            </Link>
-
-            {user ? (
-              <>
-                <Link href="/profile" className={`${navLinkStyles} cursor-pointer`}>
-                  Profile
-                  <span className={underlineStyles} />
-                </Link>
-                <button
-                  onClick={() => { setMobileMenuOpen(false); signOut(); }}
-                  className="px-6 py-2.5 text-xs font-bold uppercase tracking-widest text-white/80 border border-white/20 rounded-full hover:bg-white/10 hover:border-white/40 hover:text-white transition-all active:scale-95 cursor-pointer whitespace-nowrap"
-                >
-                  Sign Out
-                </button>
-              </>
-            ) : (
+          {user ? (
+            <>
+              <Link href="/profile" className={navLinkStyles}>
+                Profile
+                <span className={underlineStyles} />
+              </Link>
               <button
-                onClick={() => setShowLogin(true)}
-                className="px-8 py-3 bg-gradient-to-r from-amber-400 to-[#FFC700] text-gray-900 font-black text-xs uppercase tracking-widest rounded-full shadow-[0_0_20px_rgba(255,215,0,0.2)] hover:shadow-[0_0_30px_rgba(255,215,0,0.4)] hover:-translate-y-0.5 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer whitespace-nowrap"
+                onClick={signOut}
+                className="px-6 py-2.5 text-xs font-bold uppercase tracking-widest text-white/80 border border-white/20 rounded-full hover:bg-white/10 hover:border-white/40 hover:text-white transition-all active:scale-95 cursor-pointer whitespace-nowrap"
               >
-                Sign In
+                Sign Out
               </button>
-            )}
-          </div>
-
-          {/* Mobile Burger Button */}
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 text-white/70 hover:text-amber-400 transition-colors active:scale-90"
-          >
-            {mobileMenuOpen ? (
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-7 h-7">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-7 h-7">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-              </svg>
-            )}
-          </button>
+            </>
+          ) : (
+            <button
+              onClick={() => setShowLogin(true)}
+              className="px-8 py-3 bg-amber-400 text-gray-900 font-black text-xs uppercase tracking-widest rounded-full shadow-lg hover:-translate-y-0.5 active:scale-95 transition-all cursor-pointer whitespace-nowrap"
+            >
+              Sign In
+            </button>
+          )}
         </div>
 
-        {/* Mobile Menu */}
-        {mobileMenuOpen && (
-          <div className="md:hidden py-10 border-t border-white/5 space-y-8 bg-[#0a0a0a] px-6 animate-in fade-in slide-in-from-top-4 duration-300">
-            <div className="space-y-8 text-center">
-              <button onClick={handleGamesClick} className="block w-full text-white/70 uppercase text-sm font-bold tracking-[0.2em] hover:text-amber-400">Games</button>
-              <Link href="/leaderboard" onClick={() => setMobileMenuOpen(false)} className="block text-white/70 uppercase text-sm font-bold tracking-[0.2em] hover:text-amber-400">Rankings</Link>
-              {user && <Link href="/profile" onClick={() => setMobileMenuOpen(false)} className="block text-white/70 uppercase text-sm font-bold tracking-[0.2em] hover:text-amber-400">Profile</Link>}
-            </div>
-            <div className="pt-8 border-t border-white/5">
-              {user ? (
-                <button onClick={() => { setMobileMenuOpen(false); signOut(); }} className="w-full py-4 border border-white/20 text-white font-bold text-xs uppercase tracking-widest rounded-full active:scale-95 transition-transform">Sign Out</button>
-              ) : (
-                <button onClick={() => { setMobileMenuOpen(false); setShowLogin(true); }} className="w-full py-4 bg-amber-400 text-gray-900 font-black text-xs uppercase tracking-widest rounded-full shadow-lg active:scale-95 transition-transform">Sign In</button>
-              )}
-            </div>
-          </div>
-        )}
+        {/* Mobile Hamburger Button */}
+        <button
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          className="md:hidden p-2 text-white/70 hover:text-amber-400 transition-colors cursor-pointer"
+        >
+          {mobileMenuOpen ? (
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-7 h-7">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          ) : (
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-7 h-7">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+            </svg>
+          )}
+        </button>
       </nav>
+
+      {/* Mobile Menu Dropdown */}
+      {mobileMenuOpen && (
+        <div className="md:hidden absolute top-20 left-0 w-full bg-[#0a0a0a] border-b border-white/10 z-20 py-8 px-6 flex flex-col gap-6 animate-in fade-in slide-in-from-top-4">
+          <button onClick={handleGamesClick} className="text-white uppercase text-sm font-bold tracking-widest text-left">Games</button>
+          <Link href="/leaderboard" onClick={() => setMobileMenuOpen(false)} className="text-white uppercase text-sm font-bold tracking-widest">Rankings</Link>
+          {user && <Link href="/profile" onClick={() => setMobileMenuOpen(false)} className="text-white uppercase text-sm font-bold tracking-widest">Profile</Link>}
+          <div className="pt-4 border-t border-white/10">
+            {user ? (
+              <button onClick={() => { signOut(); setMobileMenuOpen(false); }} className="w-full py-4 border border-white/20 text-white font-bold uppercase text-xs rounded-full">Sign Out</button>
+            ) : (
+              <button onClick={() => { setShowLogin(true); setMobileMenuOpen(false); }} className="w-full py-4 bg-amber-400 text-gray-900 font-black uppercase text-xs rounded-full shadow-lg">Sign In</button>
+            )}
+          </div>
+        </div>
+      )}
 
       <LoginModal isOpen={showLogin} onClose={() => setShowLogin(false)} />
     </>
