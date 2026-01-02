@@ -276,8 +276,10 @@ export default function NumberMemoryGamePage() {
           {phase === 'showing' && (
             <div className="w-full">
               <div className="text-center">
-                <div className="text-9xl sm:text-[12rem] font-black text-yellow-400 mb-6 select-none">
-                  {currentNumber}
+                <div className="flex justify-center items-center mb-6">
+                  <div className="text-9xl sm:text-[12rem] font-mono font-black text-yellow-400 select-none tabular-nums">
+                    {currentNumber}
+                  </div>
                 </div>
                 <p className="text-yellow-100/80 text-sm">Memorize…</p>
               </div>
@@ -289,26 +291,31 @@ export default function NumberMemoryGamePage() {
             <div className="w-full">
               <div className="text-center">
                 <div className="mb-8">
-                  <div className="text-6xl font-black text-yellow-400/20 mb-4 select-none">
-                    {'•'.repeat(currentDigits)}
+                  <div className="flex justify-center items-center mb-4">
+                    <div className="text-6xl font-mono font-black text-yellow-400/20 select-none tabular-nums">
+                      {'•'.repeat(currentDigits)}
+                    </div>
                   </div>
                   <p className="text-yellow-100/80 text-sm mb-6">Enter the {currentDigits}-digit number</p>
                 </div>
                 
                 <div className="space-y-4">
-                  <input
-                    ref={inputRef}
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    value={inputValue}
-                    onChange={handleInputChange}
-                    onPaste={handlePaste}
-                    onKeyDown={handleKeyDown}
-                    maxLength={currentDigits}
-                    className="w-full px-6 py-4 text-5xl font-mono text-center bg-yellow-950/40 border-2 border-yellow-400/30 rounded-xl text-yellow-50 placeholder-yellow-400/40 focus:outline-none focus:border-yellow-400 transition-colors"
-                    placeholder="Type number..."
-                  />
+                  <div className="flex justify-center items-center w-full">
+                    <input
+                      ref={inputRef}
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      value={inputValue}
+                      onChange={handleInputChange}
+                      onPaste={handlePaste}
+                      onKeyDown={handleKeyDown}
+                      maxLength={currentDigits}
+                      className="px-6 py-4 text-5xl font-mono text-center bg-yellow-950/40 border-2 border-yellow-400/30 rounded-xl text-yellow-50 placeholder-yellow-400/40 focus:outline-none focus:border-yellow-400 transition-colors tabular-nums"
+                      style={{ width: `${Math.max(currentDigits * 2.5, 10)}rem`, maxWidth: '100%' }}
+                      placeholder="Type number..."
+                    />
+                  </div>
                   
                   <button
                     onClick={handleSubmit}
