@@ -4,6 +4,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { useMe } from '@/app/providers/MeContext';
 import Navbar from '@/components/Navbar';
+import LoginModal from '@/components/LoginModal';
 import Link from 'next/link';
 
 interface LeaderboardEntry {
@@ -110,10 +111,8 @@ function formatScore(score: number, unit: string | null): string {
   if (unit === 'ms') {
     return `${score.toFixed(0)} ms`;
   }
-  if (unit === 'time') {
-    // Format milliseconds as minutes (e.g., 0.25 min)
-    const minutes = score / 60000;
-    return `${minutes.toFixed(2)} min`;
+  if (unit === 's') {
+    return `${score.toFixed(2)} s`;
   }
   if (unit === 'level') {
     return `${score.toFixed(0)}`;
@@ -164,6 +163,7 @@ export default function LeaderboardTestPage() {
   const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
   const [expandedScores, setExpandedScores] = useState<(TopScore | null)[]>([]);
   const [loadingScores, setLoadingScores] = useState(false);
+  const [showLogin, setShowLogin] = useState(false);
 
   // Determine default scope (only once when me data first loads)
   useEffect(() => {
@@ -301,10 +301,10 @@ export default function LeaderboardTestPage() {
         {/* Header */}
         <div className="mb-6 md:mb-8">
           <Link
-            href="/leaderboard"
+            href="/#rankings"
             className="text-gray-600 hover:text-gray-900 mb-3 md:mb-4 inline-block text-sm md:text-base"
           >
-            ← Back to Leaderboards
+            ← Back Home
           </Link>
           <div className="flex flex-col md:flex-row items-start md:items-start justify-between gap-4">
             <div>
@@ -394,14 +394,23 @@ export default function LeaderboardTestPage() {
             </div>
           )}
           {!me?.isLoggedIn && (
-            <div className="mt-4 px-6 py-3 bg-amber-50 rounded-lg border border-amber-200">
-              <p className="text-sm text-gray-700">
-                <span className="font-semibold">Sign in to appear on leaderboards.</span>
-                {' '}
-                <Link href="/" className="text-amber-600 hover:text-amber-700 underline">
-                  Sign in with your university email
-                </Link>
-              </p>
+            <div className="mt-4 px-6 py-3 bg-amber-50 rounded-lg border border-amber-200 hover:border-amber-400 transition-colors">
+              <button
+                onClick={() => setShowLogin(true)}
+                className="text-sm text-amber-600 hover:text-amber-700 font-semibold transition-all cursor-pointer w-full text-left flex items-center gap-2 group"
+              >
+                <span>Sign in with your university email to appear on leaderboards.</span>
+                <svg 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  fill="none" 
+                  viewBox="0 0 24 24" 
+                  strokeWidth={2.5} 
+                  stroke="currentColor" 
+                  className="w-4 h-4 transform group-hover:translate-x-1 transition-transform"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                </svg>
+              </button>
             </div>
           )}
         </div>
@@ -597,6 +606,8 @@ export default function LeaderboardTestPage() {
           </>
         )}
       </div>
+      
+      <LoginModal isOpen={showLogin} onClose={() => setShowLogin(false)} />
     </div>
   );
 }

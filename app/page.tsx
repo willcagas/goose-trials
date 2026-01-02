@@ -3,7 +3,7 @@ import Link from 'next/link';
 import {useSession} from '@/app/providers/SessionContext';
 import Navbar from '@/components/Navbar';
 import {useEffect, useRef, useState} from 'react';
-import {Zap, Hash, Eye, Layers, Route, Target} from 'lucide-react';
+import {Zap, Hash, Eye, Layers, Route, Target, Trophy} from 'lucide-react';
 
 interface FlyingGoose {
   id: number;
@@ -113,6 +113,9 @@ function ProtocolSection() {
           <h2 className="text-4xl md:text-5xl font-bold uppercase tracking-tighter mb-2 text-gray-900">
             The <span className="text-amber-400">Protocol</span>
           </h2>
+          <p className="text-gray-600 text-lg">
+          Know the rules. Optimize the run. Climb the leaderboard..
+          </p>
         </div>
 
         <div className="grid md:grid-cols-3 gap-6">
@@ -125,10 +128,28 @@ function ProtocolSection() {
   );
 }
 
+interface Test {
+  slug: string;
+  name: string;
+  description: string | null;
+}
+
+interface LeaderboardEntry {
+  user_id: string;
+  username: string | null;
+  avatar_url: string | null;
+  best_score: number;
+  rank: number;
+  is_you: boolean;
+}
+
 export default function HomePage() {
-  const {loading} = useSession();
+  const {loading, user} = useSession();
   const [geese, setGeese] = useState<FlyingGoose[]>([]);
   const gooseIdRef = useRef(0);
+  const [tests, setTests] = useState<Test[]>([]);
+  const [testsLoading, setTestsLoading] = useState(true);
+  const [leaderboards, setLeaderboards] = useState<Record<string, LeaderboardEntry[]>>({});
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -145,6 +166,45 @@ export default function HomePage() {
     }, 16);
     return () => clearInterval(interval);
   }, []);
+
+  // Fetch tests and top 3 leaders for each test
+  useEffect(() => {
+    async function fetchTestsAndLeaders() {
+      try {
+        const response = await fetch('/api/tests/all');
+        if (response.ok) {
+          const { data } = await response.json();
+          setTests(data || []);
+          
+          // Fetch full leaderboard for each test (to get player count and user rank)
+          const leaderboardPromises = (data || []).map(async (test: Test) => {
+            try {
+              const leaderResponse = await fetch(`/api/leaderboard?test_slug=${test.slug}&limit=50`);
+              if (leaderResponse.ok) {
+                const { data: leaderData } = await leaderResponse.json();
+                return { slug: test.slug, leaders: leaderData || [] };
+              }
+            } catch (error) {
+              console.error(`Error fetching leaders for ${test.slug}:`, error);
+            }
+            return { slug: test.slug, leaders: [] };
+          });
+          
+          const leaderboardResults = await Promise.all(leaderboardPromises);
+          const leaderboardMap: Record<string, LeaderboardEntry[]> = {};
+          leaderboardResults.forEach(({ slug, leaders }) => {
+            leaderboardMap[slug] = leaders;
+          });
+          setLeaderboards(leaderboardMap);
+        }
+      } catch (error) {
+        console.error('Error fetching tests:', error);
+      } finally {
+        setTestsLoading(false);
+      }
+    }
+    fetchTestsAndLeaders();
+  }, [user]);
 
   const handleClick = (e: React.MouseEvent) => {
     const side = Math.floor(Math.random() * 4);
@@ -204,12 +264,12 @@ export default function HomePage() {
             >
               Play Now
             </button>
-            <Link 
-              href="/leaderboard"
-              className="w-full sm:w-auto px-10 py-4 bg-white/5 border border-amber-400/30 text-white font-bold text-sm md:text-base uppercase tracking-widest rounded-full backdrop-blur-sm hover:bg-amber-400/10 hover:border-amber-400 active:scale-95 transition-all min-w-[200px] text-center cursor-pointer"
+            <button
+              onClick={(e) => { e.stopPropagation(); document.getElementById('rankings')?.scrollIntoView({ behavior: 'smooth' }); }}
+              className="w-full sm:w-auto px-10 py-4 bg-white/5 border border-amber-400/30 text-white font-bold text-sm md:text-base uppercase tracking-widest rounded-full backdrop-blur-sm hover:bg-amber-400/10 hover:border-amber-400 active:scale-95 transition-all min-w-[200px] cursor-pointer"
             >
               View Rankings
-            </Link>
+            </button>
           </div>
         </div>
       </section>
@@ -223,6 +283,9 @@ export default function HomePage() {
             <h2 className="text-4xl md:text-5xl font-bold uppercase tracking-tighter mb-4 text-gray-900">
               The <span className="text-amber-400">Trials</span>
             </h2>
+            <p className="text-gray-600 text-lg">
+              Test your skills with six quick games, each with a unique challenge.
+            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -253,6 +316,118 @@ export default function HomePage() {
               </a>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* The Rankings Section - Design Option 5: Stats Card Style */}
+      <section id="rankings" className="relative z-10 px-4 py-16 md:py-24 bg-gray-50">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-12 md:mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold uppercase tracking-tighter mb-4 text-gray-900">
+              The <span className="text-amber-400">Rankings</span>
+            </h2>
+            <p className="text-gray-600 text-lg">
+              Compare your scores with players from your university, country, and across the globe.
+            </p>
+          </div>
+
+          {testsLoading ? (
+            <div className="text-center py-12">
+              <p className="text-gray-500">Loading rankings...</p>
+            </div>
+          ) : tests.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-500">No rankings available.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {(() => {
+                // Define the order of trials to match the trials section
+                const trialOrder = [
+                  'reaction-time',
+                  'number-memory',
+                  'chimp',
+                  'hanoi',
+                  'pathfinding',
+                  'aim-trainer'
+                ];
+                
+                // Sort tests to match trial order
+                const sortedTests = [...tests].sort((a, b) => {
+                  const indexA = trialOrder.indexOf(a.slug);
+                  const indexB = trialOrder.indexOf(b.slug);
+                  // If slug not found in order, put it at the end
+                  if (indexA === -1 && indexB === -1) return 0;
+                  if (indexA === -1) return 1;
+                  if (indexB === -1) return -1;
+                  return indexA - indexB;
+                });
+                
+                return sortedTests.map((test) => {
+                const leaders = leaderboards[test.slug] || [];
+                const playerCount = leaders.length;
+                const userEntry = user ? leaders.find(entry => entry.is_you) : null;
+                const userRank = userEntry ? userEntry.rank : null;
+                
+                return (
+                  <Link
+                    key={test.slug}
+                    href={`/leaderboard/${test.slug}`}
+                    onClick={(e) => e.stopPropagation()}
+                    className="group block cursor-pointer"
+                  >
+                    <div className="relative overflow-hidden p-6 rounded-2xl bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 hover:border-amber-400 hover:scale-105 active:scale-[0.98] transition-all shadow-sm hover:shadow-xl h-full flex flex-col cursor-pointer">
+                      {/* Trophy Icon with Number Badge */}
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="relative">
+                          <Trophy className="w-10 h-10 text-amber-400 group-hover:scale-110 transition-transform duration-300" />
+                          {playerCount > 0 && (
+                            <div className="absolute -top-2 -right-2 w-6 h-6 bg-amber-400 rounded-full border-2 border-white flex items-center justify-center">
+                              <span className="text-xs font-bold text-white">{playerCount}</span>
+                            </div>
+                          )}
+                        </div>
+                        <h3 className="text-xl font-bold text-gray-900 uppercase group-hover:text-amber-600 transition-colors flex-1 text-right">
+                          {test.name}
+                        </h3>
+                      </div>
+                      
+                      {/* Stats Section */}
+                      <div className="flex-1 space-y-3 mb-4">
+                        {/* Player Count Stat */}
+                        <div className="p-3 bg-white rounded-lg border border-gray-200">
+                          <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">Players</div>
+                          <div className="text-2xl font-bold text-gray-900">
+                            {playerCount > 0 ? playerCount : '—'}
+                          </div>
+                        </div>
+                        
+                        {/* User Rank Stat (if logged in) */}
+                        {user && (
+                          <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                            <div className="text-xs text-amber-600 uppercase tracking-wide mb-1">Your Global Rank</div>
+                            <div className="text-2xl font-bold text-amber-700">
+                              {userRank ? `#${userRank}` : '—'}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      
+                        {/* See Rankings Button */}
+                        <div className="mt-auto pt-4 border-t border-gray-200">
+                          <div className="flex items-center justify-center gap-2 text-lg font-bold text-amber-600 group-hover:text-amber-500 transition-colors">
+                            <span>View Leaderboard</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4 group-hover:translate-x-1 transition-transform">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                            </svg>
+                          </div>
+                        </div>
+                    </div>
+                  </Link>
+                );
+              })})()}
+            </div>
+          )}
         </div>
       </section>
 

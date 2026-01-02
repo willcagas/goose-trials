@@ -32,6 +32,26 @@ export default function Navbar() {
     }
   };
 
+  const handleRankingsClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setMobileMenuOpen(false);
+    
+    if (pathname === '/') {
+      const rankingsSection = document.getElementById('rankings');
+      if (rankingsSection) {
+        rankingsSection.scrollIntoView({ behavior: 'smooth' });
+      }
+    } else {
+      router.push('/');
+      setTimeout(() => {
+        const rankingsSection = document.getElementById('rankings');
+        if (rankingsSection) {
+          rankingsSection.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 100);
+    }
+  };
+
   const navLinkStyles = "relative text-white/70 uppercase text-xs font-bold tracking-widest hover:text-amber-400 transition-colors whitespace-nowrap group/link active:scale-95 cursor-pointer";
   const underlineStyles = "absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-400 transition-all duration-300 group-hover/link:w-full";
 
@@ -63,14 +83,14 @@ export default function Navbar() {
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center gap-10">
           <button onClick={handleGamesClick} className={navLinkStyles}>
-            Games
+            Trials
             <span className={underlineStyles} />
           </button>
           
-          <Link href="/leaderboard" className={navLinkStyles}>
+          <button onClick={handleRankingsClick} className={navLinkStyles}>
             Rankings
             <span className={underlineStyles} />
-          </Link>
+          </button>
 
           {user ? (
             <>
@@ -116,7 +136,7 @@ export default function Navbar() {
       {mobileMenuOpen && (
         <div className="fixed top-16 md:top-20 left-0 w-full bg-[#0a0a0a]/95 backdrop-blur-md border-b border-white/10 z-40 py-8 px-6 flex flex-col gap-6 animate-in fade-in slide-in-from-top-4">
           <button onClick={handleGamesClick} className="text-white uppercase text-sm font-bold tracking-widest text-left">Games</button>
-          <Link href="/leaderboard" onClick={() => setMobileMenuOpen(false)} className="text-white uppercase text-sm font-bold tracking-widest">Rankings</Link>
+          <button onClick={(e) => { handleRankingsClick(e); setMobileMenuOpen(false); }} className="text-white uppercase text-sm font-bold tracking-widest text-left">Rankings</button>
           {user && <Link href="/profile" onClick={() => setMobileMenuOpen(false)} className="text-white uppercase text-sm font-bold tracking-widest">Profile</Link>}
           <div className="pt-4 border-t border-white/10">
             {user ? (
