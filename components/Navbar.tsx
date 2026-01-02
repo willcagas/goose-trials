@@ -39,6 +39,9 @@ export default function Navbar() {
     <>
       {/* Changed relative to fixed, added top-0, left-0, and w-full */}
       <nav className="fixed top-0 left-0 w-full z-50 px-4 md:px-8 bg-[#0a0a0a]/90 backdrop-blur-md border-b border-white/10 h-16 md:h-20 flex items-center justify-between">
+        {/* Amber glow effect at the top */}
+        <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-amber-400 to-transparent opacity-60" />
+        <div className="absolute top-0 left-0 w-full h-8 bg-gradient-to-b from-amber-400/20 via-amber-400/5 to-transparent" />
         
         {/* Logo Section */}
         <Link href="/" className="flex items-center gap-3 group shrink-0 cursor-pointer">
@@ -87,7 +90,7 @@ export default function Navbar() {
             </>
           ) : (
             <button
-              onClick={() => setShowLogin(true)}
+              onClick={(e) => { e.stopPropagation(); setShowLogin(true); }}
               className="px-8 py-3 bg-amber-400 text-gray-900 font-black text-xs uppercase tracking-widest rounded-full shadow-lg hover:-translate-y-0.5 active:scale-95 transition-all cursor-pointer whitespace-nowrap"
             >
               Sign In
@@ -120,9 +123,9 @@ export default function Navbar() {
           {user && <Link href="/profile" onClick={() => setMobileMenuOpen(false)} className="text-white uppercase text-sm font-bold tracking-widest">Profile</Link>}
           <div className="pt-4 border-t border-white/10">
             {user ? (
-              <button onClick={() => { signOut(); setMobileMenuOpen(false); }} className="w-full py-4 border border-white/20 text-white font-bold uppercase text-xs rounded-full">Sign Out</button>
+              <button onClick={(e) => { e.stopPropagation(); signOut(); setMobileMenuOpen(false); }} className="w-full py-4 border border-white/20 text-white font-bold uppercase text-xs rounded-full">Sign Out</button>
             ) : (
-              <button onClick={() => { setShowLogin(true); setMobileMenuOpen(false); }} className="w-full py-4 bg-amber-400 text-gray-900 font-black uppercase text-xs rounded-full shadow-lg">Sign In</button>
+              <button onClick={(e) => { e.stopPropagation(); setShowLogin(true); setMobileMenuOpen(false); }} className="w-full py-4 bg-amber-400 text-gray-900 font-black uppercase text-xs rounded-full shadow-lg">Sign In</button>
             )}
           </div>
         </div>
