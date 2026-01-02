@@ -230,7 +230,9 @@ export default function HanoiGame() {
         setSubmitError(null);
         
         try {
-          const response = await submitScore(CONFIG.GAME_SLUG, result.scoreMs);
+          // Convert milliseconds to seconds with 2 decimal places
+          const scoreInSeconds = Math.round(result.scoreMs / 10) / 100;
+          const response = await submitScore(CONFIG.GAME_SLUG, scoreInSeconds);
           
           if (response.success) {
             setSubmitStatus('success');

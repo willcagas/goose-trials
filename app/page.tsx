@@ -114,7 +114,7 @@ function ProtocolSection() {
             The <span className="text-amber-400">Protocol</span>
           </h2>
           <p className="text-gray-600 text-lg">
-          Know the rules. Optimize the run. Climb the leaderboard..
+            Know the rules. Optimize the run. Climb the leaderboard.
           </p>
         </div>
 
@@ -416,7 +416,7 @@ export default function HomePage() {
                         {/* See Rankings Button */}
                         <div className="mt-auto pt-4 border-t border-gray-200">
                           <div className="flex items-center justify-center gap-2 text-lg font-bold text-amber-600 group-hover:text-amber-500 transition-colors">
-                            <span>View Leaderboard</span>
+                            <span>View Full Leaderboard</span>
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4 group-hover:translate-x-1 transition-transform">
                               <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
                             </svg>
