@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { extractEmailDomain } from '@/lib/auth/domain-utils';
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -20,7 +21,29 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
     setSuccess(false);
 
     try {
+      // Extract and validate domain (advisory check)
+      const domain = extractEmailDomain(email);
+      if (!domain) {
+        setError('Please enter a valid email address.');
+        setLoading(false);
+        return;
+      }
+
+      // Check if domain is in allowlist (advisory check)
       const supabase = createClient();
+      const { data: isAllowed, error: domainCheckError } = await supabase
+        .rpc('is_domain_allowed', { p_email_domain: domain });
+
+      if (domainCheckError) {
+        console.error('Error checking domain:', domainCheckError);
+        // Continue anyway - server-side enforcement will catch it
+      } else if (isAllowed !== true) {
+        setError('Use your university email to sign in.');
+        setLoading(false);
+        return;
+      }
+
+      // Send magic link
       const { error } = await supabase.auth.signInWithOtp({
         email: email,
         options: {
@@ -29,13 +52,24 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
       });
 
       if (error) {
-        throw error;
+        // Check if error is related to domain validation
+        if (error.message.includes('university email') || error.message.includes('domain')) {
+          setError('Use a university email to sign in.');
+        } else {
+          setError(error.message || 'Failed to send magic link. Please try again.');
+        }
+        return;
       }
 
       setSuccess(true);
       setEmail('');
-    } catch {
-      setError('Failed to send magic link. Please try again.');
+    } catch (err: any) {
+      // Handle any unexpected errors
+      if (err?.message?.includes('university email') || err?.message?.includes('domain')) {
+        setError('Use a university email to sign in.');
+      } else {
+        setError('Failed to send magic link. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -108,7 +142,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
               </svg>
             </div>
             <p className="text-white/80">
-              Click the link in your email to sign in. You can close this modal.
+              Click the link in your email and you're good to go.
             </p>
             <p className="text-white/50 text-sm">
               Your guest scores will be transferred automatically.
@@ -128,7 +162,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
             <div>
               <input
                 type="email"
-                placeholder="Enter your email"
+                placeholder="Use your university/college email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#FFD700] transition-colors"

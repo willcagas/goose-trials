@@ -1,14 +1,38 @@
 import { createClient } from '@/lib/supabase/server';
+import { extractEmailDomain } from './domain-utils';
+
+// Re-export for server-side convenience
+export { extractEmailDomain };
 
 /**
- * Extract email domain from email address
+ * Check if an email domain is allowed (exists in university_domains table)
+ * Server-safe function that checks the allowlist
  * 
- * @param email - Full email address (e.g., "user@example.com")
- * @returns Domain part of email (e.g., "example.com") or null if invalid
+ * @param email - Full email address (e.g., "user@uwaterloo.ca")
+ * @returns true if domain is in allowlist, false otherwise
  */
-export function extractEmailDomain(email: string): string | null {
-  const domain = email.split('@')[1]?.toLowerCase();
-  return domain || null;
+export async function isUniversityDomainAllowed(email: string): Promise<boolean> {
+  try {
+    const domain = extractEmailDomain(email);
+    if (!domain) {
+      return false;
+    }
+
+    const supabase = await createClient();
+    
+    const { data, error } = await supabase
+      .rpc('is_domain_allowed', { p_email_domain: domain });
+
+    if (error) {
+      console.error('Error checking domain allowlist:', error);
+      return false;
+    }
+
+    return data === true;
+  } catch (error) {
+    console.error('Unexpected error checking domain allowlist:', error);
+    return false;
+  }
 }
 
 /**

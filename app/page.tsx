@@ -18,7 +18,7 @@ interface ProtocolCardProps {
   number: string;
   title: string;
   desc: string;
-  delay: string;
+  delay?: string;
   isVisible: boolean;
 }
 
@@ -46,7 +46,7 @@ function ProtocolCard({number, title, desc, delay, isVisible}: ProtocolCardProps
   };
 
   return (
-    <div className={`h-full ${isVisible ? `opacity-100 translate-y-0 ${delay}` : 'opacity-0 translate-y-10'} transition-all duration-700`}>
+    <div className={`h-full ${isVisible ? `opacity-100 translate-y-0 ${delay || ''}` : 'opacity-0 translate-y-10'} transition-all duration-700`}>
       <div 
         ref={cardRef}
         onMouseMove={handleMouseMove}
@@ -101,10 +101,25 @@ function ProtocolSection() {
   }, []);
 
   const steps = [
-    { number: "01", title: "Play Instantly", desc: "No sign-up required. Jump in as a guest and start playing.", delay: "delay-150" },
-    { number: "02", title: "Complete 6 Games", desc: "Finish all mini-games in under 3 minutes total.", delay: "delay-300" },
-    { number: "03", title: "See Your Rank", desc: "Check your campus leaderboard. Also see how you rank globally.", delay: "delay-450" }
+    {
+      number: "01",
+      title: "Jump In",
+      desc: "No sign-up needed. Start playing instantly.",
+      delay: "delay-150",
+    },
+    {
+      number: "02",
+      title: "Run the Trials",
+      desc: "Six fast challenges designed to test focus, speed, and execution.",
+    },    
+    {
+      number: "03",
+      title: "Own Your Rank",
+      desc: "Rankings only mean something when the run is honest.",
+      delay: "delay-450",
+    }
   ];
+  
 
   return (
     <section ref={sectionRef} className="relative z-10 px-4 py-16 md:py-20 bg-gray-50">
