@@ -1,8 +1,11 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import Link from 'next/link';
 import { submitScore } from '@/lib/db/scores';
+import GameShell, { GameShellState, GameResult as ShellGameResult } from '@/components/GameShell';
+import { getGameMetadata } from '@/lib/games/registry';
+import { useMe } from '@/app/providers/MeContext';
+import { createClient } from '@/lib/supabase/client';
 
 // ============================================================================
 // CONFIGURATION - All tunables in one place
@@ -90,6 +93,8 @@ interface GameResult {
 // COMPONENT
 // ============================================================================
 export default function HanoiGame() {
+  const { me } = useMe();
+  
   // Game state
   const [gameState, setGameState] = useState<GameState>('intro');
   const [gameMode, setGameMode] = useState<GameMode>('ranked');
@@ -103,6 +108,9 @@ export default function HanoiGame() {
   const [elapsedMs, setElapsedMs] = useState(0);
   const [selectedRod, setSelectedRod] = useState<number | null>(null);
   const [result, setResult] = useState<GameResult | null>(null);
+  
+  // Best score (lower is better for time-based scoring)
+  const [bestScore, setBestScore] = useState<number | null>(null);
   
   // Score submission state (ranked mode only)
   const [submitting, setSubmitting] = useState(false);
@@ -252,6 +260,76 @@ export default function HanoiGame() {
     }
   }, [gameState, result]);
 
+  // Load best score from localStorage and Supabase
+  useEffect(() => {
+    // Load from localStorage first
+    const stored = localStorage.getItem('hanoi_best_score');
+    let localBest: number | null = null;
+    if (stored) {
+      const parsed = parseFloat(stored);
+      if (!isNaN(parsed)) {
+        localBest = parsed;
+      }
+    }
+
+    // If user is logged in, fetch from Supabase
+    if (me?.isLoggedIn && me?.userId) {
+      const fetchBestScore = async () => {
+        try {
+          const supabase = createClient();
+          const { data, error } = await supabase
+            .from('scores')
+            .select('score_value')
+            .eq('test_slug', 'hanoi')
+            .eq('user_id', me.userId)
+            .order('score_value', { ascending: true }) // Lower is better
+            .limit(1);
+
+          if (error) throw error;
+
+          if (data && data.length > 0) {
+            // Convert seconds to milliseconds
+            const supabaseBest = data[0].score_value * 1000;
+            // Use the better (lower) score
+            if (localBest === null || supabaseBest < localBest) {
+              setBestScore(supabaseBest);
+            } else {
+              setBestScore(localBest);
+            }
+          } else if (localBest !== null) {
+            setBestScore(localBest);
+          }
+        } catch (error) {
+          console.error('Error fetching best score from Supabase:', error);
+          if (localBest !== null) {
+            setBestScore(localBest);
+          }
+        }
+      };
+
+      fetchBestScore();
+    } else if (localBest !== null) {
+      setBestScore(localBest);
+    }
+  }, [me?.isLoggedIn, me?.userId]);
+
+  // Save best score to localStorage
+  useEffect(() => {
+    if (bestScore !== null) {
+      localStorage.setItem('hanoi_best_score', bestScore.toString());
+    }
+  }, [bestScore]);
+
+  // Update best score when a new record is set (ranked mode only)
+  useEffect(() => {
+    if (result && result.mode === 'ranked' && result.completed) {
+      const currentScore = result.scoreMs;
+      if (bestScore === null || currentScore < bestScore) {
+        setBestScore(currentScore);
+      }
+    }
+  }, [result, bestScore]);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -324,7 +402,40 @@ export default function HanoiGame() {
     startGame(gameMode);
   }, [startGame, gameMode]);
 
-  // Keyboard controls
+  // Map gameState to GameShell state
+  const getShellState = (): GameShellState => {
+    if (gameState === 'intro') return 'IDLE';
+    if (gameState === 'playing') return 'PLAYING';
+    if (gameState === 'results') return 'FINISHED';
+    return 'IDLE';
+  };
+
+  // Convert internal result to ShellGameResult
+  const getShellResult = (): ShellGameResult | undefined => {
+    if (!result) return undefined;
+    return {
+      score: formatTime(result.scoreMs),
+      scoreLabel: '',
+      message: result.completed 
+        ? `${result.moves} moves • ${result.extraMoves === 0 ? 'Perfect!' : `+${result.extraMoves} extra`}`
+        : 'Did Not Finish',
+    };
+  };
+
+  const getStatusText = () => {
+    if (gameState === 'playing') {
+      return `${formatTime(elapsedMs)} • ${moves}/${getOptimalMoves(diskCount)} moves`;
+    }
+    if (gameState === 'results' && submitting) {
+      return 'Saving score...';
+    }
+    if (gameState === 'results' && submitStatus === 'success') {
+      return 'Score saved!';
+    }
+    return '';
+  };
+
+  // Keyboard controls (hanoi-specific, disable global keybinds during play)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (gameState !== 'playing') return;
@@ -340,13 +451,11 @@ export default function HanoiGame() {
         e.preventDefault();
         handleRodAction(2);
       } else if (e.key === 'Escape') {
-        // Cancel selection
-        e.preventDefault();
+        // Cancel selection (don't prevent default - let GameShell handle quit)
         setSelectedRod(null);
         triggerHaptic('light');
       } else if (e.key === 'r' || e.key === 'R') {
-        // Quick restart
-        e.preventDefault();
+        // Quick restart (don't prevent default - let GameShell handle)
         restartGame();
       }
     };
@@ -461,7 +570,7 @@ export default function HanoiGame() {
           {/* Vertical pole (behind disks) */}
           <div 
             className={`absolute bottom-3 left-1/2 -translate-x-1/2 w-2 rounded-t-full transition-colors duration-200 pointer-events-none ${
-              isSelected ? 'bg-amber-400' : 'bg-slate-400'
+              isSelected ? 'bg-amber-400' : 'bg-amber-400/40'
             }`} 
             style={{ height: `${poleHeight}px` }} 
           />
@@ -484,21 +593,21 @@ export default function HanoiGame() {
           
           {/* Base platform */}
           <div className={`absolute bottom-0 w-full h-3 rounded-sm transition-colors duration-200 pointer-events-none ${
-            isSelected ? 'bg-amber-400' : 'bg-slate-400'
+            isSelected ? 'bg-amber-400' : 'bg-amber-400/40'
           }`} />
         </div>
         
         {/* Label with keyboard hint */}
         <div className="mt-3 flex items-center gap-1.5">
           <span className={`font-bold text-sm transition-colors duration-150 ${
-            isError ? 'text-rose-500' : isSelected ? 'text-amber-600' : 'text-slate-500'
+            isError ? 'text-rose-500' : isSelected ? 'text-amber-400' : 'text-amber-400/60'
           }`}>
             {rodLabels[rodIndex]}
           </span>
           <kbd className={`hidden sm:inline-block text-xs px-1.5 py-0.5 rounded border transition-colors duration-150 ${
             isSelected 
-              ? 'bg-amber-100 border-amber-300 text-amber-600' 
-              : 'bg-white/80 border-slate-200 text-slate-500'
+              ? 'bg-amber-400/20 border-amber-400/40 text-amber-400' 
+              : 'bg-white/10 border-amber-400/20 text-amber-400/70'
           }`}>
             {keyHints[rodIndex]}
           </kbd>
@@ -514,311 +623,234 @@ export default function HanoiGame() {
     );
   };
 
-  return (
-    <div className="min-h-screen text-slate-900 relative overflow-hidden">
-      {/* Decorative background */}
-      <div className="absolute -top-16 -right-24 h-64 w-64 rounded-full bg-amber-200/30 blur-3xl" />
-      <div className="absolute -bottom-24 -left-20 h-72 w-72 rounded-full bg-violet-200/30 blur-3xl" />
-      
-      {/* Back Home Button */}
-      <Link
-        href="/"
-        className="absolute top-6 left-6 px-4 py-2 rounded-full bg-white/80 backdrop-blur border border-white/60 shadow-sm text-sm font-semibold hover:bg-white transition z-10"
-      >
-        ← Back Home
-      </Link>
-
-      <main className="relative z-10 max-w-4xl mx-auto px-6 py-16">
-        {/* ================================================================ */}
-        {/* INTRO STATE */}
-        {/* ================================================================ */}
-        {gameState === 'intro' && (
-          <div className="text-center space-y-6 fade-up">
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-600 shadow-sm border border-white/60">
-              Logic Puzzle
-            </div>
-            <h1 className="text-4xl md:text-5xl font-semibold leading-tight text-slate-900">
-              Move the tower.
-            </h1>
-            <p className="text-slate-500 text-lg max-w-xl mx-auto">
-              Transfer all disks from rod A to rod C. Only move one disk at a time, 
-              and never place a larger disk on a smaller one.
-            </p>
-            
-            {/* Rules */}
-            <div className="bg-white/80 backdrop-blur rounded-2xl p-6 max-w-md mx-auto text-left border border-white/70 shadow-sm">
-              <h3 className="font-bold text-slate-700 mb-3 text-center">Rules</h3>
-              <ul className="space-y-2 text-slate-600 text-sm">
-                <li className="flex items-start gap-2">
-                  <span className="text-amber-500">•</span>
-                  Click a rod to select the top disk
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-amber-500">•</span>
-                  Click another rod to move it there
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-amber-500">•</span>
-                  Can't place larger disks on smaller ones
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-amber-500">•</span>
-                  Goal: Move all disks to rod C
-                </li>
-              </ul>
-            </div>
-
-            {/* Scoring info */}
-            <div className="bg-white/60 backdrop-blur rounded-xl p-4 max-w-md mx-auto border border-white/50">
-              <p className="text-slate-500 text-sm">
-                <span className="text-slate-700 font-medium">Score</span> = Time + ({CONFIG.EXTRA_MOVE_PENALTY_MS}ms × extra moves)
-              </p>
-              <p className="text-slate-400 text-xs mt-1">
-                Optimal: {getOptimalMoves(CONFIG.TUTORIAL_DISKS)} moves (3 disks) • {getOptimalMoves(CONFIG.RANKED_DISKS)} moves (5 disks)
-              </p>
-            </div>
-            
-            {/* Mode buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-              <button
-                onClick={() => startGame('practice')}
-                className="px-8 py-4 bg-white/80 hover:bg-white backdrop-blur text-slate-700 font-bold text-lg rounded-xl transition border border-white/70 shadow-sm"
-              >
-                Practice ({CONFIG.TUTORIAL_DISKS} disks)
-                <span className="block text-sm font-normal text-slate-400">No leaderboard</span>
-              </button>
-              <button
-                onClick={() => startGame('ranked')}
-                className="px-8 py-4 bg-gradient-to-r from-amber-400 to-orange-400 hover:from-amber-300 hover:to-orange-300 text-slate-900 font-bold text-lg rounded-xl transition shadow-lg shadow-amber-400/25"
-              >
-                Ranked Run ({CONFIG.RANKED_DISKS} disks)
-                <span className="block text-sm font-normal text-amber-900/70">Compete on leaderboard</span>
-              </button>
-            </div>
+  // Render functions for GameShell
+  const renderReady = () => (
+    <div className="text-center space-y-6">
+      <div>
+        <h2 className="text-3xl md:text-4xl font-bold text-[#0a0a0a] mb-3">
+          Tower of Hanoi
+        </h2>
+        <p className="text-[#0a0a0a]/70 text-lg max-w-xl mx-auto">
+          Transfer all disks from rod A to rod C. Only move one disk at a time, 
+          and never place a larger disk on a smaller one.
+        </p>
+      </div>
+      <div className="flex items-center justify-center gap-3 text-sm">
+        {bestScore !== null && (
+          <div className="px-3 py-1 rounded-full bg-amber-400/15 border border-amber-400/25 text-[#0a0a0a]">
+            Best: <span className="font-bold">{(bestScore / 1000).toFixed(2)} s</span>
           </div>
         )}
-
-        {/* ================================================================ */}
-        {/* PLAYING STATE */}
-        {/* ================================================================ */}
-        {gameState === 'playing' && (
-          <div className="fade-up">
-            {/* Header with stats */}
-            <header className="text-center space-y-4 mb-8">
-              <div className="inline-flex items-center gap-2 rounded-full bg-white/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-600 shadow-sm border border-white/60">
-                {gameMode === 'ranked' ? '⚡ Ranked' : '🎯 Practice'}
-              </div>
-              <h1 className="text-3xl md:text-4xl font-semibold leading-tight text-slate-900">
-                Move all disks to rod C.
-              </h1>
-              <div className="flex flex-wrap items-center justify-center gap-3">
-                <div className="rounded-full bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 shadow-sm border border-white/70">
-                  {formatTime(elapsedMs)}
-                </div>
-                <div className={`rounded-full bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] shadow-sm border border-white/70 ${
-                  moves <= getOptimalMoves(diskCount) ? 'text-emerald-600' : 'text-slate-500'
-                }`}>
-                  {moves} / {getOptimalMoves(diskCount)} moves
-                </div>
-                <div className="rounded-full bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 shadow-sm border border-white/70">
-                  {diskCount} disks
-                </div>
-              </div>
-            </header>
-
-            {/* Game board */}
-            <div className="flex gap-2 sm:gap-4 mb-8">
-              {rods.map((rod, idx) => (
-                <RodDisplay key={idx} rodIndex={idx} rod={rod} />
-              ))}
-            </div>
-
-            {/* Instructions with keyboard hints */}
-            <div className="text-center text-slate-500 text-sm mb-6 space-y-1">
-              <p>
-                {selectedRod !== null 
-                  ? 'Click a rod to move the disk there, or click again to deselect'
-                  : 'Click a rod to select its top disk'
-                }
-              </p>
-              <p className="hidden sm:block text-xs text-slate-400">
-                <kbd className="px-1.5 py-0.5 bg-white/80 border border-white/60 rounded text-slate-500 shadow-sm">1</kbd>
-                <kbd className="px-1.5 py-0.5 bg-white/80 border border-white/60 rounded text-slate-500 shadow-sm ml-1">2</kbd>
-                <kbd className="px-1.5 py-0.5 bg-white/80 border border-white/60 rounded text-slate-500 shadow-sm ml-1">3</kbd>
-                {' '}select rods • 
-                <kbd className="px-1.5 py-0.5 bg-white/80 border border-white/60 rounded text-slate-500 shadow-sm ml-1">Esc</kbd>
-                {' '}cancel •
-                <kbd className="px-1.5 py-0.5 bg-white/80 border border-white/60 rounded text-slate-500 shadow-sm ml-1">R</kbd>
-                {' '}restart
-              </p>
-            </div>
-
-            {/* Control buttons */}
-            <div className="flex justify-center gap-4">
-              <button
-                onClick={restartGame}
-                className="px-6 py-3 bg-white/80 hover:bg-white backdrop-blur text-slate-700 font-bold rounded-xl transition border border-white/70 shadow-sm"
-              >
-                Restart
-              </button>
-              <button
-                onClick={quitGame}
-                className="px-6 py-3 bg-white/60 hover:bg-white/80 backdrop-blur text-slate-500 font-bold rounded-xl transition border border-white/50"
-              >
-                Quit
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* ================================================================ */}
-        {/* RESULTS STATE */}
-        {/* ================================================================ */}
-        {gameState === 'results' && result && (
-          <div className="text-center space-y-6 fade-up">
-            <div className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] shadow-sm border ${
-              result.completed 
-                ? 'bg-emerald-100/80 text-emerald-700 border-emerald-200' 
-                : 'bg-rose-100/80 text-rose-700 border-rose-200'
-            }`}>
-              {result.completed 
-                ? (result.mode === 'ranked' ? '🏆 Run Complete' : '✓ Practice Complete')
-                : '⏱️ Time\'s Up'
-              }
-            </div>
-            <h1 className="text-4xl md:text-5xl font-semibold leading-tight text-slate-900">
-              {result.completed ? 'Well done!' : 'Keep practicing!'}
-            </h1>
-            <p className="text-slate-500">
-              {result.disks} disks • {result.mode === 'ranked' ? 'Ranked' : 'Practice'}
-              {!result.completed && ' • Did Not Finish'}
-            </p>
-
-            {/* Results card */}
-            <div className="bg-white/80 backdrop-blur rounded-2xl p-6 sm:p-8 max-w-md mx-auto border border-white/70 shadow-sm">
-              {/* Final score */}
-              <div className="mb-6">
-                <div className="text-slate-500 text-sm uppercase tracking-wide mb-1">Final Score</div>
-                <div className="text-5xl sm:text-6xl font-mono font-black text-amber-500">
-                  {formatTime(result.scoreMs)}
-                </div>
-              </div>
-
-              {/* Stats grid */}
-              <div className="grid grid-cols-2 gap-4 text-left">
-                <div className="bg-slate-50/80 rounded-xl p-4 border border-slate-100">
-                  <div className="text-slate-400 text-xs uppercase tracking-wide">Time</div>
-                  <div className="text-xl font-mono font-bold text-slate-900">{formatTime(result.elapsedMs)}</div>
-                </div>
-                <div className="bg-slate-50/80 rounded-xl p-4 border border-slate-100">
-                  <div className="text-slate-400 text-xs uppercase tracking-wide">Moves</div>
-                  <div className="text-xl font-mono font-bold text-slate-900">{result.moves}</div>
-                </div>
-                <div className="bg-slate-50/80 rounded-xl p-4 border border-slate-100">
-                  <div className="text-slate-400 text-xs uppercase tracking-wide">Optimal</div>
-                  <div className="text-xl font-mono font-bold text-emerald-600">{result.optimalMoves}</div>
-                </div>
-                <div className="bg-slate-50/80 rounded-xl p-4 border border-slate-100">
-                  <div className="text-slate-400 text-xs uppercase tracking-wide">Extra Moves</div>
-                  <div className={`text-xl font-mono font-bold ${result.extraMoves === 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
-                    {result.extraMoves === 0 ? '0 ★' : `+${result.extraMoves}`}
-                  </div>
-                </div>
-              </div>
-
-              {/* Score breakdown */}
-              {result.completed && result.extraMoves > 0 && (
-                <div className="mt-4 pt-4 border-t border-slate-200 text-sm text-slate-500">
-                  {formatTime(result.elapsedMs)} + ({result.extraMoves} × {CONFIG.EXTRA_MOVE_PENALTY_MS}ms) = {formatTime(result.scoreMs)}
-                </div>
-              )}
-              {result.completed && result.extraMoves === 0 && (
-                <div className="mt-4 pt-4 border-t border-slate-200 text-sm text-emerald-600">
-                  ★ Perfect! Solved in optimal moves!
-                </div>
-              )}
-              {!result.completed && (
-                <div className="mt-4 pt-4 border-t border-slate-200 text-sm text-rose-500">
-                  Time ran out before completing the puzzle.
-                </div>
-              )}
-            </div>
-
-            {/* Action buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-              <button
-                onClick={() => startGame(result.mode)}
-                className={`px-8 py-4 font-bold text-lg rounded-xl transition ${
-                  result.mode === 'ranked'
-                    ? 'bg-gradient-to-r from-amber-400 to-orange-400 hover:from-amber-300 hover:to-orange-300 text-slate-900 shadow-lg shadow-amber-400/25'
-                    : 'bg-white/80 hover:bg-white backdrop-blur text-slate-700 border border-white/70 shadow-sm'
-                }`}
-              >
-                Play Again
-              </button>
-              <button
-                onClick={quitGame}
-                className="px-8 py-4 bg-white/60 hover:bg-white/80 backdrop-blur text-slate-500 font-bold text-lg rounded-xl transition border border-white/50"
-              >
-                Back to Menu
-              </button>
-            </div>
-
-            {/* Practice mode disclaimer */}
-            {result.mode === 'practice' && (
-              <p className="text-slate-400 text-sm">
-                Practice runs are not submitted to the leaderboard.
-              </p>
-            )}
-            
-            {/* Ranked mode submission status */}
-            {result.mode === 'ranked' && result.completed && (
-              <div>
-                {submitting && (
-                  <p className="text-amber-600 text-sm flex items-center justify-center gap-2">
-                    <span className="inline-block w-4 h-4 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
-                    Submitting score...
-                  </p>
-                )}
-                {!submitting && submitStatus === 'success' && (
-                  <p className="text-emerald-600 text-sm">
-                    ✓ Score submitted to leaderboard!
-                  </p>
-                )}
-                {!submitting && submitStatus === 'error' && (
-                  <p className="text-rose-500 text-sm">
-                    ✗ {submitError || 'Failed to submit score'}
-                  </p>
-                )}
-              </div>
-            )}
-            
-            {/* DNF - not submitted */}
-            {result.mode === 'ranked' && !result.completed && (
-              <p className="text-slate-400 text-sm">
-                Incomplete runs are not submitted to the leaderboard.
-              </p>
-            )}
-          </div>
-        )}
-      </main>
-
-      <style jsx>{`
-        .fade-up {
-          animation: fadeUp 0.6s ease-out both;
-        }
-        @keyframes fadeUp {
-          from {
-            opacity: 0;
-            transform: translateY(12px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
+        <div className="px-3 py-1 rounded-full bg-amber-400/15 border border-amber-400/25 text-[#0a0a0a]">
+          Disks: <span className="font-bold">{CONFIG.RANKED_DISKS}</span>
+        </div>
+      </div>
+      <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
+        <button
+          onClick={() => startGame('ranked')}
+          className="px-8 py-4 bg-amber-400 hover:bg-amber-300 text-black font-bold text-lg rounded-xl transition-colors"
+        >
+          Press Space / Tap Start
+        </button>
+        <button
+          onClick={() => startGame('practice')}
+          className="px-6 py-4 bg-white hover:bg-amber-50 text-black font-bold text-lg rounded-xl transition-colors border border-amber-400"
+        >
+          Practice ({CONFIG.TUTORIAL_DISKS} disks)
+        </button>
+      </div>
     </div>
+  );
+
+  const renderGame = () => (
+    <div className="space-y-6">
+      {/* Header with stats */}
+      <header className="text-center space-y-4">
+        <div className="inline-flex items-center gap-2 rounded-full bg-[#0a0a0a]/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#0a0a0a] border border-[#0a0a0a]/20">
+          {gameMode === 'ranked' ? '⚡ Ranked' : '🎯 Practice'}
+        </div>
+        <h1 className="text-2xl md:text-3xl font-semibold leading-tight text-[#0a0a0a]">
+          Move all disks to rod C.
+        </h1>
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <div className="rounded-full bg-[#0a0a0a]/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#0a0a0a] border border-[#0a0a0a]/20">
+            {formatTime(elapsedMs)}
+          </div>
+          <div className={`rounded-full bg-[#0a0a0a]/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] border border-[#0a0a0a]/20 ${
+            moves <= getOptimalMoves(diskCount) ? 'text-emerald-600' : 'text-[#0a0a0a]/70'
+          }`}>
+            {moves} / {getOptimalMoves(diskCount)} moves
+          </div>
+          <div className="rounded-full bg-[#0a0a0a]/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#0a0a0a] border border-[#0a0a0a]/20">
+            {diskCount} disks
+          </div>
+        </div>
+      </header>
+
+      {/* Game board */}
+      <div className="flex gap-2 sm:gap-4">
+        {rods.map((rod, idx) => (
+          <RodDisplay key={idx} rodIndex={idx} rod={rod} />
+        ))}
+      </div>
+
+      {/* Instructions */}
+      <div className="text-center text-[#0a0a0a]/70 text-sm space-y-1">
+        <p>
+          {selectedRod !== null 
+            ? 'Click a rod to move the disk there, or click again to deselect'
+            : 'Click a rod to select its top disk'
+          }
+        </p>
+        <p className="hidden sm:block text-xs text-[#0a0a0a]/50">
+          <kbd className="px-1.5 py-0.5 bg-[#0a0a0a]/10 border border-[#0a0a0a]/20 rounded text-[#0a0a0a]/70">1</kbd>
+          <kbd className="px-1.5 py-0.5 bg-[#0a0a0a]/10 border border-[#0a0a0a]/20 rounded text-[#0a0a0a]/70 ml-1">2</kbd>
+          <kbd className="px-1.5 py-0.5 bg-[#0a0a0a]/10 border border-[#0a0a0a]/20 rounded text-[#0a0a0a]/70 ml-1">3</kbd>
+          {' '}select rods
+        </p>
+      </div>
+    </div>
+  );
+
+  const renderResult = (shellResult: ShellGameResult) => {
+    if (!result) return null;
+    
+    return (
+      <div className="text-center space-y-6">
+        <div className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] border ${
+          result.completed 
+            ? 'bg-emerald-500/20 text-emerald-400 border-emerald-400/30' 
+            : 'bg-rose-500/20 text-rose-400 border-rose-400/30'
+        }`}>
+          {result.completed 
+            ? (result.mode === 'ranked' ? '🏆 Run Complete' : '✓ Practice Complete')
+            : '⏱️ Time\'s Up'
+          }
+        </div>
+        <div>
+          <h2 className="text-3xl md:text-4xl font-bold text-[#0a0a0a] mb-2">
+            {result.completed ? 'Well done!' : 'Keep practicing!'}
+          </h2>
+          <p className="text-[#0a0a0a]/60">
+            {result.disks} disks • {result.mode === 'ranked' ? 'Ranked' : 'Practice'}
+            {!result.completed && ' • Did Not Finish'}
+          </p>
+        </div>
+
+        {/* Results card */}
+        <div className="bg-[#0a0a0a]/10 backdrop-blur rounded-2xl p-6 sm:p-8 max-w-md mx-auto border border-[#0a0a0a]/20">
+          {/* Final score */}
+          <div className="mb-6">
+            <div className="text-[#0a0a0a]/60 text-sm uppercase tracking-wide mb-1">Final Score</div>
+            <div className="text-5xl sm:text-6xl font-mono font-black text-amber-400">
+              {formatTime(result.scoreMs)}
+            </div>
+          </div>
+
+          {/* Stats grid */}
+          <div className="grid grid-cols-2 gap-4 text-left">
+            <div className="bg-[#0a0a0a]/5 rounded-xl p-4 border border-[#0a0a0a]/10">
+              <div className="text-[#0a0a0a]/50 text-xs uppercase tracking-wide">Time</div>
+              <div className="text-xl font-mono font-bold text-[#0a0a0a]">{formatTime(result.elapsedMs)}</div>
+            </div>
+            <div className="bg-[#0a0a0a]/5 rounded-xl p-4 border border-[#0a0a0a]/10">
+              <div className="text-[#0a0a0a]/50 text-xs uppercase tracking-wide">Moves</div>
+              <div className="text-xl font-mono font-bold text-[#0a0a0a]">{result.moves}</div>
+            </div>
+            <div className="bg-[#0a0a0a]/5 rounded-xl p-4 border border-[#0a0a0a]/10">
+              <div className="text-[#0a0a0a]/50 text-xs uppercase tracking-wide">Optimal</div>
+              <div className="text-xl font-mono font-bold text-emerald-600">{result.optimalMoves}</div>
+            </div>
+            <div className="bg-[#0a0a0a]/5 rounded-xl p-4 border border-[#0a0a0a]/10">
+              <div className="text-[#0a0a0a]/50 text-xs uppercase tracking-wide">Extra Moves</div>
+              <div className={`text-xl font-mono font-bold ${result.extraMoves === 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                {result.extraMoves === 0 ? '0 ★' : `+${result.extraMoves}`}
+              </div>
+            </div>
+          </div>
+
+          {/* Score breakdown */}
+          {result.completed && result.extraMoves > 0 && (
+            <div className="mt-4 pt-4 border-t border-[#0a0a0a]/10 text-sm text-[#0a0a0a]/60">
+              {formatTime(result.elapsedMs)} + ({result.extraMoves} × {CONFIG.EXTRA_MOVE_PENALTY_MS}ms) = {formatTime(result.scoreMs)}
+            </div>
+          )}
+          {result.completed && result.extraMoves === 0 && (
+            <div className="mt-4 pt-4 border-t border-[#0a0a0a]/10 text-sm text-emerald-600">
+              ★ Perfect! Solved in optimal moves!
+            </div>
+          )}
+          {!result.completed && (
+            <div className="mt-4 pt-4 border-t border-[#0a0a0a]/10 text-sm text-rose-600">
+              Time ran out before completing the puzzle.
+            </div>
+          )}
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+          <button
+            onClick={() => startGame(result.mode)}
+            className={`px-8 py-4 font-bold text-lg rounded-xl transition ${
+              result.mode === 'ranked'
+                ? 'bg-gradient-to-r from-amber-400 to-orange-400 hover:from-amber-300 hover:to-orange-300 text-black shadow-lg shadow-amber-400/25'
+                : 'bg-[#0a0a0a]/10 hover:bg-[#0a0a0a]/20 text-[#0a0a0a] border border-[#0a0a0a]/20'
+            }`}
+          >
+            Play Again
+          </button>
+          <a
+            href={`/leaderboard/hanoi`}
+            className="px-8 py-4 bg-[#0a0a0a]/10 hover:bg-[#0a0a0a]/20 text-[#0a0a0a] font-semibold text-lg rounded-xl transition border border-[#0a0a0a]/20"
+          >
+            View Leaderboard
+          </a>
+        </div>
+
+        {/* Submission status */}
+        {result.mode === 'ranked' && result.completed && (
+          <div>
+            {submitting && (
+              <p className="text-amber-400 text-sm flex items-center justify-center gap-2">
+                <span className="inline-block w-4 h-4 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+                Submitting score...
+              </p>
+            )}
+            {!submitting && submitStatus === 'success' && (
+              <p className="text-emerald-600 text-sm">✓ Score submitted to leaderboard!</p>
+            )}
+            {!submitting && submitStatus === 'error' && (
+              <p className="text-rose-600 text-sm">✗ {submitError || 'Failed to submit score'}</p>
+            )}
+          </div>
+        )}
+        {result.mode === 'practice' && (
+          <p className="text-[#0a0a0a]/50 text-sm">Practice runs are not submitted to the leaderboard.</p>
+        )}
+        {result.mode === 'ranked' && !result.completed && (
+          <p className="text-[#0a0a0a]/50 text-sm">Incomplete runs are not submitted to the leaderboard.</p>
+        )}
+      </div>
+    );
+  };
+
+  const gameMetadata = getGameMetadata('hanoi');
+
+  return (
+    <GameShell
+      gameMetadata={gameMetadata}
+      gameState={getShellState()}
+      onStart={() => startGame('ranked')}
+      onRestart={restartGame}
+      onQuit={quitGame}
+      renderGame={renderGame}
+      renderReady={renderReady}
+      renderResult={renderResult}
+      result={getShellResult()}
+      statusText={getStatusText()}
+      maxWidth="2xl"
+      disableKeybinds={gameState === 'playing'} // Disable global keybinds during play (hanoi has its own)
+    />
   );
 }
 

@@ -77,7 +77,7 @@ export default function PathfindingBoard({
           isShaking ? 'board-shake' : ''
         }`}
       >
-        <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-slate-500">
+        <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-amber-400/70">
           <span>{phaseLabel}</span>
           <span>{showMaze ? 'Preview' : 'Trace Mode'}</span>
         </div>
@@ -112,18 +112,18 @@ export default function PathfindingBoard({
             />
             {showControls && (
               <div className="absolute inset-0 z-30 flex items-center justify-center">
-                <div className="rounded-2xl bg-white/90 backdrop-blur px-6 py-5 shadow-lg border border-white/70 text-center max-w-[80%]">
+                <div className="rounded-2xl bg-white/90 backdrop-blur px-6 py-5 shadow-lg border border-amber-400/30 text-center max-w-[80%]">
                   {phase === 'failed' ? (
                     <>
-                      <p className="text-sm uppercase tracking-[0.2em] text-slate-500">
+                      <p className="text-sm uppercase tracking-[0.2em] text-amber-400/80">
                         Run ended
                       </p>
                       {failReason && (
-                        <p className="mt-2 text-sm text-rose-700">
+                        <p className="mt-2 text-sm text-rose-500">
                           {failReason}
                         </p>
                       )}
-                      <p className="mt-2 text-xs text-slate-500">
+                      <p className="mt-2 text-xs text-amber-400/70">
                         {submitting && 'Saving score...'}
                         {!submitting &&
                           submitState === 'success' &&
@@ -134,7 +134,7 @@ export default function PathfindingBoard({
                       </p>
                     </>
                   ) : (
-                    <p className="text-sm uppercase tracking-[0.2em] text-slate-500">
+                    <p className="text-sm uppercase tracking-[0.2em] text-amber-400/80">
                       Ready
                     </p>
                   )}
@@ -143,7 +143,7 @@ export default function PathfindingBoard({
                     {phase === 'idle' && (
                       <button
                         onClick={onStart}
-                        className="px-6 py-2 rounded-full bg-slate-900 text-white text-sm font-semibold shadow-lg shadow-slate-900/20 hover:bg-slate-800 transition"
+                        className="px-6 py-2 rounded-full bg-amber-400 hover:bg-amber-300 text-black text-sm font-semibold shadow-lg shadow-amber-400/20 transition"
                       >
                         Start Run
                       </button>
@@ -152,13 +152,13 @@ export default function PathfindingBoard({
                       <>
                         <button
                           onClick={onStart}
-                          className="px-6 py-2 rounded-full bg-slate-900 text-white text-sm font-semibold shadow-lg shadow-slate-900/20 hover:bg-slate-800 transition"
+                          className="px-6 py-2 rounded-full bg-amber-400 hover:bg-amber-300 text-black text-sm font-semibold shadow-lg shadow-amber-400/20 transition"
                         >
                           Try Again
                         </button>
                         <button
                           onClick={onReset}
-                          className="px-6 py-2 rounded-full bg-white/80 text-slate-700 text-sm font-semibold shadow-sm border border-white/70 hover:bg-white transition"
+                          className="px-6 py-2 rounded-full bg-white/80 text-amber-400/90 text-sm font-semibold shadow-sm border border-amber-400/30 hover:bg-white transition"
                         >
                           Reset
                         </button>

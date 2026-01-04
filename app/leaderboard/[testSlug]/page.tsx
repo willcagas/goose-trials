@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter, usePathname } from 'next/navigation';
 import { useMe } from '@/app/providers/MeContext';
 import Navbar from '@/components/Navbar';
 import LoginModal from '@/components/LoginModal';
@@ -149,6 +149,41 @@ export default function LeaderboardTestPage() {
   const params = useParams();
   const testSlug = params.testSlug as string;
   const { me, loading: meLoading } = useMe();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const handleBackClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    
+    // Check if we came from a game page
+    if (typeof window !== 'undefined') {
+      const referrer = document.referrer;
+      // Check if referrer is a game page
+      if (referrer && referrer.includes('/games/')) {
+        // Extract the game path from referrer
+        const url = new URL(referrer);
+        const gamePath = url.pathname;
+        router.push(gamePath);
+        return;
+      }
+    }
+    
+    // Otherwise, go to rankings section on home page
+    if (pathname === '/') {
+      const rankingsSection = document.getElementById('rankings');
+      if (rankingsSection) {
+        rankingsSection.scrollIntoView({ behavior: 'smooth' });
+      }
+    } else {
+      router.push('/');
+      setTimeout(() => {
+        const rankingsSection = document.getElementById('rankings');
+        if (rankingsSection) {
+          rankingsSection.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 100);
+    }
+  };
 
   const [testInfo, setTestInfo] = useState<TestInfo | null>(null);
   const [universityInfo, setUniversityInfo] = useState<UniversityInfo | null>(null);
@@ -302,12 +337,12 @@ export default function LeaderboardTestPage() {
       <div className="max-w-7xl mx-auto px-4 py-8 md:py-12">
         {/* Header */}
         <div className="mb-6 md:mb-8">
-          <Link
-            href="/#rankings"
+          <button
+            onClick={handleBackClick}
             className="text-gray-600 hover:text-gray-900 mb-3 md:mb-4 inline-block text-sm md:text-base"
           >
-            ← Back Home
-          </Link>
+            ← Back
+          </button>
           <div className="flex flex-col md:flex-row items-start md:items-start justify-between gap-4">
             <div>
               <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold uppercase tracking-tighter mb-2 text-gray-900">

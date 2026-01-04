@@ -1,382 +1,359 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
 import { submitScore } from '@/lib/db/scores';
+import GameShell, { GameShellState, GameResult } from '@/components/GameShell';
+import { getGameMetadata } from '@/lib/games/registry';
+import { useMe } from '@/app/providers/MeContext';
+import { createClient } from '@/lib/supabase/client';
 
 type Phase = 'idle' | 'showing' | 'hidden' | 'failed';
 
 type Cell = {
-id: number;
-value: number | null;
+  id: number;
+  value: number | null;
 };
 
-
-//Helper functions
-
-//Returns a random integer between min and max (both included)
+// Helper functions
 function randInt(min: number, max: number) {
-return Math.floor(min + Math.random() * (max - min + 1));
+  return Math.floor(min + Math.random() * (max - min + 1));
 }
 
-//Decide grid size based on level
 function computeGridSize(level: number) {
-if (level <= 25) return 5;
-if (level <= 36) return 6;
-return 7;
+  if (level <= 25) return 5;
+  if (level <= 36) return 6;
+  return 7;
 }
 
-//Generate an array of unique random cell indices
-//maxExclusive is the number of cells possible (ex: for a 5x5, maxExclusive would be 25)
 function pickRandomUniqueIndices(count: number, maxExclusive: number) {
-const all: number[] = [];
-for (let i = 0; i < maxExclusive; i++) all.push(i);
+  const all: number[] = [];
+  for (let i = 0; i < maxExclusive; i++) all.push(i);
 
-//Fisher-Yates list shuffle
-for (let i = all.length - 1; i > 0; i--) {
-  const j = randInt(0, i);
-  const temp = all[i];
-  all[i] = all[j];
-  all[j] = temp;
+  // Fisher-Yates shuffle
+  for (let i = all.length - 1; i > 0; i--) {
+    const j = randInt(0, i);
+    const temp = all[i];
+    all[i] = all[j];
+    all[j] = temp;
+  }
+
+  return all.slice(0, count);
 }
 
-// Take the first `count`
-return all.slice(0, count);
-}
-
-// Build the cells for a level: place numbers 1..level in random positions
 function makeCells(level: number, gridSize: number): Cell[] {
-const total = gridSize * gridSize;
+  const total = gridSize * gridSize;
+  const cells: Cell[] = [];
+  for (let id = 0; id < total; id++) {
+    cells.push({ id, value: null });
+  }
 
-// Start with everything empty
-const cells: Cell[] = [];
-for (let id = 0; id < total; id++) {
-  cells.push({ id, value: null });
+  const chosenPositions = pickRandomUniqueIndices(level, total);
+  for (let i = 0; i < level; i++) {
+    const cellIndex = chosenPositions[i];
+    cells[cellIndex].value = i + 1;
+  }
+
+  return cells;
 }
 
-// Choose random cell positions where numbers will go
-const chosenPositions = pickRandomUniqueIndices(level, total);
-
-// Put 1..level into those positions
-for (let i = 0; i < level; i++) {
-  const cellIndex = chosenPositions[i];
-  cells[cellIndex].value = i + 1;
-}
-
-return cells;
-}
-
-
-// Component
 export default function ChimpGamePage() {
+  const { me } = useMe();
+  const [phase, setPhase] = useState<Phase>('idle');
+  const [level, setLevel] = useState(4);
+  const [gridSize, setGridSize] = useState(computeGridSize(4));
+  const [cells, setCells] = useState<Cell[]>(() => makeCells(4, computeGridSize(4)));
+  const [nextExpected, setNextExpected] = useState(1);
+  const [clicked, setClicked] = useState<number[]>([]);
+  const [bestLevel, setBestLevel] = useState(0);
+  const [submitting, setSubmitting] = useState(false);
+  const [result, setResult] = useState<GameResult | undefined>(undefined);
 
-// Main game state
-//starts off at idle & level 4
-const [phase, setPhase] = useState<Phase>('idle');
-const [level, setLevel] = useState(4);
+  const hideTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-//Board state
-//used arrow function for cells for lazy initialization (runs function only on mount/first time rendering rather than re-running each render)
-//because running makeCells after every render is expensive
-const [gridSize, setGridSize] = useState(computeGridSize(4));
-const [cells, setCells] = useState<Cell[]>(() => makeCells(4, computeGridSize(4)));
-
-//What number the user must click next (starts at 1)
-const [nextExpected, setNextExpected] = useState(1);
-
-//Keep track of which numbers have been clicked correctly
-const [clicked, setClicked] = useState<number[]>([]);
-
-//Best score
-const [bestLevel, setBestLevel] = useState(0);
-
-//Saving score UI
-const [submitting, setSubmitting] = useState(false);
-
-//Timer reference so we can clear it safely
-//useRef allows us to store the timer without resetting each render (persists despite re-renders) & without causing the component to re-render when it changes
-const hideTimerRef = useRef<NodeJS.Timeout | null>(null);
-
-//Best score: load/save localStorage
-useEffect(() => {
-  const stored = localStorage.getItem('chimp_best_level');
-  if (stored !== null) setBestLevel(Number(stored));
-}, []);
-
-useEffect(() => {
-  localStorage.setItem('chimp_best_level', String(bestLevel));
-}, [bestLevel]);
-
-//Cleanup timer if component unmounts
-useEffect(() => {
-  return () => {
-    if (hideTimerRef.current !== null) clearTimeout(hideTimerRef.current);
-  };
-}, []);
-
-//Timer logic
-function scheduleHideNumbers() {
-  //Clear old timer if it exists
-  if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-
-  //After 5 seconds, switch phase to "hidden"
-  hideTimerRef.current = setTimeout(() => {
-    setPhase('hidden');
-  }, 5000);
-}
-
-
-//Start helper function
-function startRun(startLevel: number) {
-  if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-
-  const gs = computeGridSize(startLevel);
-
-  setLevel(startLevel);
-  setGridSize(gs);
-  setCells(makeCells(startLevel, gs));
-
-  setNextExpected(1);
-  setClicked([]);
-
-  setPhase('showing');
-  scheduleHideNumbers();
-}
-
-//When user clears a level
-async function advanceToNextLevel() {
-  const clearedLevel = level;
-
-  // Update best if needed
-  if (clearedLevel > bestLevel) {
-    setBestLevel(clearedLevel);
-  }
-
-  //Move to next level
-  const nextLevel = clearedLevel + 1;
-  startRun(nextLevel);
-}
-
-//Handle clicking a cell
-async function handleCellClick(cell: Cell) {
-  //Only allow clicks after numbers are hidden
-  if (phase !== 'hidden') return;
-
-  //Ignore empty cells
-  if (cell.value === null) return;
-
-  const valueClicked = cell.value;
-
-  //Wrong number => fail immediately, submit final score
-  if (valueClicked !== nextExpected) {
-    setPhase('failed');
-    
-    // Submit score - the last successfully cleared level (level - 1)
-    // If player fails on level 4, their score is 3 (or 0 if they never cleared any level)
-    const finalScore = Math.max(level - 1, 0);
-    if (finalScore > 0) {
-      setSubmitting(true);
-      const result = await submitScore('chimp', finalScore);
-      setSubmitting(false);
-      
-      if (result.success) {
-        console.log('Score submitted successfully!');
-      } else {
-        console.error('Failed to submit score:', result.error);
-      }
+  // Load/save best score
+  useEffect(() => {
+    // First load from localStorage
+    const stored = localStorage.getItem('chimp_best_level');
+    let localBest = 0;
+    if (stored !== null) {
+      localBest = Number(stored);
+      setBestLevel(localBest);
     }
-    return;
+
+    // If user is logged in, fetch best score from Supabase
+    if (me?.isLoggedIn && me?.userId) {
+      const fetchBestScore = async () => {
+        try {
+          const supabase = createClient();
+          const { data, error } = await supabase
+            .from('scores')
+            .select('score_value')
+            .eq('test_slug', 'chimp')
+            .eq('user_id', me.userId)
+            .order('score_value', { ascending: false }) // Higher is better
+            .limit(1);
+
+          if (!error && data && data.length > 0) {
+            const dbBest = data[0].score_value;
+            // Use the higher of localStorage and database
+            setBestLevel(Math.max(localBest, dbBest));
+          }
+        } catch (error) {
+          console.error('Error fetching best score from Supabase:', error);
+        }
+      };
+
+      fetchBestScore();
+    }
+  }, [me?.isLoggedIn, me?.userId]);
+
+  useEffect(() => {
+    localStorage.setItem('chimp_best_level', String(bestLevel));
+  }, [bestLevel]);
+
+  useEffect(() => {
+    return () => {
+      if (hideTimerRef.current !== null) clearTimeout(hideTimerRef.current);
+    };
+  }, []);
+
+  // Map phase to GameShell state
+  const getShellState = (): GameShellState => {
+    if (phase === 'idle') return 'IDLE';
+    if (phase === 'showing' || phase === 'hidden') return 'PLAYING';
+    if (phase === 'failed') return 'FINISHED';
+    return 'IDLE';
+  };
+
+  function scheduleHideNumbers() {
+    if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+    hideTimerRef.current = setTimeout(() => {
+      setPhase('hidden');
+    }, 5000);
   }
 
-  //Correct number: add to clicked list
-  setClicked((prev) => [...prev, valueClicked]);
+  function startRun(startLevel: number) {
+    if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
 
-  //If that was the last number, level is cleared
-  if (valueClicked === level) {
-    await advanceToNextLevel();
-    return;
+    const gs = computeGridSize(startLevel);
+    setLevel(startLevel);
+    setGridSize(gs);
+    setCells(makeCells(startLevel, gs));
+    setNextExpected(1);
+    setClicked([]);
+    setResult(undefined);
+    setPhase('showing');
+    scheduleHideNumbers();
   }
 
-  //Otherwise expect the next number
-  setNextExpected((prev) => prev + 1);
-}
-
-//UI helpers
-function headerText() {
-  if (phase === 'idle') return 'Chimp Test';
-  if (phase === 'showing') return `Level ${level} — Memorize`;
-  if (phase === 'hidden') return `Level ${level} — Tap ${nextExpected}`;
-  return `Game Over — You reached level ${level}`;
-}
-
-function subText() {
-  if (phase === 'idle')
-    return 'Numbers appear, then vanish. Tap squares in ascending order. One mistake ends the run.';
-  if (phase === 'showing') return 'You have 5 seconds to memorize…';
-  if (phase === 'hidden') return 'Tap in ascending order.';
-  return 'One mistake ends the run.';
-}
-
-function backgroundClass() {
-  if (phase === 'failed') return 'bg-yellow-600';
-  if (phase === 'showing') return 'bg-black';
-  if (phase === 'hidden') return 'bg-zinc-900';
-  return 'bg-black';
-}
-
-function shouldShowNumber(value: number | null) {
-  if (value === null) return false;
-
-  // During showing: reveal all numbers
-  if (phase === 'showing') return true;
-
-  // During hidden: reveal only the ones already clicked correctly
-  if (phase === 'hidden') return clicked.includes(value);
-
-  // During failed: reveal everything
-  if (phase === 'failed') return true;
-
-  return false;
-}
-
-//Cell styling based on phase
-function cellClass(cell: Cell) {
-  const base =
-    'aspect-square rounded-xl flex items-center justify-center font-extrabold select-none transition border border-yellow-400/20 text-yellow-100';
-
-  const isNumberCell = cell.value !== null;
-  const isClicked = cell.value !== null && clicked.includes(cell.value);
-
-  if (phase === 'failed') {
-    if (!isNumberCell) return base + ' bg-yellow-950/40';
-    return base + ' bg-yellow-900/40';
+  async function advanceToNextLevel() {
+    const clearedLevel = level;
+    if (clearedLevel > bestLevel) {
+      setBestLevel(clearedLevel);
+    }
+    const nextLevel = clearedLevel + 1;
+    startRun(nextLevel);
   }
 
-  if (phase === 'showing') {
-    return base + (isNumberCell ? ' bg-yellow-900/40 cursor-default' : ' bg-yellow-950/40');
+  async function handleCellClick(cell: Cell) {
+    if (phase !== 'hidden') return;
+    if (cell.value === null) return;
+
+    const valueClicked = cell.value;
+
+    if (valueClicked !== nextExpected) {
+      setPhase('failed');
+      const finalScore = Math.max(level - 1, 0);
+      setResult({
+        score: finalScore,
+        scoreLabel: 'level',
+        personalBest: bestLevel,
+        personalBestLabel: 'level',
+      });
+
+      if (finalScore > 0) {
+        setSubmitting(true);
+        const submitResult = await submitScore('chimp', finalScore);
+        setSubmitting(false);
+        
+        if (submitResult.success) {
+          console.log('Score submitted successfully!');
+        } else {
+          console.error('Failed to submit score:', submitResult.error);
+        }
+      }
+      return;
+    }
+
+    setClicked((prev) => [...prev, valueClicked]);
+
+    if (valueClicked === level) {
+      await advanceToNextLevel();
+      return;
+    }
+
+    setNextExpected((prev) => prev + 1);
   }
 
-  if (phase === 'hidden') {
-    if (!isNumberCell) return base + ' bg-yellow-950/40 cursor-default';
-    if (isClicked) return base + ' bg-yellow-900/40 cursor-default';
-    return base + ' bg-yellow-950/25 hover:bg-yellow-950/40 cursor-pointer active:scale-[0.98]';
+  function shouldShowNumber(value: number | null) {
+    if (value === null) return false;
+    if (phase === 'showing') return true;
+    if (phase === 'hidden') return clicked.includes(value);
+    if (phase === 'failed') return true;
+    return false;
   }
 
-  //idle
-  return base + ' bg-yellow-950/25';
-}
+  function cellClass(cell: Cell) {
+    const base = 'aspect-square rounded-xl flex items-center justify-center font-extrabold select-none transition border border-amber-400/20 text-white';
+    const isNumberCell = cell.value !== null;
+    const isClicked = cell.value !== null && clicked.includes(cell.value);
 
-//Render
-return (
-  <div className={`min-h-screen ${backgroundClass()} transition-colors duration-300 text-yellow-50 relative`}>
-    {/* Back Home Button */}
-    <Link
-      href="/"
-      className="absolute top-4 left-4 px-4 py-2 bg-yellow-400/20 hover:bg-yellow-400/30 text-yellow-50 font-semibold rounded-lg transition z-10 border border-yellow-400/30"
-    >
-      ← Back Home
-    </Link>
+    if (phase === 'failed') {
+      if (!isNumberCell) return base + ' bg-amber-950/40';
+      return base + ' bg-amber-900/40';
+    }
 
-    <div className="max-w-3xl mx-auto px-4 py-10">
-      <div className="text-center mb-6">
-        <h1 className="text-4xl font-black tracking-tight text-yellow-50">{headerText()}</h1>
-        <p className="text-yellow-100/80 mt-2">{subText()}</p>
+    if (phase === 'showing') {
+      return base + (isNumberCell ? ' bg-amber-900/40 cursor-default' : ' bg-amber-950/40');
+    }
 
-        <div className="mt-4 flex items-center justify-center gap-3 text-sm">
-          <div className="px-3 py-1 rounded-full bg-yellow-400/15 border border-yellow-400/25">
-            Best (cleared): <span className="font-bold text-yellow-50">{bestLevel}</span>
-          </div>
-          <div className="px-3 py-1 rounded-full bg-yellow-400/15 border border-yellow-400/25">
-            Grid: <span className="font-bold text-yellow-50">{gridSize}×{gridSize}</span>
-          </div>
+    if (phase === 'hidden') {
+      if (!isNumberCell) return base + ' bg-amber-950/40 cursor-default';
+      if (isClicked) return base + ' bg-amber-900/40 cursor-default';
+      return base + ' bg-amber-950/25 hover:bg-amber-950/40 cursor-pointer active:scale-[0.98]';
+    }
+
+    return base + ' bg-amber-950/25';
+  }
+
+  const getStatusText = () => {
+    switch (phase) {
+      case 'showing':
+        return `Level ${level} — Memorize`;
+      case 'hidden':
+        return `Level ${level} — Tap ${nextExpected}`;
+      case 'failed':
+        return submitting ? 'Saving score...' : 'Score saved!';
+      default:
+        return '';
+    }
+  };
+
+  const renderGame = () => (
+    <div className="w-full max-w-xl mx-auto">
+      <div
+        className="grid gap-2 sm:gap-3"
+        style={{ gridTemplateColumns: `repeat(${gridSize}, minmax(0, 1fr))` }}
+      >
+        {cells.map((cell) => (
+          <button
+            key={cell.id}
+            className={cellClass(cell)}
+            onClick={() => handleCellClick(cell)}
+            disabled={
+              phase !== 'hidden' ||
+              cell.value === null ||
+              (cell.value !== null && clicked.includes(cell.value))
+            }
+          >
+            {shouldShowNumber(cell.value) ? (
+              <span className="text-2xl sm:text-3xl text-white">{cell.value}</span>
+            ) : (
+              <span className="opacity-0">0</span>
+            )}
+          </button>
+        ))}
+      </div>
+      {phase !== 'idle' && phase !== 'failed' && (
+        <div className="mt-5 text-center text-[#0a0a0a]/70 text-sm">
+          {phase === 'showing' ? 'Memorize…' : `Next: ${nextExpected}`}
+        </div>
+      )}
+    </div>
+  );
+
+  const renderReady = () => (
+    <div className="text-center space-y-6">
+      <div>
+        <h2 className="text-3xl md:text-4xl font-bold text-[#0a0a0a] mb-3">
+          Chimp Test
+        </h2>
+        <p className="text-[#0a0a0a]/70 text-lg">
+          Numbers appear, then vanish. Tap squares in ascending order. One mistake ends the run.
+        </p>
+      </div>
+      <div className="flex items-center justify-center gap-3 text-sm">
+        <div className="px-3 py-1 rounded-full bg-amber-400/15 border border-amber-400/25 text-[#0a0a0a]">
+          Best: <span className="font-bold">{bestLevel}</span>
+        </div>
+        <div className="px-3 py-1 rounded-full bg-amber-400/15 border border-amber-400/25 text-[#0a0a0a]">
+          Grid: <span className="font-bold">{gridSize}×{gridSize}</span>
         </div>
       </div>
+      <button
+        onClick={() => startRun(4)}
+        className="px-8 py-4 bg-amber-400 hover:bg-amber-300 text-black font-bold text-lg rounded-xl transition-colors"
+      >
+        Press Space / Tap Start
+      </button>
+    </div>
+  );
 
-      <div className="flex flex-col items-center gap-6">
-        {/* Start button */}
-        {phase === 'idle' && (
-          <button
-            onClick={() => startRun(4)}
-            className="px-8 py-4 bg-yellow-400 text-black font-black text-xl rounded-xl hover:bg-yellow-300 transition"
-          >
-            Start
-          </button>
-        )}
-
-        {/* Game Over screen */}
-        {phase === 'failed' && (
-          <div className="text-center">
-            <div className="text-2xl font-bold mb-2 text-yellow-50">
-              Score: <span className="text-yellow-50">{Math.max(bestLevel, level - 1)}</span>
-            </div>
-
-            {submitting && <p className="text-yellow-100/80 mb-2">Saving score...</p>}
-            {!submitting && <p className="text-green-300/80 mb-2">✓ Score saved!</p>}
-
-            <div className="flex flex-wrap items-center justify-center gap-3 mt-4">
-              <button
-                onClick={() => startRun(4)}
-                className="px-6 py-3 bg-yellow-400 text-black font-bold rounded-xl hover:bg-yellow-300 transition"
-              >
-                Restart
-              </button>
-            </div>
-
-            <p className="text-yellow-100/80 mt-4 text-sm">Tip: clicks only count after numbers disappear.</p>
-          </div>
-        )}
-
-        {/* Grid */}
-        <div className="w-full max-w-xl">
-          <div
-            className="grid gap-2 sm:gap-3"
-            style={{ gridTemplateColumns: `repeat(${gridSize}, minmax(0, 1fr))` }}
-          >
-            {cells.map((cell) => (
-              <button
-                key={cell.id}
-                className={cellClass(cell)}
-                onClick={() => handleCellClick(cell)}
-                disabled={
-                  phase !== 'hidden' ||
-                  cell.value === null ||
-                  (cell.value !== null && clicked.includes(cell.value))
-                }
-              >
-                {shouldShowNumber(cell.value) ? (
-                  <span className="text-2xl sm:text-3xl text-yellow-50">{cell.value}</span>
-                ) : (
-                  <span className="opacity-0">0</span> // keeps the size consistent
-                )}
-              </button>
-            ))}
-          </div>
-
-          {/* Bottom helper text */}
-          {phase !== 'idle' && phase !== 'failed' && (
-            <div className="mt-5 text-center text-yellow-100/80 text-sm">
-              {phase === 'showing' ? 'Memorize…' : `Next: ${nextExpected}`}
-            </div>
+  const renderResult = (result: GameResult) => (
+    <div className="text-center space-y-6">
+      <div>
+        <h2 className="text-2xl md:text-3xl font-bold text-[#0a0a0a] mb-2">Game Over</h2>
+        <div className="text-5xl md:text-6xl font-bold text-amber-400 mb-2">
+          {result.score}
+          {result.scoreLabel && (
+            <span className="text-2xl md:text-3xl text-[#0a0a0a]/60 ml-2">
+              {result.scoreLabel}
+            </span>
           )}
         </div>
-
-        {/* Rules */}
-        {phase === 'idle' && (
-          <div className="text-center text-yellow-100/80 text-sm max-w-xl">
-            Rules:
-            <ul className="mt-2 space-y-1">
-              <li>• A grid displays numbers 1…N in random positions.</li>
-              <li>• After 5 seconds, all numbers disappear.</li>
-              <li>• Tap squares in the correct ascending order.</li>
-              <li>• Numbers increase each level.</li>
-              <li>• One mistake ends the run.</li>
-              <li>• Score = highest level cleared.</li>
-            </ul>
-          </div>
+        {submitting && <p className="text-[#0a0a0a]/60 text-base">Saving score...</p>}
+        {!submitting && <p className="text-green-600 text-base">✓ Score saved!</p>}
+        {result.personalBest !== undefined && (
+          <p className="text-[#0a0a0a]/60 text-sm md:text-base mt-2">
+            Personal Best: {result.personalBest} {result.personalBestLabel}
+          </p>
         )}
       </div>
+      <div className="flex flex-wrap items-center justify-center gap-3">
+        <button
+          onClick={() => startRun(4)}
+          className="px-6 py-3 bg-amber-400 hover:bg-amber-300 text-black font-bold rounded-xl transition-colors"
+        >
+          Play Again
+        </button>
+        <a
+          href={`/leaderboard/chimp`}
+          className="px-6 py-3 bg-[#0a0a0a]/10 hover:bg-[#0a0a0a]/20 text-[#0a0a0a] font-semibold rounded-xl transition-colors border border-[#0a0a0a]/20"
+        >
+          View Leaderboard
+        </a>
+      </div>
     </div>
-  </div>
-);
-}
+  );
 
+  const gameMetadata = getGameMetadata('chimp');
+
+  return (
+    <GameShell
+      gameMetadata={gameMetadata}
+      gameState={getShellState()}
+      onStart={() => startRun(4)}
+      onRestart={() => startRun(4)}
+      onQuit={() => {
+        setPhase('idle');
+        setResult(undefined);
+      }}
+      renderGame={renderGame}
+      renderReady={renderReady}
+      renderResult={renderResult}
+      result={result}
+      statusText={getStatusText()}
+      maxWidth="2xl"
+    />
+  );
+}

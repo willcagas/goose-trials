@@ -1,12 +1,16 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
 import { submitScore } from '@/lib/db/scores';
+import GameShell, { GameShellState, GameResult } from '@/components/GameShell';
+import { getGameMetadata } from '@/lib/games/registry';
+import { useMe } from '@/app/providers/MeContext';
+import { createClient } from '@/lib/supabase/client';
 
 type Phase = 'idle' | 'showing' | 'input' | 'failed';
 
 export default function NumberMemoryGamePage() {
+  const { me } = useMe();
   // Game state
   const [phase, setPhase] = useState<Phase>('idle');
   const [currentDigits, setCurrentDigits] = useState(3);
@@ -15,18 +19,48 @@ export default function NumberMemoryGamePage() {
   const [highestRecalled, setHighestRecalled] = useState(0);
   const [bestScore, setBestScore] = useState(0);
   const [submitting, setSubmitting] = useState(false);
+  const [result, setResult] = useState<GameResult | undefined>(undefined);
 
   // Timer reference for cleanup
   const displayTimerRef = useRef<NodeJS.Timeout | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Load best score from localStorage on mount
+  // Load best score from localStorage and Supabase on mount
   useEffect(() => {
+    // First load from localStorage
     const stored = localStorage.getItem('number_memory_best');
+    let localBest = 0;
     if (stored !== null) {
-      setBestScore(Number(stored));
+      localBest = Number(stored);
+      setBestScore(localBest);
     }
-  }, []);
+
+    // If user is logged in, fetch best score from Supabase
+    if (me?.isLoggedIn && me?.userId) {
+      const fetchBestScore = async () => {
+        try {
+          const supabase = createClient();
+          const { data, error } = await supabase
+            .from('scores')
+            .select('score_value')
+            .eq('test_slug', 'number-memory')
+            .eq('user_id', me.userId)
+            .order('score_value', { ascending: false }) // Higher is better
+            .limit(1);
+
+          if (!error && data && data.length > 0) {
+            const dbBest = data[0].score_value;
+            // Use the higher of localStorage and database
+            setBestScore(Math.max(localBest, dbBest));
+          }
+        } catch (error) {
+          console.error('Error fetching best score from Supabase:', error);
+        }
+      };
+
+      fetchBestScore();
+    }
+  }, [me?.isLoggedIn, me?.userId]);
 
   // Save best score to localStorage when it changes
   useEffect(() => {
@@ -50,6 +84,14 @@ export default function NumberMemoryGamePage() {
       inputRef.current.focus();
     }
   }, [phase]);
+
+  // Map phase to GameShell state
+  const getShellState = (): GameShellState => {
+    if (phase === 'idle') return 'IDLE';
+    if (phase === 'showing' || phase === 'input') return 'PLAYING';
+    if (phase === 'failed') return 'FINISHED';
+    return 'IDLE';
+  };
 
   // Generate random N-digit number
   function generateNumber(digitCount: number): string {
@@ -78,10 +120,11 @@ export default function NumberMemoryGamePage() {
     }, displayTime);
   }
 
-  // Handle start button
+  // Handle start
   function handleStart() {
     setCurrentDigits(3);
     setHighestRecalled(0);
+    setResult(undefined);
     startLevel(3);
   }
 
@@ -122,19 +165,24 @@ export default function NumberMemoryGamePage() {
 
       // Submit score
       const finalScore = highestRecalled;
+      setResult({
+        score: finalScore,
+        scoreLabel: 'digits',
+        personalBest: bestScore,
+        personalBestLabel: 'digits',
+      });
+
       if (finalScore > 0) {
         setSubmitting(true);
-        const result = await submitScore('number-memory', finalScore);
+        const submitResult = await submitScore('number-memory', finalScore);
         setSubmitting(false);
 
-        if (result.success) {
+        if (submitResult.success) {
           console.log('Score submitted successfully!');
         } else {
-          console.error('Failed to submit score:', result.error);
+          console.error('Failed to submit score:', submitResult.error);
         }
       }
-
-      // Update best score display if needed (already done above on correct answers)
     }
   }
 
@@ -169,190 +217,161 @@ export default function NumberMemoryGamePage() {
     setHighestRecalled(0);
     setInputValue('');
     setCurrentNumber('');
+    setResult(undefined);
   }
 
-  // Background color based on phase
-  function getBackgroundColor() {
+  // Get status text
+  const getStatusText = () => {
     switch (phase) {
-      case 'idle':
-      case 'showing':
-        return 'bg-black';
-      case 'input':
-        return 'bg-zinc-900';
-      case 'failed':
-        return 'bg-yellow-600';
-      default:
-        return 'bg-black';
-    }
-  }
-
-  // Header text based on phase
-  function getHeaderText() {
-    switch (phase) {
-      case 'idle':
-        return 'Number Memory';
       case 'showing':
         return `Level ${currentDigits} — Memorize`;
       case 'input':
         return `Level ${currentDigits} — Enter Number`;
       case 'failed':
-        return `Game Over — You reached ${highestRecalled} digits`;
-      default:
-        return 'Number Memory';
-    }
-  }
-
-  // Sub text based on phase
-  function getSubText() {
-    switch (phase) {
-      case 'idle':
-        return 'Remember the number, then type it back. Each level adds one more digit.';
-      case 'showing':
-        return 'You have 2-4 seconds to memorize…';
-      case 'input':
-        return 'Type the number exactly as you saw it.';
-      case 'failed':
-        return 'One mistake ends the run.';
+        return submitting ? 'Saving score...' : 'Score saved!';
       default:
         return '';
     }
-  }
+  };
 
-  return (
-    <div className={`relative min-h-screen w-full ${getBackgroundColor()} transition-colors duration-300 text-yellow-50`}>
-      {/* Back Home Button */}
-      <Link
-        href="/"
-        className="absolute top-6 left-6 px-4 py-2 bg-yellow-400/20 hover:bg-yellow-400/30 text-yellow-50 font-semibold rounded-lg transition z-10 border border-yellow-400/30"
-      >
-        ← Back Home
-      </Link>
-
-      {/* Main content wrapper - grid for viewport centering */}
-      <div className="min-h-screen grid place-items-center px-6">
-        {/* Inner content container */}
-        <div className="max-w-2xl w-full flex flex-col items-center text-center gap-6">
-          {/* Header section */}
-          <div>
-            <h1 className="text-5xl md:text-6xl font-black tracking-tight text-yellow-50">{getHeaderText()}</h1>
-            <p className="text-xl font-semibold text-yellow-100/80 mt-2">{getSubText()}</p>
-
-            <div className="mt-4 flex items-center justify-center gap-3 text-sm">
-              <div className="px-3 py-1 rounded-full bg-yellow-400/15 border border-yellow-400/25">
-                Best: <span className="font-bold text-yellow-50">{bestScore}</span>
-              </div>
-              {phase !== 'idle' && phase !== 'failed' && (
-                <div className="px-3 py-1 rounded-full bg-yellow-400/15 border border-yellow-400/25">
-                  Digits: <span className="font-bold text-yellow-50">{currentDigits}</span>
-                </div>
-              )}
+  // Render game UI
+  const renderGame = () => {
+    if (phase === 'showing') {
+      return (
+        <div className="text-center space-y-6">
+          <div className="flex justify-center items-center">
+            <div className="text-8xl md:text-[12rem] font-mono font-black text-amber-400 select-none tabular-nums">
+              {currentNumber}
             </div>
           </div>
+          <p className="text-[#0a0a0a]/70 text-lg">Memorize…</p>
+        </div>
+      );
+    }
 
-          {/* Idle phase - Start screen */}
-          {phase === 'idle' && (
-            <>
-              <button
-                onClick={handleStart}
-                className="px-8 py-4 bg-yellow-400 text-black font-black text-xl rounded-xl hover:bg-yellow-300 transition"
-              >
-                Start
-              </button>
-
-              <div className="text-center text-yellow-100/80 text-lg max-w-lg leading-relaxed">
-                <p className="mb-3 font-semibold">Rules:</p>
-                <ul className="mt-2 space-y-2">
-                  <li>• A number appears for 2-4 seconds</li>
-                  <li>• Type the number exactly as you saw it</li>
-                  <li>• Each correct answer adds one more digit</li>
-                  <li>• One mistake ends the game</li>
-                  <li>• Score = highest number of digits you correctly recalled</li>
-                </ul>
-              </div>
-            </>
-          )}
-
-          {/* Showing phase - Display number */}
-          {phase === 'showing' && (
-            <div className="w-full">
-              <div className="text-center">
-                <div className="flex justify-center items-center mb-6">
-                  <div className="text-9xl sm:text-[12rem] font-mono font-black text-yellow-400 select-none tabular-nums">
-                    {currentNumber}
-                  </div>
-                </div>
-                <p className="text-yellow-100/80 text-sm">Memorize…</p>
+    if (phase === 'input') {
+      return (
+        <div className="text-center space-y-6 w-full">
+          <div className="mb-8">
+            <div className="flex justify-center items-center mb-4">
+              <div className="text-5xl md:text-6xl font-mono font-black text-amber-400/20 select-none tabular-nums">
+                {'•'.repeat(currentDigits)}
               </div>
             </div>
-          )}
-
-          {/* Input phase - User enters number */}
-          {phase === 'input' && (
-            <div className="w-full">
-              <div className="text-center">
-                <div className="mb-8">
-                  <div className="flex justify-center items-center mb-4">
-                    <div className="text-6xl font-mono font-black text-yellow-400/20 select-none tabular-nums">
-                      {'•'.repeat(currentDigits)}
-                    </div>
-                  </div>
-                  <p className="text-yellow-100/80 text-sm mb-6">Enter the {currentDigits}-digit number</p>
-                </div>
-                
-                <div className="space-y-4">
-                  <div className="flex justify-center items-center w-full">
-                    <input
-                      ref={inputRef}
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      value={inputValue}
-                      onChange={handleInputChange}
-                      onPaste={handlePaste}
-                      onKeyDown={handleKeyDown}
-                      maxLength={currentDigits}
-                      className="px-6 py-4 text-5xl font-mono text-center bg-yellow-950/40 border-2 border-yellow-400/30 rounded-xl text-yellow-50 placeholder-yellow-400/40 focus:outline-none focus:border-yellow-400 transition-colors tabular-nums"
-                      style={{ width: `${Math.max(currentDigits * 2.5, 10)}rem`, maxWidth: '100%' }}
-                      placeholder="Type number..."
-                    />
-                  </div>
-                  
-                  <button
-                    onClick={handleSubmit}
-                    disabled={inputValue.trim() === ''}
-                    className="px-8 py-4 bg-yellow-400 text-black font-bold text-lg rounded-xl hover:bg-yellow-300 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Submit
-                  </button>
-                </div>
-              </div>
+            <p className="text-[#0a0a0a]/70 text-base mb-6">Enter the {currentDigits}-digit number</p>
+          </div>
+          
+          <div className="space-y-4">
+            <div className="flex justify-center items-center w-full">
+              <input
+                ref={inputRef}
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={inputValue}
+                onChange={handleInputChange}
+                onPaste={handlePaste}
+                onKeyDown={handleKeyDown}
+                maxLength={currentDigits}
+                className="px-6 py-4 text-4xl md:text-5xl font-mono text-center bg-[#0a0a0a]/10 border-2 border-amber-400/30 rounded-xl text-[#0a0a0a] placeholder-[#0a0a0a]/40 focus:outline-none focus:border-amber-400 transition-colors tabular-nums"
+                style={{ width: `${Math.max(currentDigits * 2.5, 10)}rem`, maxWidth: '100%' }}
+                placeholder="Type number..."
+              />
             </div>
-          )}
+            
+            <button
+              onClick={handleSubmit}
+              disabled={inputValue.trim() === ''}
+              className="px-8 py-4 bg-amber-400 text-black font-bold text-lg rounded-xl hover:bg-amber-300 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Submit
+            </button>
+          </div>
+        </div>
+      );
+    }
 
-          {/* Failed phase - Game over */}
-          {phase === 'failed' && (
-            <div className="text-center">
-              <div className="text-2xl font-bold mb-2 text-yellow-50">
-                Score: <span className="text-yellow-50">{highestRecalled}</span>
-              </div>
+    return null;
+  };
 
-              {submitting && <p className="text-yellow-100/80 mb-2">Saving score...</p>}
-              {!submitting && highestRecalled > 0 && <p className="text-green-300/80 mb-2">✓ Score saved!</p>}
-
-              <div className="flex flex-wrap items-center justify-center gap-3 mt-4">
-                <button
-                  onClick={handleRestart}
-                  className="px-6 py-3 bg-yellow-400 text-black font-bold rounded-xl hover:bg-yellow-300 transition"
-                >
-                  Restart
-                </button>
-              </div>
-
-              <p className="text-yellow-100/80 mt-4 text-sm">Tip: type the number exactly as shown, including leading zeros.</p>
-            </div>
-          )}
+  // Custom ready view
+  const renderReady = () => (
+    <div className="text-center space-y-6">
+      <div>
+        <h2 className="text-3xl md:text-4xl font-bold text-[#0a0a0a] mb-3">
+          Number Memory
+        </h2>
+        <p className="text-[#0a0a0a]/70 text-lg">
+          Remember the number, then type it back. Each level adds one more digit.
+        </p>
+      </div>
+      <div className="flex items-center justify-center gap-3 text-sm">
+        <div className="px-3 py-1 rounded-full bg-amber-400/15 border border-amber-400/25 text-[#0a0a0a]">
+          Best: <span className="font-bold">{bestScore}</span>
         </div>
       </div>
+      <button
+        onClick={handleStart}
+        className="px-8 py-4 bg-amber-400 hover:bg-amber-300 text-black font-bold text-lg rounded-xl transition-colors"
+      >
+        Press Space / Tap Start
+      </button>
     </div>
+  );
+
+  // Custom result view
+  const renderResult = (result: GameResult) => (
+    <div className="text-center space-y-6">
+      <div>
+        <h2 className="text-2xl md:text-3xl font-bold text-[#0a0a0a] mb-2">Game Over</h2>
+        <div className="text-5xl md:text-6xl font-bold text-amber-400 mb-2">
+          {result.score}
+          {result.scoreLabel && (
+            <span className="text-2xl md:text-3xl text-[#0a0a0a]/60 ml-2">
+              {result.scoreLabel}
+            </span>
+          )}
+        </div>
+        {submitting && <p className="text-[#0a0a0a]/60 text-base">Saving score...</p>}
+        {!submitting && highestRecalled > 0 && <p className="text-green-600 text-base">✓ Score saved!</p>}
+        {result.personalBest !== undefined && (
+          <p className="text-[#0a0a0a]/60 text-sm md:text-base mt-2">
+            Personal Best: {result.personalBest} {result.personalBestLabel}
+          </p>
+        )}
+      </div>
+      <div className="flex flex-wrap items-center justify-center gap-3">
+        <button
+          onClick={handleRestart}
+          className="px-6 py-3 bg-amber-400 hover:bg-amber-300 text-black font-bold rounded-xl transition-colors"
+        >
+          Play Again
+        </button>
+        <a
+          href={`/leaderboard/number-memory`}
+          className="px-6 py-3 bg-[#0a0a0a]/10 hover:bg-[#0a0a0a]/20 text-[#0a0a0a] font-semibold rounded-xl transition-colors border border-[#0a0a0a]/20"
+        >
+          View Leaderboard
+        </a>
+      </div>
+    </div>
+  );
+
+  const gameMetadata = getGameMetadata('number-memory');
+
+  return (
+    <GameShell
+      gameMetadata={gameMetadata}
+      gameState={getShellState()}
+      onStart={handleStart}
+      onRestart={handleRestart}
+      onQuit={handleRestart}
+      renderGame={renderGame}
+      renderReady={renderReady}
+      renderResult={renderResult}
+      result={result}
+      statusText={getStatusText()}
+      maxWidth="2xl"
+    />
   );
 }

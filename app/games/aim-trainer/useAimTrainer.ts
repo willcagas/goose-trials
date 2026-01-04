@@ -3,11 +3,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { submitScore } from '@/lib/db/scores';
 import { MAX_TARGET, MIN_TARGET, ROUND_DURATION_MS } from './constants';
 import type { Phase, Target } from './types';
+import { createClient } from '@/lib/supabase/client';
 
 const clamp = (min: number, value: number, max: number) =>
   Math.min(Math.max(value, min), max);
 
-export function useAimTrainer() {
+export function useAimTrainer(me?: { isLoggedIn?: boolean; userId?: string | null } | null) {
   const [phase, setPhase] = useState<Phase>('idle');
   const [hits, setHits] = useState(0);
   const [misses, setMisses] = useState(0);
@@ -42,12 +43,45 @@ export function useAimTrainer() {
   }, [hits, misses]);
 
   useEffect(() => {
+    // First load from localStorage
     const stored = localStorage.getItem('aim_trainer_best_hits');
+    let localBest: number | null = null;
     if (stored) {
       const parsed = Number(stored);
-      if (!Number.isNaN(parsed)) setBestHits(parsed);
+      if (!Number.isNaN(parsed)) {
+        localBest = parsed;
+        setBestHits(parsed);
+      }
     }
-  }, []);
+
+    // If user is logged in, fetch best score from Supabase
+    if (me?.isLoggedIn && me?.userId) {
+      const fetchBestScore = async () => {
+        try {
+          const supabase = createClient();
+          const { data, error } = await supabase
+            .from('scores')
+            .select('score_value')
+            .eq('test_slug', 'aim-trainer')
+            .eq('user_id', me.userId)
+            .order('score_value', { ascending: false }) // Higher is better
+            .limit(1);
+
+          if (!error && data && data.length > 0) {
+            const dbBest = data[0].score_value;
+            // Use the higher of localStorage and database
+            if (localBest === null || dbBest > localBest) {
+              setBestHits(dbBest);
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching best score from Supabase:', error);
+        }
+      };
+
+      fetchBestScore();
+    }
+  }, [me?.isLoggedIn, me?.userId]);
 
   useEffect(() => {
     if (bestHits !== null) {
@@ -102,17 +136,26 @@ export function useAimTrainer() {
   }, [finishRun, phase]);
 
   useEffect(() => {
-    if (!boardRef.current) return;
     const node = boardRef.current;
+    if (!node) return;
+    
     const updateSize = () => {
       const rect = node.getBoundingClientRect();
-      setBoardSize({ width: rect.width, height: rect.height });
+      // Only update if we have valid dimensions (not off-screen or zero-sized)
+      if (rect.width > 0 && rect.height > 0 && rect.left >= 0) {
+        setBoardSize({ width: rect.width, height: rect.height });
+      }
     };
+    
+    // Initial measurement
     updateSize();
+    
+    // Set up ResizeObserver to watch for size changes
     const observer = new ResizeObserver(updateSize);
     observer.observe(node);
+    
     return () => observer.disconnect();
-  }, []);
+  }, [phase]); // Re-run when phase changes so we observe the correct board
 
   const spawnTarget = useCallback(
     (nextHits: number) => {
@@ -182,7 +225,6 @@ export function useAimTrainer() {
   };
 
   const startRun = () => {
-    if (!boardSize) return;
     setPhase('running');
     setHits(0);
     setMisses(0);

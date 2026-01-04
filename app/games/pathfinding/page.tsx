@@ -11,9 +11,12 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import Link from 'next/link';
 import { submitScore } from '@/lib/db/scores';
 import PathfindingBoard from './PathfindingBoard';
+import GameShell, { GameShellState, GameResult } from '@/components/GameShell';
+import { getGameMetadata } from '@/lib/games/registry';
+import { useMe } from '@/app/providers/MeContext';
+import { createClient } from '@/lib/supabase/client';
 import type {
   Cell,
   Direction,
@@ -129,9 +132,11 @@ const getWallSegment = (from: Position, direction: Direction): WallSegment => {
 };
 
 export default function PathfindingGame() {
+  const { me } = useMe();
   const [phase, setPhase] = useState<GamePhase>('idle');
   const [round, setRound] = useState(1);
   const [score, setScore] = useState(0);
+  const [bestScore, setBestScore] = useState(0);
   const [mazeSize, setMazeSize] = useState(BASE_SIZE);
   const [maze, setMaze] = useState<Cell[][]>(() => generateMaze(BASE_SIZE));
   const [playerPath, setPlayerPath] = useState<Position[]>([]);
@@ -150,6 +155,51 @@ export default function PathfindingGame() {
   const extraLivesRef = useRef(EXTRA_LIVES_PER_MAZE);
   const revealedWallKeysRef = useRef<Set<string>>(new Set());
   const blockedMoveKeysRef = useRef<Set<string>>(new Set());
+
+  // Load best score from localStorage and Supabase on mount
+  useEffect(() => {
+    // First load from localStorage (for guest users or fallback)
+    const stored = localStorage.getItem('pathfinding_best_score');
+    if (stored !== null && stored !== '') {
+      const parsed = Number(stored);
+      if (!isNaN(parsed)) {
+        setBestScore(parsed);
+      }
+    }
+
+    // If user is logged in, fetch best score from Supabase
+    if (me?.isLoggedIn && me?.userId) {
+      const fetchBestScore = async () => {
+        try {
+          const supabase = createClient();
+          const { data, error } = await supabase
+            .from('scores')
+            .select('score_value')
+            .eq('test_slug', 'pathfinding')
+            .eq('user_id', me.userId)
+            .order('score_value', { ascending: false }) // Higher is better for pathfinding
+            .limit(1);
+
+          if (!error && data && data.length > 0) {
+            const dbBest = data[0].score_value;
+            // Use the higher of localStorage and database
+            setBestScore((prev) => Math.max(prev, dbBest));
+          }
+        } catch (error) {
+          console.error('Error fetching best score from Supabase:', error);
+        }
+      };
+
+      fetchBestScore();
+    }
+  }, [me?.isLoggedIn, me?.userId]);
+
+  // Save best score to localStorage when it changes
+  useEffect(() => {
+    if (bestScore > 0) {
+      localStorage.setItem('pathfinding_best_score', String(bestScore));
+    }
+  }, [bestScore]);
 
   const lastPosition = playerPath[playerPath.length - 1];
   const pathSet = useMemo(() => {
@@ -245,7 +295,12 @@ export default function PathfindingGame() {
   const handleSuccess = () => {
     const nextRound = round + 1;
     setIsDrawing(false);
-    setScore((prev) => prev + 1);
+    const newScore = score + 1;
+    setScore(newScore);
+    // Update best score if needed
+    if (newScore > bestScore) {
+      setBestScore(newScore);
+    }
     setRound(nextRound);
     beginRound(nextRound);
   };
@@ -256,6 +311,10 @@ export default function PathfindingGame() {
     setFailReason(reason);
     setShowMaze(true);
     setPhase('failed');
+    // Update best score if needed
+    if (score > bestScore) {
+      setBestScore(score);
+    }
     setSubmitting(true);
     setSubmitState('idle');
     const result = await submitScore('pathfinding', score);
@@ -348,6 +407,14 @@ export default function PathfindingGame() {
     setSubmitState('idle');
   };
 
+  // Map phase to GameShell state
+  const getShellState = (): GameShellState => {
+    if (phase === 'idle') return 'IDLE';
+    if (phase === 'memorize' || phase === 'input') return 'PLAYING';
+    if (phase === 'failed') return 'FINISHED';
+    return 'IDLE';
+  };
+
   const phaseLabel =
     phase === 'memorize'
       ? 'Memorize'
@@ -359,87 +426,135 @@ export default function PathfindingGame() {
 
   const showPath = phase === 'input' || phase === 'failed';
 
-  return (
-    <div className="min-h-screen text-slate-900 relative overflow-hidden">
-      <div className="absolute -top-16 -right-24 h-64 w-64 rounded-full" />
-      <div className="absolute -bottom-24 -left-20 h-72 w-72 rounded-full" />
+  const getStatusText = () => {
+    if (phase === 'memorize' || phase === 'input') {
+      return `Round ${round} • Score: ${score} • ${mazeSize}×${mazeSize}`;
+    }
+    if (phase === 'failed') {
+      return submitting ? 'Saving score...' : (submitState === 'success' ? 'Score saved!' : '');
+    }
+    return '';
+  };
 
-      <Link
-        href="/"
-        className="absolute top-6 left-6 px-4 py-2 rounded-full bg-white/80 backdrop-blur border border-white/60 shadow-sm text-sm font-semibold hover:bg-white transition"
+  const result: GameResult | undefined = phase === 'failed' ? {
+    score: score,
+    scoreLabel: 'rounds',
+    message: failReason || 'Game over',
+  } : undefined;
+
+  // Render functions for GameShell
+  const renderReady = () => (
+    <div className="text-center space-y-6">
+      <div>
+        <h2 className="text-3xl md:text-4xl font-bold text-[#0a0a0a] mb-3">
+          Pathfinding
+        </h2>
+        <p className="text-[#0a0a0a]/70 text-lg max-w-xl mx-auto">
+          A maze appears for 1 second, then disappears. Navigate from start to end from memory.
+        </p>
+      </div>
+      <div className="flex items-center justify-center gap-3 text-sm">
+        <div className="px-3 py-1 rounded-full bg-amber-400/15 border border-amber-400/25 text-[#0a0a0a]">
+          Best: <span className="font-bold">{bestScore > 0 ? bestScore : '--'}</span>
+        </div>
+      </div>
+      <button
+        onClick={startGame}
+        className="px-8 py-4 bg-amber-400 hover:bg-amber-300 text-black font-bold text-lg rounded-xl transition-colors"
       >
-        &lt;- Back Home
-      </Link>
-
-      <main className="relative z-10 max-w-5xl mx-auto px-6 py-16 flex flex-col items-center gap-10">
-        <header className="text-center space-y-4 fade-up">
-          <div className="inline-flex items-center gap-2 rounded-full bg-white/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-600">
-            Memory Maze
-          </div>
-          <h1 className="text-4xl md:text-5xl font-semibold leading-tight text-slate-900">
-            Trace the invisible path.
-          </h1>
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            <div className="rounded-full bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 shadow-sm border border-white/70">
-              Score {score}
-            </div>
-            <div className="rounded-full bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 shadow-sm border border-white/70">
-              Round {round}
-            </div>
-            <div className="rounded-full bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 shadow-sm border border-white/70">
-              {mazeSize} x {mazeSize}
-            </div>
-          </div>
-        </header>
-
-        <PathfindingBoard
-          phaseLabel={phaseLabel}
-          phase={phase}
-          mazeSize={mazeSize}
-          maze={maze}
-          showMaze={showMaze}
-          showPath={showPath}
-          wallColor={WALL_COLOR}
-          wallSegments={wallSegments}
-          revealedWallSegments={revealedWallSegments}
-          pathSegments={pathSegments}
-          pathSet={pathSet}
-          lastPosition={lastPosition}
-          failReason={failReason}
-          submitting={submitting}
-          submitState={submitState}
-          shakeTick={shakeTick}
-          onStart={startGame}
-          onReset={resetGame}
-          onPointerDown={handlePointerDown}
-          onPointerEnter={handlePointerEnter}
-        />
-      </main>
-
-      <style jsx>{`
-        .fade-up {
-          animation: fadeUp 0.6s ease-out both;
-        }
-        .stagger > * {
-          animation: fadeUp 0.6s ease-out both;
-        }
-        .stagger > *:nth-child(2) {
-          animation-delay: 0.08s;
-        }
-        .stagger > *:nth-child(3) {
-          animation-delay: 0.16s;
-        }
-        @keyframes fadeUp {
-          from {
-            opacity: 0;
-            transform: translateY(12px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
+        Press Space / Tap Start
+      </button>
     </div>
+  );
+
+  const renderGame = () => (
+    <div className="w-full">
+      <div className="flex flex-wrap items-center justify-center gap-3 mb-6">
+        <div className="rounded-full bg-[#0a0a0a]/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#0a0a0a] border border-[#0a0a0a]/20">
+          Score {score}
+        </div>
+        <div className="rounded-full bg-[#0a0a0a]/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#0a0a0a] border border-[#0a0a0a]/20">
+          Round {round}
+        </div>
+        <div className="rounded-full bg-[#0a0a0a]/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#0a0a0a] border border-[#0a0a0a]/20">
+          {mazeSize} x {mazeSize}
+        </div>
+      </div>
+      <PathfindingBoard
+        phaseLabel={phaseLabel}
+        phase={phase}
+        mazeSize={mazeSize}
+        maze={maze}
+        showMaze={showMaze}
+        showPath={showPath}
+        wallColor={WALL_COLOR}
+        wallSegments={wallSegments}
+        revealedWallSegments={revealedWallSegments}
+        pathSegments={pathSegments}
+        pathSet={pathSet}
+        lastPosition={lastPosition}
+        failReason={failReason}
+        submitting={submitting}
+        submitState={submitState}
+        shakeTick={shakeTick}
+        onStart={startGame}
+        onReset={resetGame}
+        onPointerDown={handlePointerDown}
+        onPointerEnter={handlePointerEnter}
+      />
+    </div>
+  );
+
+  const renderResult = (result: GameResult) => (
+    <div className="text-center space-y-6">
+      <div>
+        <h2 className="text-2xl md:text-3xl font-bold text-[#0a0a0a] mb-2">Game Over</h2>
+        <div className="text-5xl md:text-6xl font-bold text-amber-400 mb-2">
+          {result.score}
+          {result.scoreLabel && (
+            <span className="text-2xl md:text-3xl text-[#0a0a0a]/60 ml-2">
+              {result.scoreLabel}
+            </span>
+          )}
+        </div>
+        {submitting && <p className="text-[#0a0a0a]/60 text-base">Saving score...</p>}
+        {!submitting && submitState === 'success' && <p className="text-green-600 text-base">✓ Score saved!</p>}
+        {result.message && (
+          <p className="text-[#0a0a0a]/70 text-base mt-2">{result.message}</p>
+        )}
+      </div>
+      <div className="flex flex-wrap items-center justify-center gap-3">
+        <button
+          onClick={startGame}
+          className="px-6 py-3 bg-amber-400 hover:bg-amber-300 text-black font-bold rounded-xl transition-colors"
+        >
+          Play Again
+        </button>
+        <a
+          href={`/leaderboard/pathfinding`}
+          className="px-6 py-3 bg-[#0a0a0a]/10 hover:bg-[#0a0a0a]/20 text-[#0a0a0a] font-semibold rounded-xl transition-colors border border-[#0a0a0a]/20"
+        >
+          View Leaderboard
+        </a>
+      </div>
+    </div>
+  );
+
+  const gameMetadata = getGameMetadata('pathfinding');
+
+  return (
+    <GameShell
+      gameMetadata={gameMetadata}
+      gameState={getShellState()}
+      onStart={startGame}
+      onRestart={startGame}
+      onQuit={resetGame}
+      renderGame={renderGame}
+      renderReady={renderReady}
+      renderResult={renderResult}
+      result={result}
+      statusText={getStatusText()}
+      maxWidth="2xl"
+    />
   );
 }

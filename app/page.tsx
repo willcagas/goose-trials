@@ -309,9 +309,9 @@ export default function HomePage() {
               { href: "/games/reaction-time", tag: "REACTION", icon: Zap, title: "Reaction Time", desc: "Test your reflexes with split-second timing challenges." },
               { href: "/games/number-memory", tag: "MEMORY", icon: Hash, title: "Number Memory", desc: "Remember and recall increasingly long number sequences." },
               { href: "/games/chimp", tag: "VISUAL", icon: Eye, title: "Chimp Test", desc: "Master pattern recognition and working memory." },
-              { href: "/games/hanoi", tag: "SPATIAL", icon: Layers, title: "Tower of Hanoi", desc: "Solve the classic puzzle with optimal moves." },
+              { href: "/games/aim-trainer", tag: "ACCURACY", icon: Target, title: "Aim Trainer", desc: "Hit targets as quick as possible to test accuracy." },
               { href: "/games/pathfinding", tag: "SPATIAL", icon: Route, title: "Pathfinding", desc: "Navigate mazes and find the shortest route." },
-              { href: "/games/aim-trainer", tag: "ACCURACY", icon: Target, title: "Aim Trainer", desc: "Hit targets as quick as possible to test accuracy." }
+              { href: "/games/hanoi", tag: "SPATIAL", icon: Layers, title: "Tower of Hanoi", desc: "Solve the classic puzzle with optimal moves." }
             ].map((trial, idx) => (
               <a key={idx} href={trial.href} onClick={(e) => e.stopPropagation()} className="cursor-pointer">
                 <div className="relative overflow-hidden group p-8 rounded-3xl bg-white border-2 border-gray-200 hover:border-amber-400 active:scale-[0.98] transition-all shadow-sm hover:shadow-md h-full flex flex-col">
@@ -363,9 +363,9 @@ export default function HomePage() {
                   'reaction-time',
                   'number-memory',
                   'chimp',
-                  'hanoi',
+                  'aim-trainer',
                   'pathfinding',
-                  'aim-trainer'
+                  'hanoi'
                 ];
                 
                 // Sort tests to match trial order

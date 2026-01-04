@@ -1,9 +1,11 @@
 'use client';
 
-import Link from 'next/link';
 import AimTrainerBoard from './AimTrainerBoard';
 import { ROUND_DURATION_MS } from './constants';
 import { useAimTrainer } from './useAimTrainer';
+import GameShell, { GameShellState, GameResult } from '@/components/GameShell';
+import { getGameMetadata } from '@/lib/games/registry';
+import { useMe } from '@/app/providers/MeContext';
 
 const formatMs = (value: number | null) => {
     if (value === null) return '--';
@@ -11,6 +13,7 @@ const formatMs = (value: number | null) => {
 };
 
 export default function AimTrainerGame() {
+    const { me } = useMe();
     const {
         phase,
         hits,
@@ -29,22 +32,38 @@ export default function AimTrainerGame() {
         handleHit,
         resetRun,
         startRun,
-    } = useAimTrainer();
+    } = useAimTrainer(me);
+
+    // Map phase to GameShell state
+    const getShellState = (): GameShellState => {
+        if (phase === 'idle') return 'IDLE';
+        if (phase === 'running') return 'PLAYING';
+        if (phase === 'complete') return 'FINISHED';
+        return 'IDLE';
+    };
+
+    const result: GameResult | undefined = phase === 'complete' ? {
+        score: hits,
+        scoreLabel: 'hits',
+        personalBest: bestHits ?? undefined,
+        personalBestLabel: 'hits',
+        message: `Accuracy: ${accuracy}% · Misses: ${misses}`,
+    } : undefined;
 
     const overlay = (
-        <div className="rounded-2xl bg-white/90 backdrop-blur px-6 py-5 shadow-lg border border-white/70 text-center max-w-[80%]">
+        <div className="rounded-2xl bg-white/90 backdrop-blur px-6 py-5 shadow-lg border border-amber-400/30 text-center max-w-[80%]">
             {phase === 'complete' ? (
                 <>
-                    <p className="text-sm uppercase tracking-[0.2em] text-slate-500">
+                    <p className="text-sm uppercase tracking-[0.2em] text-amber-400/80">
                         Run ended
                     </p>
-                    <p className="mt-2 text-3xl font-semibold text-slate-900 tabular-nums">
+                    <p className="mt-2 text-3xl font-semibold text-black tabular-nums">
                         {hits} hits
                     </p>
-                    <p className="mt-2 text-xs text-slate-500">
+                    <p className="mt-2 text-xs text-amber-400/70">
                         Accuracy {accuracy}% · Misses {misses}
                     </p>
-                    <p className="mt-2 text-xs text-slate-500">
+                    <p className="mt-2 text-xs text-amber-400/70">
                         {submitting && 'Saving score...'}
                         {!submitting && submitState === 'success' && 'Score saved.'}
                         {!submitting && submitState === 'error' && 'Score save failed.'}
@@ -52,10 +71,10 @@ export default function AimTrainerGame() {
                 </>
             ) : (
                 <>
-                    <p className="text-sm uppercase tracking-[0.2em] text-slate-500">
+                    <p className="text-sm uppercase tracking-[0.2em] text-amber-400/80">
                         Ready
                     </p>
-                    <p className="mt-2 text-xs text-slate-500">
+                    <p className="mt-2 text-xs text-amber-400/70">
                         Hit as many targets as you can before time runs out.
                     </p>
                 </>
@@ -65,8 +84,7 @@ export default function AimTrainerGame() {
                 {phase === 'idle' && (
                     <button
                         onClick={startRun}
-                        className="px-6 py-2 rounded-full bg-slate-900 text-white text-sm font-semibold shadow-lg shadow-slate-900/20 hover:bg-slate-800 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={!canStart}
+                        className="px-6 py-2 rounded-full bg-amber-400 hover:bg-amber-300 text-black text-sm font-semibold shadow-lg shadow-amber-400/20 transition disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         Start Run
                     </button>
@@ -75,13 +93,13 @@ export default function AimTrainerGame() {
                     <>
                         <button
                             onClick={startRun}
-                            className="px-6 py-2 rounded-full bg-slate-900 text-white text-sm font-semibold shadow-lg shadow-slate-900/20 hover:bg-slate-800 transition"
+                            className="px-6 py-2 rounded-full bg-amber-400 hover:bg-amber-300 text-black text-sm font-semibold shadow-lg shadow-amber-400/20 transition"
                         >
                             Try Again
                         </button>
                         <button
                             onClick={resetRun}
-                            className="px-6 py-2 rounded-full bg-white/80 text-slate-700 text-sm font-semibold shadow-sm border border-white/70 hover:bg-white transition"
+                            className="px-6 py-2 rounded-full bg-white/80 text-amber-400/90 text-sm font-semibold shadow-sm border border-amber-400/30 hover:bg-white transition"
                         >
                             Reset
                         </button>
@@ -91,92 +109,117 @@ export default function AimTrainerGame() {
         </div>
     );
 
-    return (
-        <div className="min-h-screen text-slate-900 relative overflow-hidden">
-            <Link
-                href="/"
-                className="absolute top-6 left-6 px-4 py-2 rounded-full bg-white/80 backdrop-blur border border-white/60 shadow-sm text-sm font-semibold hover:bg-white transition"
-            >
-                &lt;- Back Home
-            </Link>
+    const getStatusText = () => {
+        if (phase === 'running') {
+            return `Time: ${formatMs(timeLeftMs)} · Hits: ${hits} · Accuracy: ${accuracy}%`;
+        }
+        if (phase === 'complete') {
+            return submitting ? 'Saving score...' : (submitState === 'success' ? 'Score saved!' : '');
+        }
+        return '';
+    };
 
-            <main className="relative z-10 max-w-5xl mx-auto px-6 py-16 flex flex-col items-center gap-10">
-                <header className="text-center space-y-4 fade-up">
-                    <div className="inline-flex items-center gap-2 rounded-full bg-white/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-600">
-                        Aim Trainer
-                    </div>
-                    <h1 className="text-4xl md:text-5xl font-semibold leading-tight text-slate-900">
-                        Hit the targets fast.
-                    </h1>
-                    <p className="text-sm md:text-base text-slate-600 max-w-xl mx-auto">
-                        You have {Math.round(ROUND_DURATION_MS / 1000)} seconds to hit as
-                        many targets as possible.
-                    </p>
-                    <div className="flex flex-wrap items-center justify-center gap-3 stagger">
-                        <div className="rounded-full bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 shadow-sm border border-white/70">
-                            Time {formatMs(timeLeftMs)}
-                        </div>
-                        <div className="rounded-full bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 shadow-sm border border-white/70">
-                            Hits {hits}
-                        </div>
-                        <div className="rounded-full bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 shadow-sm border border-white/70">
-                            Accuracy {accuracy}%
-                        </div>
-                        <div className="rounded-full bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 shadow-sm border border-white/70">
-                            Best {bestHits ?? '--'}
-                        </div>
-                    </div>
-                </header>
-
-                <section className="fade-up w-full">
-                    <div className="bg-white/80 border border-white/70 shadow-xl p-6">
-                        <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-slate-500">
-                            <span>{phaseLabel}</span>
-                            <span>{Math.round(ROUND_DURATION_MS / 1000)}s Round</span>
-                        </div>
-
-                        <div className="mt-6 flex justify-center">
-                            <AimTrainerBoard
-                                phase={phase}
-                                target={target}
-                                targetFeedback={targetFeedback}
-                                boardRef={boardRef}
-                                onBoardPointerDown={handleBoardPointerDown}
-                                onHit={handleHit}
-                                overlay={overlay}
-                            />
-                        </div>
-                    </div>
-                </section>
-            </main>
-
-            <style jsx>{`
-        .fade-up {
-          animation: fadeUp 0.6s ease-out both;
-        }
-        .stagger > * {
-          animation: fadeUp 0.6s ease-out both;
-        }
-        .stagger > *:nth-child(2) {
-          animation-delay: 0.08s;
-        }
-        .stagger > *:nth-child(3) {
-          animation-delay: 0.16s;
-        }
-        .stagger > *:nth-child(4) {
-          animation-delay: 0.24s;
-        }
-        @keyframes fadeUp {
-          from {
-            opacity: 0;
-            transform: translateY(12px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
+    const renderGame = () => (
+        <div className="w-full">
+            <div className="bg-[#0a0a0a]/10 border border-[#0a0a0a]/20 shadow-xl p-6 rounded-xl">
+                <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-[#0a0a0a]/70 mb-4">
+                    <span>{phaseLabel}</span>
+                    <span>{Math.round(ROUND_DURATION_MS / 1000)}s Round</span>
+                </div>
+                <div className="flex justify-center">
+                    <AimTrainerBoard
+                        phase={phase}
+                        target={target}
+                        targetFeedback={targetFeedback}
+                        boardRef={boardRef}
+                        onBoardPointerDown={handleBoardPointerDown}
+                        onHit={handleHit}
+                        overlay={overlay}
+                    />
+                </div>
+            </div>
         </div>
+    );
+
+    const renderReady = () => (
+        <div className="text-center space-y-6">
+            <div>
+                <h2 className="text-3xl md:text-4xl font-bold text-[#0a0a0a] mb-3">
+                    Aim Trainer
+                </h2>
+                <p className="text-[#0a0a0a]/70 text-lg">
+                    You have {Math.round(ROUND_DURATION_MS / 1000)} seconds to hit as many targets as possible.
+                </p>
+            </div>
+            <div className="flex flex-wrap items-center justify-center gap-3 text-sm">
+                <div className="px-3 py-1 rounded-full bg-amber-400/15 border border-amber-400/25 text-[#0a0a0a]">
+                    Best: <span className="font-bold">{bestHits ?? '--'}</span>
+                </div>
+            </div>
+            <button
+                onClick={startRun}
+                className="px-8 py-4 bg-amber-400 hover:bg-amber-300 text-black font-bold text-lg rounded-xl transition-colors"
+            >
+                Press Space / Tap Start
+            </button>
+        </div>
+    );
+
+    const renderResult = (result: GameResult) => (
+        <div className="text-center space-y-6">
+            <div>
+                <h2 className="text-2xl md:text-3xl font-bold text-[#0a0a0a] mb-2">Run Complete</h2>
+                <div className="text-5xl md:text-6xl font-bold text-amber-400 mb-2">
+                    {result.score}
+                    {result.scoreLabel && (
+                        <span className="text-2xl md:text-3xl text-[#0a0a0a]/60 ml-2">
+                            {result.scoreLabel}
+                        </span>
+                    )}
+                </div>
+                {submitting && <p className="text-[#0a0a0a]/60 text-base">Saving score...</p>}
+                {!submitting && submitState === 'success' && <p className="text-green-600 text-base">✓ Score saved!</p>}
+                {result.message && (
+                    <p className="text-[#0a0a0a]/70 text-base mt-2">{result.message}</p>
+                )}
+                {result.personalBest !== undefined && (
+                    <p className="text-[#0a0a0a]/60 text-sm md:text-base mt-2">
+                        Personal Best: {result.personalBest} {result.personalBestLabel}
+                    </p>
+                )}
+            </div>
+            <div className="flex flex-wrap items-center justify-center gap-3">
+                <button
+                    onClick={startRun}
+                    className="px-6 py-3 bg-amber-400 hover:bg-amber-300 text-black font-bold rounded-xl transition-colors"
+                >
+                    Play Again
+                </button>
+                <a
+                    href={`/leaderboard/aim-trainer`}
+                    className="px-6 py-3 bg-[#0a0a0a]/10 hover:bg-[#0a0a0a]/20 text-[#0a0a0a] font-semibold rounded-xl transition-colors border border-[#0a0a0a]/20"
+                >
+                    View Leaderboard
+                </a>
+            </div>
+        </div>
+    );
+
+    const gameMetadata = getGameMetadata('aim-trainer');
+
+    return (
+        <GameShell
+            gameMetadata={gameMetadata}
+            gameState={getShellState()}
+            onStart={startRun}
+            onRestart={startRun}
+            onQuit={resetRun}
+            renderGame={renderGame}
+            renderReady={renderReady}
+            renderResult={renderResult}
+            result={result}
+            statusText={getStatusText()}
+      maxWidth="2xl"
+    />
     );
 }

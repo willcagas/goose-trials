@@ -25,15 +25,15 @@ export default function AimTrainerBoard({
   const showOverlay = phase !== 'running';
   const targetClass =
     targetFeedback === 'hit'
-      ? 'bg-slate-900 ring-2 ring-emerald-300/70 shadow-[0_0_30px_rgba(16,185,129,0.4)]'
+      ? 'bg-amber-400 ring-2 ring-emerald-300/70 shadow-[0_0_30px_rgba(16,185,129,0.4)]'
       : targetFeedback === 'miss'
-      ? 'bg-slate-900 ring-2 ring-rose-300/70 shadow-[0_0_12px_rgba(244,63,94,0.4)]'
-      : 'bg-slate-900 ring-2 ring-white/70 shadow-sm';
+      ? 'bg-amber-400 ring-2 ring-rose-300/70 shadow-[0_0_12px_rgba(244,63,94,0.4)]'
+      : 'bg-amber-400 ring-2 ring-amber-300/70 shadow-sm';
 
   return (
     <div
       ref={boardRef}
-      className="relative touch-none rounded-2xl bg-white/80 border border-white/70 shadow-inner overflow-hidden"
+      className="relative touch-none rounded-2xl bg-white/80 border border-amber-400/30 shadow-inner overflow-hidden"
       style={{
         width: 'min(90vw, 480px)',
         aspectRatio: '1 / 1',
