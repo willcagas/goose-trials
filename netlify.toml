@@ -2,15 +2,15 @@
   command = "npm run build"
   publish = ".next"
 
-# Proxy PostHog requests to avoid ad blockers and tracking protection
+# Proxy PostHog requests through generic-looking paths
 [[redirects]]
-  from = "/ingest/static/*"
+  from = "/api/v2/static/*"
   to = "https://us-assets.i.posthog.com/static/:splat"
   status = 200
   force = true
 
 [[redirects]]
-  from = "/ingest/*"
+  from = "/api/v2/*"
   to = "https://us.i.posthog.com/:splat"
   status = 200
   force = true
