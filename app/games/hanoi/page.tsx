@@ -752,6 +752,70 @@ export default function HanoiGame() {
       ? `${result.moves} moves • ${result.extraMoves === 0 ? 'Perfect!' : `+${result.extraMoves} extra`}`
       : 'Did Not Finish';
     
+    // Practice mode: simplified result card without score saving, sharing, leaderboard
+    if (result.mode === 'practice') {
+      return (
+        <div className="w-full max-w-md mx-auto">
+          <div className="bg-[#0a0a0a] border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-amber-400/20 to-amber-600/10 px-6 py-4 border-b border-white/10">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <img 
+                    src="/goosetrialspfp-removebg-preview.png" 
+                    alt="Goose Trials"
+                    className="w-8 h-8 object-contain"
+                    style={{ imageRendering: 'pixelated' }}
+                  />
+                  <div>
+                    <div className="text-xs text-white/50 uppercase tracking-wider">Practice Mode</div>
+                    <div className="text-lg font-bold text-white">{gameMetadata.title}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Score Section */}
+            <div className="px-6 py-8 text-center">
+              <div className="mb-4">
+                <div className="text-6xl md:text-7xl font-bold mb-1 text-amber-400">
+                  {formatTime(result.scoreMs)}
+                </div>
+                <p className="text-white/50 text-sm mt-2">Practice Complete</p>
+              </div>
+
+              {/* Stats Message */}
+              <p className="text-white/50 text-sm mb-4">{statsMessage}</p>
+
+              {/* Footer */}
+              <div className="mt-6 pt-4 border-t border-white/10">
+                <p className="text-white/40 text-xs">goosetrials.com</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="mt-4 space-y-3">
+            <div className="flex gap-3">
+              <button
+                onClick={() => startGame('practice')}
+                className="flex-1 px-4 py-3 bg-[#0a0a0a] hover:bg-[#1a1a1a] text-white font-bold rounded-xl transition-colors border border-white/20"
+              >
+                Practice Again
+              </button>
+              <button
+                onClick={() => startGame('ranked')}
+                className="flex-1 px-4 py-3 bg-amber-400 hover:bg-amber-300 text-black font-bold rounded-xl transition-colors"
+              >
+                Play Ranked
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
+    // Ranked mode: full ResultCard with all features
     return (
       <ResultCard
         gameMetadata={gameMetadata}
