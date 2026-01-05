@@ -50,6 +50,8 @@ export interface GameShellProps {
 
   // Allow games to disable global keybinds if needed
   disableKeybinds?: boolean;
+  // Whether to show the Restart button in the header (defaults to false)
+  showRestart?: boolean;
 }
 
 /**
@@ -80,6 +82,7 @@ export default function GameShell({
   className,
   gameClassName,
   disableKeybinds = false,
+  showRestart = false,
 }: GameShellProps) {
   const [showHelp, setShowHelp] = useState(false);
   const gamePanelRef = useRef<HTMLDivElement>(null);
@@ -298,13 +301,26 @@ export default function GameShell({
             </div>
 
             {/* Right: Help button */}
-            <button
-              onClick={() => setShowHelp(true)}
-              className="p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
-              aria-label="Show help"
-            >
-              <HelpCircle className="w-5 h-5 md:w-6 md:h-6" />
-            </button>
+            <div className="flex items-center gap-2">
+              {/* Restart button - only if caller opts in via showRestart prop */}
+              {showRestart && gameState !== 'IDLE' && gameState !== 'COUNTDOWN' && (
+                <button
+                  onClick={() => onRestart()}
+                  className="px-3 py-2 bg-white/10 hover:bg-white/20 text-white text-sm font-semibold rounded-lg transition-colors border border-white/10"
+                  aria-label="Restart"
+                >
+                  Restart
+                </button>
+              )}
+
+              <button
+                onClick={() => setShowHelp(true)}
+                className="p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                aria-label="Show help"
+              >
+                <HelpCircle className="w-5 h-5 md:w-6 md:h-6" />
+              </button>
+            </div>
           </div>
         </div>
       </header>
