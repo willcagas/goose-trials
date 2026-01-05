@@ -189,7 +189,8 @@ export default function ReactionTimeGame() {
 
       if (submitResult.success) {
         console.log('Score submitted successfully!');
-        // Refresh top scores after submission
+        // Refresh top scores after submission - ensure loading state is set
+        setLoadingScores(true);
         await fetchTopScores();
         // Refresh best score from Supabase
         if (me?.isLoggedIn && me?.userId) {
@@ -338,6 +339,66 @@ export default function ReactionTimeGame() {
             <p className="text-[#0a0a0a]/60 text-sm mt-2">{result.message}</p>
           )}
         </div>
+
+        {/* Leaderboard Average and Top 5 Scores */}
+        {me?.isLoggedIn && (
+          <div className="bg-amber-400/15 border border-amber-400/30 rounded-xl p-3 md:p-4 max-w-md mx-auto">
+            {loadingScores ? (
+              <div className="text-center py-4">
+                <p className="text-sm text-[#0a0a0a]/60">Loading scores...</p>
+              </div>
+            ) : (
+              <>
+                {/* Leaderboard Average */}
+                {leaderboardAverage !== null && (
+                  <div className="mb-3">
+                    <p className="text-xs font-semibold text-[#0a0a0a]/70 mb-1 uppercase tracking-wide">
+                      Your Leaderboard Score (Avg of Top 5)
+                    </p>
+                    <p className="text-2xl md:text-3xl font-bold text-amber-400">
+                      {leaderboardAverage.toFixed(0)} ms
+                    </p>
+                  </div>
+                )}
+
+                {/* Top 5 Scores */}
+                <div className="flex flex-wrap items-center justify-center gap-1.5">
+                  {topScores.map((score, index) => (
+                    <div
+                      key={index}
+                      className={`flex-1 min-w-[70px] max-w-[85px] p-1.5 rounded-lg border ${
+                        score
+                          ? 'bg-amber-400/20 border-amber-400/40'
+                          : 'bg-[#0a0a0a]/5 border-[#0a0a0a]/10 border-dashed'
+                      }`}
+                    >
+                      <div className="text-center">
+                        <div className="text-[10px] font-semibold text-[#0a0a0a]/60 mb-0.5">
+                          #{index + 1}
+                        </div>
+                        <div className={`text-xs font-bold ${score ? 'text-[#0a0a0a]' : 'text-[#0a0a0a]/40'}`}>
+                          {score ? `${score.score_value} ms` : '—'}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {!me?.isLoggedIn && (
+          <div className="bg-amber-400/10 border border-amber-400/30 rounded-xl p-4">
+            <p className="text-sm text-[#0a0a0a]/80">
+              <Link href="/" className="text-amber-400 hover:text-amber-300 font-semibold underline">
+                Sign in
+              </Link>
+              {' '}to track your top scores and appear on the leaderboard!
+            </p>
+          </div>
+        )}
+
         <div className="flex flex-wrap items-center justify-center gap-3">
           <button
             onClick={handleRestart}
@@ -347,7 +408,7 @@ export default function ReactionTimeGame() {
           </button>
           <Link
             href={`/leaderboard/reaction-time`}
-            className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-xl transition-colors border border-white/20"
+            className="px-6 py-3 bg-[#0a0a0a]/10 hover:bg-[#0a0a0a]/20 text-[#0a0a0a] font-semibold rounded-xl transition-colors border border-[#0a0a0a]/20"
           >
             View Leaderboard
           </Link>
@@ -386,111 +447,18 @@ export default function ReactionTimeGame() {
   const gameMetadata = getGameMetadata('reaction-time');
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row">
-      {/* Main Game Area with GameShell */}
-      <div className="flex-1">
-        <GameShell
-          gameMetadata={gameMetadata}
-          gameState={getShellState()}
-          onStart={startGame}
-          onRestart={handleRestart}
-          onQuit={reset}
-          renderGame={renderGame}
-          renderReady={renderReady}
-          renderResult={renderResult}
-          result={result}
-          statusText={getStatusText()}
-          maxWidth="2xl"
-        />
-      </div>
-
-      {/* Top 5 Scores Sidebar */}
-      <div className="w-full md:w-80 bg-[#0a0a0a] border-t md:border-t-0 md:border-l border-white/10 p-4 md:p-6 overflow-y-auto">
-        <h3 className="text-lg md:text-xl font-bold text-white mb-2">Your Top 5 Scores</h3>
-
-        {!me?.isLoggedIn ? (
-          <div className="bg-white/10 border border-amber-400/30 rounded-lg p-4 mb-4">
-            <p className="text-sm text-white/80">
-              <Link href="/" className="text-amber-400 hover:text-amber-300 font-semibold underline">
-                Sign in
-              </Link>
-              {' '}to track your top scores and appear on the leaderboard!
-            </p>
-          </div>
-        ) : (
-          <>
-            {/* Leaderboard Requirement Notice */}
-            {topScores.filter(s => s !== null).length < 5 && (
-              <div className="bg-amber-400/10 border border-amber-400/30 rounded-lg p-4 mb-4">
-                <p className="text-xs font-semibold text-amber-400 mb-1">
-                  Leaderboard Requirement
-                </p>
-                <p className="text-sm text-white/70">
-                  Complete 5 attempts to appear on the leaderboard.
-                  <span className="font-semibold"> ({topScores.filter(s => s !== null).length}/5)</span>
-                </p>
-              </div>
-            )}
-          </>
-        )}
-
-        {me?.isLoggedIn && loadingScores ? (
-          <p className="text-white/60 text-sm">Loading scores...</p>
-        ) : me?.isLoggedIn ? (
-          <>
-            {/* Leaderboard Average */}
-            {leaderboardAverage !== null && (
-              <div className="bg-amber-400/10 border border-amber-400/30 rounded-lg p-4 mb-4">
-                <p className="text-xs text-white/60 mb-1">Leaderboard Score (Avg)</p>
-                <p className="text-2xl font-bold text-amber-400">
-                  {leaderboardAverage.toFixed(0)} ms
-                </p>
-              </div>
-            )}
-
-            {/* Top 5 Scores List */}
-            <div className="space-y-2">
-              {topScores.map((score, index) => (
-                <div
-                  key={index}
-                  className={`p-3 rounded-lg border ${
-                    score
-                      ? 'bg-white/10 border-white/20'
-                      : 'bg-white/5 border-white/10 border-dashed'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-white/60">
-                      #{index + 1}
-                    </span>
-                    <span className={`text-lg font-bold ${score ? 'text-white' : 'text-white/40'}`}>
-                      {score ? `${score.score_value} ms` : '—'}
-                    </span>
-                  </div>
-                  {score && (
-                    <div className="text-xs text-white/40 mt-1">
-                      {new Date(score.created_at).toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        hour: 'numeric',
-                        minute: '2-digit',
-                      })}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {/* View Full Leaderboard Link */}
-            <Link
-              href="/leaderboard/reaction-time"
-              className="mt-6 block w-full px-4 py-3 bg-amber-400 hover:bg-amber-300 text-black font-semibold text-center rounded-lg transition"
-            >
-              View Full Leaderboard
-            </Link>
-          </>
-        ) : null}
-      </div>
-    </div>
+    <GameShell
+      gameMetadata={gameMetadata}
+      gameState={getShellState()}
+      onStart={startGame}
+      onRestart={handleRestart}
+      onQuit={reset}
+      renderGame={renderGame}
+      renderReady={renderReady}
+      renderResult={renderResult}
+      result={result}
+      statusText={getStatusText()}
+      maxWidth="2xl"
+    />
   );
 }

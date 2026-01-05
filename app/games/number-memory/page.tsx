@@ -20,10 +20,15 @@ export default function NumberMemoryGamePage() {
   const [bestScore, setBestScore] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<GameResult | undefined>(undefined);
+  const [memorizeProgress, setMemorizeProgress] = useState(100);
 
   // Timer reference for cleanup
   const displayTimerRef = useRef<NodeJS.Timeout | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const progressAnimationRef = useRef<number | null>(null);
+  const progressStartTimeRef = useRef<number | null>(null);
+  const displayTimeRef = useRef<number>(3000);
+  const isShowingPhaseRef = useRef(false);
 
   // Load best score from localStorage and Supabase on mount
   useEffect(() => {
@@ -75,8 +80,50 @@ export default function NumberMemoryGamePage() {
       if (displayTimerRef.current !== null) {
         clearTimeout(displayTimerRef.current);
       }
+      if (progressAnimationRef.current !== null) {
+        cancelAnimationFrame(progressAnimationRef.current);
+      }
     };
   }, []);
+
+  // Animate progress bar during showing phase
+  useEffect(() => {
+    if (phase === 'showing') {
+      setMemorizeProgress(100);
+      progressStartTimeRef.current = Date.now();
+      isShowingPhaseRef.current = true;
+      
+      const animate = () => {
+        if (progressStartTimeRef.current === null || !isShowingPhaseRef.current) return;
+        
+        const elapsed = Date.now() - progressStartTimeRef.current;
+        const elapsedProgress = Math.min((elapsed / displayTimeRef.current) * 100, 100);
+        const remainingProgress = 100 - elapsedProgress;
+        setMemorizeProgress(remainingProgress);
+        
+        if (remainingProgress > 0 && isShowingPhaseRef.current) {
+          progressAnimationRef.current = requestAnimationFrame(animate);
+        }
+      };
+      
+      progressAnimationRef.current = requestAnimationFrame(animate);
+    } else {
+      isShowingPhaseRef.current = false;
+      setMemorizeProgress(100);
+      if (progressAnimationRef.current !== null) {
+        cancelAnimationFrame(progressAnimationRef.current);
+        progressAnimationRef.current = null;
+      }
+      progressStartTimeRef.current = null;
+    }
+    
+    return () => {
+      isShowingPhaseRef.current = false;
+      if (progressAnimationRef.current !== null) {
+        cancelAnimationFrame(progressAnimationRef.current);
+      }
+    };
+  }, [phase]);
 
   // Focus input when entering input phase
   useEffect(() => {
@@ -115,6 +162,7 @@ export default function NumberMemoryGamePage() {
 
     // Random display time between 2-4 seconds
     const displayTime = 2000 + Math.random() * 2000;
+    displayTimeRef.current = displayTime;
     displayTimerRef.current = setTimeout(() => {
       setPhase('input');
     }, displayTime);
@@ -244,7 +292,14 @@ export default function NumberMemoryGamePage() {
               {currentNumber}
             </div>
           </div>
-          <p className="text-[#0a0a0a]/70 text-lg">Memorize…</p>
+          <div className="w-full max-w-md mx-auto">
+            <div className="h-2 bg-amber-950/20 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-amber-400 rounded-full transition-all duration-75 ease-linear"
+                style={{ width: `${memorizeProgress}%` }}
+              />
+            </div>
+          </div>
         </div>
       );
     }

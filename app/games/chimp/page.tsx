@@ -67,8 +67,12 @@ export default function ChimpGamePage() {
   const [bestLevel, setBestLevel] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<GameResult | undefined>(undefined);
+  const [memorizeProgress, setMemorizeProgress] = useState(0);
 
   const hideTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const progressAnimationRef = useRef<number | null>(null);
+  const progressStartTimeRef = useRef<number | null>(null);
+  const isShowingPhaseRef = useRef(false);
 
   // Load/save best score
   useEffect(() => {
@@ -114,8 +118,50 @@ export default function ChimpGamePage() {
   useEffect(() => {
     return () => {
       if (hideTimerRef.current !== null) clearTimeout(hideTimerRef.current);
+      if (progressAnimationRef.current !== null) {
+        cancelAnimationFrame(progressAnimationRef.current);
+      }
     };
   }, []);
+
+  // Animate progress bar during showing phase
+  useEffect(() => {
+    if (phase === 'showing') {
+      setMemorizeProgress(100);
+      progressStartTimeRef.current = Date.now();
+      isShowingPhaseRef.current = true;
+      
+      const animate = () => {
+        if (progressStartTimeRef.current === null || !isShowingPhaseRef.current) return;
+        
+        const elapsed = Date.now() - progressStartTimeRef.current;
+        const elapsedProgress = Math.min((elapsed / 5000) * 100, 100);
+        const remainingProgress = 100 - elapsedProgress;
+        setMemorizeProgress(remainingProgress);
+        
+        if (remainingProgress > 0 && isShowingPhaseRef.current) {
+          progressAnimationRef.current = requestAnimationFrame(animate);
+        }
+      };
+      
+      progressAnimationRef.current = requestAnimationFrame(animate);
+    } else {
+      isShowingPhaseRef.current = false;
+      setMemorizeProgress(0);
+      if (progressAnimationRef.current !== null) {
+        cancelAnimationFrame(progressAnimationRef.current);
+        progressAnimationRef.current = null;
+      }
+      progressStartTimeRef.current = null;
+    }
+    
+    return () => {
+      isShowingPhaseRef.current = false;
+      if (progressAnimationRef.current !== null) {
+        cancelAnimationFrame(progressAnimationRef.current);
+      }
+    };
+  }, [phase]);
 
   // Map phase to GameShell state
   const getShellState = (): GameShellState => {
@@ -265,8 +311,21 @@ export default function ChimpGamePage() {
         ))}
       </div>
       {phase !== 'idle' && phase !== 'failed' && (
-        <div className="mt-5 text-center text-[#0a0a0a]/70 text-sm">
-          {phase === 'showing' ? 'Memorize…' : `Next: ${nextExpected}`}
+        <div className="mt-5">
+          {phase === 'showing' ? (
+            <div className="w-full">
+              <div className="h-2 bg-amber-950/20 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-amber-400 rounded-full transition-all duration-75 ease-linear"
+                  style={{ width: `${memorizeProgress}%` }}
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="text-center text-[#0a0a0a]/70 text-sm">
+              Next: {nextExpected}
+            </div>
+          )}
         </div>
       )}
     </div>
