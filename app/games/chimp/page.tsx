@@ -67,12 +67,7 @@ export default function ChimpGamePage() {
   const [bestLevel, setBestLevel] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<GameResult | undefined>(undefined);
-  const [memorizeProgress, setMemorizeProgress] = useState(0);
-
   const hideTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const progressAnimationRef = useRef<number | null>(null);
-  const progressStartTimeRef = useRef<number | null>(null);
-  const isShowingPhaseRef = useRef(false);
 
   // Load/save best score
   useEffect(() => {
@@ -118,50 +113,9 @@ export default function ChimpGamePage() {
   useEffect(() => {
     return () => {
       if (hideTimerRef.current !== null) clearTimeout(hideTimerRef.current);
-      if (progressAnimationRef.current !== null) {
-        cancelAnimationFrame(progressAnimationRef.current);
-      }
     };
   }, []);
 
-  // Animate progress bar during showing phase
-  useEffect(() => {
-    if (phase === 'showing') {
-      setMemorizeProgress(100);
-      progressStartTimeRef.current = Date.now();
-      isShowingPhaseRef.current = true;
-      
-      const animate = () => {
-        if (progressStartTimeRef.current === null || !isShowingPhaseRef.current) return;
-        
-        const elapsed = Date.now() - progressStartTimeRef.current;
-        const elapsedProgress = Math.min((elapsed / 5000) * 100, 100);
-        const remainingProgress = 100 - elapsedProgress;
-        setMemorizeProgress(remainingProgress);
-        
-        if (remainingProgress > 0 && isShowingPhaseRef.current) {
-          progressAnimationRef.current = requestAnimationFrame(animate);
-        }
-      };
-      
-      progressAnimationRef.current = requestAnimationFrame(animate);
-    } else {
-      isShowingPhaseRef.current = false;
-      setMemorizeProgress(0);
-      if (progressAnimationRef.current !== null) {
-        cancelAnimationFrame(progressAnimationRef.current);
-        progressAnimationRef.current = null;
-      }
-      progressStartTimeRef.current = null;
-    }
-    
-    return () => {
-      isShowingPhaseRef.current = false;
-      if (progressAnimationRef.current !== null) {
-        cancelAnimationFrame(progressAnimationRef.current);
-      }
-    };
-  }, [phase]);
 
   // Map phase to GameShell state
   const getShellState = (): GameShellState => {
@@ -170,13 +124,6 @@ export default function ChimpGamePage() {
     if (phase === 'failed') return 'FINISHED';
     return 'IDLE';
   };
-
-  function scheduleHideNumbers() {
-    if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-    hideTimerRef.current = setTimeout(() => {
-      setPhase('hidden');
-    }, 5000);
-  }
 
   function startRun(startLevel: number) {
     if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
@@ -189,7 +136,6 @@ export default function ChimpGamePage() {
     setClicked([]);
     setResult(undefined);
     setPhase('showing');
-    scheduleHideNumbers();
   }
 
   async function advanceToNextLevel() {
@@ -202,8 +148,16 @@ export default function ChimpGamePage() {
   }
 
   async function handleCellClick(cell: Cell) {
-    if (phase !== 'hidden') return;
+    // Only allow clicking on numbered cells
     if (cell.value === null) return;
+
+    // If we're in showing phase, first click transitions to hidden phase AND counts as a click
+    if (phase === 'showing') {
+      setPhase('hidden');
+      // Continue to process this click below
+    } else if (phase !== 'hidden') {
+      return;
+    }
 
     const valueClicked = cell.value;
 
@@ -212,16 +166,16 @@ export default function ChimpGamePage() {
       const finalScore = Math.max(level - 1, 0);
       setResult({
         score: finalScore,
-        scoreLabel: 'levels',
+        scoreLabel: 'numbers',
         personalBest: bestLevel,
-        personalBestLabel: 'levels',
+        personalBestLabel: 'numbers',
       });
 
       if (finalScore > 0) {
         setSubmitting(true);
         const submitResult = await submitScore('chimp', finalScore);
         setSubmitting(false);
-        
+
         if (submitResult.success) {
           console.log('Score submitted successfully!');
         } else {
@@ -260,7 +214,7 @@ export default function ChimpGamePage() {
     }
 
     if (phase === 'showing') {
-      return base + (isNumberCell ? ' bg-amber-900/40 cursor-default' : ' bg-amber-950/40');
+      return base + (isNumberCell ? ' bg-amber-900/40 cursor-pointer hover:bg-amber-900/60 active:scale-[0.98]' : ' bg-amber-950/40 cursor-default');
     }
 
     if (phase === 'hidden') {
@@ -275,7 +229,7 @@ export default function ChimpGamePage() {
   const getStatusText = () => {
     switch (phase) {
       case 'showing':
-        return `Level ${level} — Memorize`;
+        return `Level ${level} — Memorize, then click 1`;
       case 'hidden':
         return `Level ${level} — Tap ${nextExpected}`;
       case 'failed':
@@ -297,9 +251,10 @@ export default function ChimpGamePage() {
             className={cellClass(cell)}
             onClick={() => handleCellClick(cell)}
             disabled={
-              phase !== 'hidden' ||
+              phase === 'idle' ||
+              phase === 'failed' ||
               cell.value === null ||
-              (cell.value !== null && clicked.includes(cell.value))
+              (phase === 'hidden' && clicked.includes(cell.value))
             }
           >
             {shouldShowNumber(cell.value) ? (
@@ -310,22 +265,11 @@ export default function ChimpGamePage() {
           </button>
         ))}
       </div>
-      {phase !== 'idle' && phase !== 'failed' && (
+      {phase === 'hidden' && (
         <div className="mt-5">
-          {phase === 'showing' ? (
-            <div className="w-full">
-              <div className="h-2 bg-amber-950/20 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-amber-400 rounded-full transition-all duration-75 ease-linear"
-                  style={{ width: `${memorizeProgress}%` }}
-                />
-              </div>
-            </div>
-          ) : (
-            <div className="text-center text-[#0a0a0a]/70 text-sm">
-              Next: {nextExpected}
-            </div>
-          )}
+          <div className="text-center text-[#0a0a0a]/70 text-sm">
+            Next: {nextExpected}
+          </div>
         </div>
       )}
     </div>
