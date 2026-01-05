@@ -180,6 +180,14 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
                 posthog.identify(result.id, {
                     email: result.email,
                 });
+                
+                // Track login event (only for actual sign-ins, not page reloads)
+                if (event === 'SIGNED_IN') {
+                    posthog.capture('user_signed_in', {
+                        method: 'magic_link',
+                    });
+                }
+                
                 await triggerOnboardingIfNeeded(result.id);
             }
             if (event === 'SIGNED_OUT') {
