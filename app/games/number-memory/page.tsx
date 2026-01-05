@@ -295,8 +295,11 @@ export default function NumberMemoryGamePage() {
           <div className="w-full max-w-md mx-auto">
             <div className="h-2 bg-amber-950/20 rounded-full overflow-hidden">
               <div
-                className="h-full bg-amber-400 rounded-full transition-all duration-75 ease-linear"
-                style={{ width: `${memorizeProgress}%` }}
+                className="h-full bg-amber-400 rounded-full"
+                style={{
+                  width: `${memorizeProgress}%`,
+                  transition: 'none'
+                }}
               />
             </div>
           </div>

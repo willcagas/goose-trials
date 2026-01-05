@@ -275,10 +275,10 @@ export default function ReactionTimeGame() {
   // Render game UI
   const renderGame = () => {
     const bgColor = getBackgroundColor();
-    
+
     return (
       <div
-        className={`min-h-[60vh] ${bgColor} transition-colors duration-300 flex items-center justify-center text-white cursor-pointer select-none rounded-xl`}
+        className={`h-[calc(100vh-8rem)] w-full ${bgColor} transition-colors duration-300 flex items-center justify-center text-white cursor-pointer select-none`}
         onClick={handleClick}
       >
         <div className="text-center px-4">
@@ -458,7 +458,7 @@ export default function ReactionTimeGame() {
       renderResult={renderResult}
       result={result}
       statusText={getStatusText()}
-      maxWidth="2xl"
+      maxWidth="full"
     />
   );
 }

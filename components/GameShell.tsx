@@ -304,11 +304,11 @@ export default function GameShell({
       <main
         ref={gamePanelRef}
         className={cn(
-          'flex-1 flex items-center justify-center px-4 md:px-6 py-8 md:py-12 min-h-[calc(100vh-8rem)] bg-[#fafafa]',
+          'flex-1 flex items-center justify-center px-0 py-0 min-h-[calc(100vh-8rem)] bg-[#fafafa]',
           gameClassName
         )}
       >
-        <div className={cn('w-full', maxWidthClasses[maxWidth])}>
+        <div className={cn('w-full h-full', maxWidthClasses[maxWidth])}>
           {renderGamePanel()}
         </div>
       </main>
