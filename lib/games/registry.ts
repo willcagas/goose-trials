@@ -125,7 +125,7 @@ export const GAMES_REGISTRY: Record<GameSlug, GameMetadata> = {
         '1/A/8: Select rod A',
         '2/S/9: Select rod B',
         '3/D/0: Select rod C',
-        'Esc: Cancel selection',
+        'Esc: Return to menu',
         'R: Restart',
         'Space: Start game'
       ],
@@ -141,9 +141,10 @@ export const GAMES_REGISTRY: Record<GameSlug, GameMetadata> = {
     title: 'Pathfinding',
     description: 'Navigate mazes and find the shortest route.',
     howToPlay: [
-      'A maze appears for 1 second, then disappears',
+      'A maze appears and stays visible until you start moving',
       'Navigate from the start (green) to the end (red)',
       'Use your mouse to drag a path or tap squares',
+      'You are allowed up to one mistake per round',
       'After each successful attempt, the maze gets bigger',
       'The test ends when you fail to navigate the maze'
     ],

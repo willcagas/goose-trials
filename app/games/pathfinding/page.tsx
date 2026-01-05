@@ -450,7 +450,7 @@ export default function PathfindingGame() {
           Pathfinding
         </h2>
         <p className="text-[#0a0a0a]/70 text-lg max-w-xl mx-auto">
-          A maze appears for 1 second, then disappears. Navigate from start to end from memory.
+          A maze appears and stays visible until you start moving. Navigate from start to end from memory. You are allowed up to one mistake per round.
         </p>
       </div>
       <div className="flex items-center justify-center gap-3 text-sm">

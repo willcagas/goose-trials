@@ -166,9 +166,9 @@ export default function ChimpGamePage() {
       const finalScore = Math.max(level - 1, 0);
       setResult({
         score: finalScore,
-        scoreLabel: 'level',
+        scoreLabel: 'levels',
         personalBest: bestLevel,
-        personalBestLabel: 'level',
+        personalBestLabel: 'levels',
       });
 
       if (finalScore > 0) {

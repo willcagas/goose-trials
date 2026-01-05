@@ -32,6 +32,7 @@ export default function ReactionTimeGame() {
 
   const startTimeRef = useRef<number>(0);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isRestartingRef = useRef<boolean>(false);
 
   // Map internal state to GameShell state
   const getShellState = (): GameShellState => {
@@ -119,6 +120,16 @@ export default function ReactionTimeGame() {
   }, []);
 
   const startGame = () => {
+    // Prevent multiple simultaneous starts
+    if (isRestartingRef.current) return;
+    isRestartingRef.current = true;
+    
+    // Clear any existing timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    
     setInternalState('waiting');
     setReactionTime(null);
     setResult(undefined);
@@ -129,6 +140,7 @@ export default function ReactionTimeGame() {
     timeoutRef.current = setTimeout(() => {
       startTimeRef.current = Date.now();
       setInternalState('ready');
+      isRestartingRef.current = false;
     }, delay);
   };
 
@@ -137,7 +149,9 @@ export default function ReactionTimeGame() {
       // Clicked too early!
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
       }
+      isRestartingRef.current = false; // Reset flag so "Try Again" button works
       setInternalState('tooEarly');
       setResult({
         score: 'Too Early!',
@@ -207,12 +221,20 @@ export default function ReactionTimeGame() {
   };
 
   const reset = () => {
+    // Clear any pending timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    isRestartingRef.current = false;
     setInternalState('idle');
     setReactionTime(null);
     setResult(undefined);
   };
 
   const handleRestart = () => {
+    // Prevent multiple simultaneous restarts
+    if (isRestartingRef.current) return;
     reset();
     startGame();
   };
@@ -279,8 +301,8 @@ export default function ReactionTimeGame() {
       return (
         <div className="text-center space-y-6">
           <div>
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-2">Too Early!</h2>
-            <p className="text-white/70 text-lg">{result.message}</p>
+            <h2 className="text-3xl md:text-4xl font-bold text-[#0a0a0a] mb-2">Too Early!</h2>
+            <p className="text-[#0a0a0a]/70 text-lg">{result.message}</p>
           </div>
           <button
             onClick={handleRestart}
@@ -295,25 +317,25 @@ export default function ReactionTimeGame() {
     return (
       <div className="text-center space-y-6">
         <div>
-          <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">Run Complete</h2>
+          <h2 className="text-2xl md:text-3xl font-bold text-[#0a0a0a] mb-2">Run Complete</h2>
           <div className="text-5xl md:text-6xl font-bold text-amber-400 mb-2">
             {reactionTime}
             {result.scoreLabel && (
-              <span className="text-2xl md:text-3xl text-white/60 ml-2">
+              <span className="text-2xl md:text-3xl text-[#0a0a0a]/60 ml-2">
                 {result.scoreLabel}
               </span>
             )}
           </div>
-          {submitting && <p className="text-white/60 text-base">Saving score...</p>}
-          {!submitting && <p className="text-green-400 text-base">✓ Score saved!</p>}
+          {submitting && <p className="text-[#0a0a0a]/60 text-base">Saving score...</p>}
+          {!submitting && <p className="text-green-600 text-base">✓ Score saved!</p>}
           {result.personalBest !== undefined && (
-            <p className="text-white/60 text-sm md:text-base mt-2">
+            <p className="text-[#0a0a0a]/60 text-sm md:text-base mt-2">
               Personal Best: {result.personalBest}
               {result.personalBestLabel && ` ${result.personalBestLabel}`}
             </p>
           )}
           {result.message && (
-            <p className="text-white/60 text-sm mt-2">{result.message}</p>
+            <p className="text-[#0a0a0a]/60 text-sm mt-2">{result.message}</p>
           )}
         </div>
         <div className="flex flex-wrap items-center justify-center gap-3">

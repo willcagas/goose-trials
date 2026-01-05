@@ -115,8 +115,10 @@ export default function GameShell({
       }
 
       // Esc: Always available (quit to IDLE or close help)
-      if (e.key === 'Escape' && !e.repeat) {
+      // Handle ESC even on key repeat to ensure it works when held
+      if (e.key === 'Escape') {
         e.preventDefault();
+        e.stopPropagation();
         if (showHelp) {
           setShowHelp(false);
         } else if (gameState === 'PLAYING' || gameState === 'PAUSED' || gameState === 'FINISHED') {
@@ -146,8 +148,9 @@ export default function GameShell({
         }
       }
 
-      // ?: Toggle help
-      if (e.key === '?' && !e.shiftKey && !e.repeat) {
+      // ?: Toggle help (works even when keybinds are disabled)
+      // Note: On most keyboards, "?" is Shift+/, so e.key will be '?' when Shift is held
+      if (e.key === '?' && !e.repeat) {
         e.preventDefault();
         setShowHelp(!showHelp);
       }

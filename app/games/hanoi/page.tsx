@@ -162,6 +162,13 @@ export default function HanoiGame() {
 
   // Start the game
   const startGame = useCallback((mode: GameMode) => {
+    // Clear any existing timers first
+    if (timerRef.current) clearInterval(timerRef.current);
+    if (maxTimeRef.current) clearTimeout(maxTimeRef.current);
+    
+    // Reset restart flag when game actually starts
+    isRestartingRef.current = false;
+    
     const disks = mode === 'practice' ? CONFIG.TUTORIAL_DISKS : CONFIG.RANKED_DISKS;
     setGameMode(mode);
     setDiskCount(disks);
@@ -195,6 +202,9 @@ export default function HanoiGame() {
       clearTimeout(maxTimeRef.current);
       maxTimeRef.current = null;
     }
+    
+    // Reset restart flag when game ends
+    isRestartingRef.current = false;
     
     // Use refs for values that might be stale in timeout callbacks
     const currentMoves = movesRef.current;
@@ -391,14 +401,22 @@ export default function HanoiGame() {
   const quitGame = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
     if (maxTimeRef.current) clearTimeout(maxTimeRef.current);
+    isRestartingRef.current = false; // Reset flag when quitting
     setGameState('intro');
     setResult(null);
   }, []);
 
   // Restart current mode
+  const isRestartingRef = useRef(false);
   const restartGame = useCallback(() => {
+    // Prevent multiple simultaneous restarts (debounce rapid clicks)
+    if (isRestartingRef.current) return;
+    isRestartingRef.current = true;
+    
     if (timerRef.current) clearInterval(timerRef.current);
     if (maxTimeRef.current) clearTimeout(maxTimeRef.current);
+    
+    // startGame will reset the flag when it actually starts
     startGame(gameMode);
   }, [startGame, gameMode]);
 
@@ -451,9 +469,8 @@ export default function HanoiGame() {
         e.preventDefault();
         handleRodAction(2);
       } else if (e.key === 'Escape') {
-        // Cancel selection (don't prevent default - let GameShell handle quit)
-        setSelectedRod(null);
-        triggerHaptic('light');
+        // Don't handle ESC here - let GameShell handle quit
+        // ESC cancel selection feature disabled per user request
       } else if (e.key === 'r' || e.key === 'R') {
         // Quick restart (don't prevent default - let GameShell handle)
         restartGame();

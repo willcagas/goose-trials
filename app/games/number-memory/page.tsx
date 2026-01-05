@@ -204,7 +204,7 @@ export default function NumberMemoryGamePage() {
 
   // Handle Enter key
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && phase === 'input') {
       e.preventDefault();
       handleSubmit();
     }
