@@ -17,6 +17,7 @@ import GameShell, { GameShellState, GameResult } from '@/components/GameShell';
 import { getGameMetadata } from '@/lib/games/registry';
 import { useMe } from '@/app/providers/MeContext';
 import { createClient } from '@/lib/supabase/client';
+import ResultCard from '@/components/ResultCard';
 import type {
   Cell,
   Direction,
@@ -151,6 +152,8 @@ export default function PathfindingGame() {
   const [submitState, setSubmitState] = useState<'idle' | 'success' | 'error'>(
     'idle'
   );
+  const [scoreTimestamp, setScoreTimestamp] = useState<Date | undefined>(undefined);
+  const [isNewHighScore, setIsNewHighScore] = useState(false);
   const pathRef = useRef<Position[]>([]);
   const extraLivesRef = useRef(EXTRA_LIVES_PER_MAZE);
   const revealedWallKeysRef = useRef<Set<string>>(new Set());
@@ -158,7 +161,13 @@ export default function PathfindingGame() {
 
   // Load best score from localStorage and Supabase on mount
   useEffect(() => {
-    // First load from localStorage (for guest users or fallback)
+    // Only show best scores for logged-in users
+    if (!me?.isLoggedIn || !me?.userId) {
+      setBestScore(0);
+      return;
+    }
+
+    // Load from localStorage as initial value
     const stored = localStorage.getItem('pathfinding_best_score');
     if (stored !== null && stored !== '') {
       const parsed = Number(stored);
@@ -167,31 +176,29 @@ export default function PathfindingGame() {
       }
     }
 
-    // If user is logged in, fetch best score from Supabase
-    if (me?.isLoggedIn && me?.userId) {
-      const fetchBestScore = async () => {
-        try {
-          const supabase = createClient();
-          const { data, error } = await supabase
-            .from('scores')
-            .select('score_value')
-            .eq('test_slug', 'pathfinding')
-            .eq('user_id', me.userId)
-            .order('score_value', { ascending: false }) // Higher is better for pathfinding
-            .limit(1);
+    // Fetch best score from Supabase
+    const fetchBestScore = async () => {
+      try {
+        const supabase = createClient();
+        const { data, error } = await supabase
+          .from('scores')
+          .select('score_value')
+          .eq('test_slug', 'pathfinding')
+          .eq('user_id', me.userId)
+          .order('score_value', { ascending: false }) // Higher is better for pathfinding
+          .limit(1);
 
-          if (!error && data && data.length > 0) {
-            const dbBest = data[0].score_value;
-            // Use the higher of localStorage and database
-            setBestScore((prev) => Math.max(prev, dbBest));
-          }
-        } catch (error) {
-          console.error('Error fetching best score from Supabase:', error);
+        if (!error && data && data.length > 0) {
+          const dbBest = data[0].score_value;
+          // Use the higher of localStorage and database
+          setBestScore((prev) => Math.max(prev, dbBest));
         }
-      };
+      } catch (error) {
+        console.error('Error fetching best score from Supabase:', error);
+      }
+    };
 
-      fetchBestScore();
-    }
+    fetchBestScore();
   }, [me?.isLoggedIn, me?.userId]);
 
   // Save best score to localStorage when it changes
@@ -311,15 +318,20 @@ export default function PathfindingGame() {
     setFailReason(reason);
     setShowMaze(true);
     setPhase('failed');
+    setScoreTimestamp(new Date());
     // Update best score if needed
     if (score > bestScore) {
       setBestScore(score);
     }
     setSubmitting(true);
     setSubmitState('idle');
+    setIsNewHighScore(false);
     const result = await submitScore('pathfinding', score);
     setSubmitting(false);
     setSubmitState(result.success ? 'success' : 'error');
+    if (result.success && result.isNewHighScore) {
+      setIsNewHighScore(true);
+    }
   };
 
   const revealWall = (segment: WallSegment) => {
@@ -506,38 +518,18 @@ export default function PathfindingGame() {
   );
 
   const renderResult = (result: GameResult) => (
-    <div className="text-center space-y-6">
-      <div>
-        <h2 className="text-2xl md:text-3xl font-bold text-[#0a0a0a] mb-2">Game Over</h2>
-        <div className="text-5xl md:text-6xl font-bold text-amber-400 mb-2">
-          {result.score}
-          {result.scoreLabel && (
-            <span className="text-2xl md:text-3xl text-[#0a0a0a]/60 ml-2">
-              {result.scoreLabel}
-            </span>
-          )}
-        </div>
-        {submitting && <p className="text-[#0a0a0a]/60 text-base">Saving score...</p>}
-        {!submitting && submitState === 'success' && <p className="text-green-600 text-base">✓ Score saved!</p>}
-        {result.message && (
-          <p className="text-[#0a0a0a]/70 text-base mt-2">{result.message}</p>
-        )}
-      </div>
-      <div className="flex flex-wrap items-center justify-center gap-3">
-        <button
-          onClick={startGame}
-          className="px-6 py-3 bg-amber-400 hover:bg-amber-300 text-black font-bold rounded-xl transition-colors"
-        >
-          Play Again
-        </button>
-        <a
-          href={`/leaderboard/pathfinding`}
-          className="px-6 py-3 bg-[#0a0a0a]/10 hover:bg-[#0a0a0a]/20 text-[#0a0a0a] font-semibold rounded-xl transition-colors border border-[#0a0a0a]/20"
-        >
-          View Leaderboard
-        </a>
-      </div>
-    </div>
+    <ResultCard
+      gameMetadata={gameMetadata}
+      score={result.score}
+      scoreLabel="rounds"
+      personalBest={bestScore > 0 ? bestScore : undefined}
+      personalBestLabel="rounds"
+      message={result.message}
+      isNewHighScore={isNewHighScore}
+      timestamp={scoreTimestamp}
+      onPlayAgain={startGame}
+      isSubmitting={submitting}
+    />
   );
 
   const gameMetadata = getGameMetadata('pathfinding');

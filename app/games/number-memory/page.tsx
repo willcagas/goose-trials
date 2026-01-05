@@ -6,6 +6,7 @@ import GameShell, { GameShellState, GameResult } from '@/components/GameShell';
 import { getGameMetadata } from '@/lib/games/registry';
 import { useMe } from '@/app/providers/MeContext';
 import { createClient } from '@/lib/supabase/client';
+import ResultCard from '@/components/ResultCard';
 
 type Phase = 'idle' | 'showing' | 'input' | 'failed';
 
@@ -21,6 +22,8 @@ export default function NumberMemoryGamePage() {
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<GameResult | undefined>(undefined);
   const [memorizeProgress, setMemorizeProgress] = useState(100);
+  const [scoreTimestamp, setScoreTimestamp] = useState<Date | undefined>(undefined);
+  const [isNewHighScore, setIsNewHighScore] = useState(false);
 
   // Timer reference for cleanup
   const displayTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -32,7 +35,13 @@ export default function NumberMemoryGamePage() {
 
   // Load best score from localStorage and Supabase on mount
   useEffect(() => {
-    // First load from localStorage
+    // Only show best scores for logged-in users
+    if (!me?.isLoggedIn || !me?.userId) {
+      setBestScore(0);
+      return;
+    }
+
+    // Load from localStorage as initial value
     const stored = localStorage.getItem('number_memory_best');
     let localBest = 0;
     if (stored !== null) {
@@ -40,31 +49,29 @@ export default function NumberMemoryGamePage() {
       setBestScore(localBest);
     }
 
-    // If user is logged in, fetch best score from Supabase
-    if (me?.isLoggedIn && me?.userId) {
-      const fetchBestScore = async () => {
-        try {
-          const supabase = createClient();
-          const { data, error } = await supabase
-            .from('scores')
-            .select('score_value')
-            .eq('test_slug', 'number-memory')
-            .eq('user_id', me.userId)
-            .order('score_value', { ascending: false }) // Higher is better
-            .limit(1);
+    // Fetch best score from Supabase
+    const fetchBestScore = async () => {
+      try {
+        const supabase = createClient();
+        const { data, error } = await supabase
+          .from('scores')
+          .select('score_value')
+          .eq('test_slug', 'number-memory')
+          .eq('user_id', me.userId)
+          .order('score_value', { ascending: false }) // Higher is better
+          .limit(1);
 
-          if (!error && data && data.length > 0) {
-            const dbBest = data[0].score_value;
-            // Use the higher of localStorage and database
-            setBestScore(Math.max(localBest, dbBest));
-          }
-        } catch (error) {
-          console.error('Error fetching best score from Supabase:', error);
+        if (!error && data && data.length > 0) {
+          const dbBest = data[0].score_value;
+          // Use the higher of localStorage and database
+          setBestScore(Math.max(localBest, dbBest));
         }
-      };
+      } catch (error) {
+        console.error('Error fetching best score from Supabase:', error);
+      }
+    };
 
-      fetchBestScore();
-    }
+    fetchBestScore();
   }, [me?.isLoggedIn, me?.userId]);
 
   // Save best score to localStorage when it changes
@@ -205,6 +212,7 @@ export default function NumberMemoryGamePage() {
     } else {
       // Incorrect answer - game over
       setPhase('failed');
+      setScoreTimestamp(new Date());
       
       // Clear timer
       if (displayTimerRef.current !== null) {
@@ -222,11 +230,15 @@ export default function NumberMemoryGamePage() {
 
       if (finalScore > 0) {
         setSubmitting(true);
+        setIsNewHighScore(false);
         const submitResult = await submitScore('number-memory', finalScore);
         setSubmitting(false);
 
         if (submitResult.success) {
           console.log('Score submitted successfully!');
+          if (submitResult.isNewHighScore) {
+            setIsNewHighScore(true);
+          }
         } else {
           console.error('Failed to submit score:', submitResult.error);
         }
@@ -362,7 +374,7 @@ export default function NumberMemoryGamePage() {
       </div>
       <div className="flex items-center justify-center gap-3 text-sm">
         <div className="px-3 py-1 rounded-full bg-amber-400/15 border border-amber-400/25 text-[#0a0a0a]">
-          Best: <span className="font-bold">{bestScore}</span>
+          Best: <span className="font-bold">{bestScore > 0 ? bestScore : '--'}</span>
         </div>
       </div>
       <button
@@ -376,40 +388,17 @@ export default function NumberMemoryGamePage() {
 
   // Custom result view
   const renderResult = (result: GameResult) => (
-    <div className="text-center space-y-6">
-      <div>
-        <h2 className="text-2xl md:text-3xl font-bold text-[#0a0a0a] mb-2">Game Over</h2>
-        <div className="text-5xl md:text-6xl font-bold text-amber-400 mb-2">
-          {result.score}
-          {result.scoreLabel && (
-            <span className="text-2xl md:text-3xl text-[#0a0a0a]/60 ml-2">
-              {result.scoreLabel}
-            </span>
-          )}
-        </div>
-        {submitting && <p className="text-[#0a0a0a]/60 text-base">Saving score...</p>}
-        {!submitting && highestRecalled > 0 && <p className="text-green-600 text-base">✓ Score saved!</p>}
-        {result.personalBest !== undefined && (
-          <p className="text-[#0a0a0a]/60 text-sm md:text-base mt-2">
-            Personal Best: {result.personalBest} {result.personalBestLabel}
-          </p>
-        )}
-      </div>
-      <div className="flex flex-wrap items-center justify-center gap-3">
-        <button
-          onClick={handleRestart}
-          className="px-6 py-3 bg-amber-400 hover:bg-amber-300 text-black font-bold rounded-xl transition-colors"
-        >
-          Play Again
-        </button>
-        <a
-          href={`/leaderboard/number-memory`}
-          className="px-6 py-3 bg-[#0a0a0a]/10 hover:bg-[#0a0a0a]/20 text-[#0a0a0a] font-semibold rounded-xl transition-colors border border-[#0a0a0a]/20"
-        >
-          View Leaderboard
-        </a>
-      </div>
-    </div>
+    <ResultCard
+      gameMetadata={gameMetadata}
+      score={result.score}
+      scoreLabel="digits"
+      personalBest={bestScore > 0 ? bestScore : undefined}
+      personalBestLabel="digits"
+      isNewHighScore={isNewHighScore}
+      timestamp={scoreTimestamp}
+      onPlayAgain={handleRestart}
+      isSubmitting={submitting}
+    />
   );
 
   const gameMetadata = getGameMetadata('number-memory');

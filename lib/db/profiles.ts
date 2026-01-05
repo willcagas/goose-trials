@@ -40,6 +40,42 @@ export async function getProfile(userId: string): Promise<{
 }
 
 /**
+ * Get profile data by username
+ * 
+ * @param username - Username to fetch profile for (case-insensitive)
+ * @returns Profile data or null if not found or error
+ */
+export async function getProfileByUsername(username: string): Promise<{
+  id: string;
+  username: string;
+  avatar_url: string | null;
+  university_id: string | null;
+} | null> {
+  try {
+    const supabase = await createClient();
+    
+    // Normalize username to lowercase for case-insensitive lookup
+    const normalizedUsername = username.toLowerCase();
+    
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .select('id, username, avatar_url, university_id')
+      .eq('username', normalizedUsername)
+      .single();
+
+    if (error && error.code !== 'PGRST116') { // PGRST116 means no rows found
+      console.error('Error fetching profile by username:', error);
+      return null;
+    }
+
+    return profile || null;
+  } catch (error) {
+    console.error('Unexpected error fetching profile by username:', error);
+    return null;
+  }
+}
+
+/**
  * Upsert profile data (insert or update)
  * 
  * @param profileData - Profile data to upsert

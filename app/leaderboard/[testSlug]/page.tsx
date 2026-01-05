@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
-import { useParams, useRouter, usePathname } from 'next/navigation';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { useParams, useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useMe } from '@/app/providers/MeContext';
 import Navbar from '@/components/Navbar';
 import LoginModal from '@/components/LoginModal';
@@ -147,10 +147,16 @@ interface TopScore {
 
 export default function LeaderboardTestPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const testSlug = params.testSlug as string;
+  const highlightUsername = searchParams.get('user');
   const { me, loading: meLoading } = useMe();
   const router = useRouter();
   const pathname = usePathname();
+  
+  // Refs for scrolling to highlighted user
+  const highlightedRowRef = useRef<HTMLTableRowElement>(null);
+  const hasScrolledToHighlight = useRef(false);
 
   const handleBackClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -330,6 +336,25 @@ export default function LeaderboardTestPage() {
   const canViewCampus = me?.universityId !== null;
   const canViewCountry = me?.universityId !== null && universityInfo?.country !== null;
   const isReactionTime = testSlug === 'reaction-time';
+
+  // Scroll to highlighted user when data loads
+  useEffect(() => {
+    if (
+      highlightUsername && 
+      !loading && 
+      !hasScrolledToHighlight.current && 
+      highlightedRowRef.current
+    ) {
+      // Small delay to ensure DOM is fully rendered
+      setTimeout(() => {
+        highlightedRowRef.current?.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'center' 
+        });
+        hasScrolledToHighlight.current = true;
+      }, 100);
+    }
+  }, [highlightUsername, loading, currentData]);
 
   return (
     <div className="min-h-screen bg-gray-50 overflow-x-hidden">
@@ -518,13 +543,17 @@ export default function LeaderboardTestPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {currentData.map((entry) => (
+                    {currentData.map((entry) => {
+                      const isHighlighted = highlightUsername && entry.username?.toLowerCase() === highlightUsername.toLowerCase();
+                      return (
                       <React.Fragment key={entry.user_id}>
                         {/* Main Row */}
                         <tr
                           onClick={isReactionTime ? () => handleRowClick(entry.user_id) : undefined}
                           className={`${
-                            entry.is_you
+                            isHighlighted
+                              ? 'bg-amber-400/20 ring-2 ring-amber-400 ring-inset font-semibold'
+                              : entry.is_you
                               ? 'bg-amber-400/10 font-semibold'
                               : 'hover:bg-amber-400/5'
                           } transition-colors ${isReactionTime ? 'cursor-pointer' : ''}`}
@@ -638,7 +667,8 @@ export default function LeaderboardTestPage() {
                         </tr>
                       )}
                       </React.Fragment>
-                    ))}
+                    );
+                    })}
                   </tbody>
                 </table>
               </div>

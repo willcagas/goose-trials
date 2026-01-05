@@ -7,6 +7,7 @@ import { useMe } from '@/app/providers/MeContext';
 import { createClient } from '@/lib/supabase/client';
 import GameShell, { GameShellState, GameResult } from '@/components/GameShell';
 import { getGameMetadata } from '@/lib/games/registry';
+import ResultCard from '@/components/ResultCard';
 
 interface TopScore {
   score_value: number;
@@ -22,6 +23,8 @@ export default function ReactionTimeGame() {
   const [attempts, setAttempts] = useState<number>(0);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<GameResult | undefined>(undefined);
+  const [scoreTimestamp, setScoreTimestamp] = useState<Date | undefined>(undefined);
+  const [isNewHighScore, setIsNewHighScore] = useState(false);
 
   // Top 5 scores
   const [topScores, setTopScores] = useState<(TopScore | null)[]>(Array(5).fill(null));
@@ -44,7 +47,13 @@ export default function ReactionTimeGame() {
 
   // Load best time from localStorage and Supabase on mount
   useEffect(() => {
-    // First load from localStorage
+    // Only show best scores for logged-in users
+    if (!me?.isLoggedIn || !me?.userId) {
+      setBestTime(null);
+      return;
+    }
+
+    // Load from localStorage as initial value
     const storedBestTime = localStorage.getItem('reaction_best_time');
     let localBest: number | null = null;
     if (storedBestTime) {
@@ -52,33 +61,31 @@ export default function ReactionTimeGame() {
       setBestTime(localBest);
     }
 
-    // If user is logged in, fetch best score from Supabase
-    if (me?.isLoggedIn && me?.userId) {
-      const fetchBestScore = async () => {
-        try {
-          const supabase = createClient();
-          const { data, error } = await supabase
-            .from('scores')
-            .select('score_value')
-            .eq('test_slug', 'reaction-time')
-            .eq('user_id', me.userId)
-            .order('score_value', { ascending: true }) // Lower is better for reaction time
-            .limit(1);
+    // Fetch best score from Supabase
+    const fetchBestScore = async () => {
+      try {
+        const supabase = createClient();
+        const { data, error } = await supabase
+          .from('scores')
+          .select('score_value')
+          .eq('test_slug', 'reaction-time')
+          .eq('user_id', me.userId)
+          .order('score_value', { ascending: true }) // Lower is better for reaction time
+          .limit(1);
 
-          if (!error && data && data.length > 0) {
-            const dbBest = data[0].score_value;
-            // Use the lower of localStorage and database (lower is better for reaction time)
-            if (localBest === null || dbBest < localBest) {
-              setBestTime(dbBest);
-            }
+        if (!error && data && data.length > 0) {
+          const dbBest = data[0].score_value;
+          // Use the lower of localStorage and database (lower is better for reaction time)
+          if (localBest === null || dbBest < localBest) {
+            setBestTime(dbBest);
           }
-        } catch (error) {
-          console.error('Error fetching best score from Supabase:', error);
         }
-      };
+      } catch (error) {
+        console.error('Error fetching best score from Supabase:', error);
+      }
+    };
 
-      fetchBestScore();
-    }
+    fetchBestScore();
   }, [me?.isLoggedIn, me?.userId]);
 
   // NEW: Fetch top 5 scores
@@ -174,6 +181,7 @@ export default function ReactionTimeGame() {
       }
 
       setInternalState('clicked');
+      setScoreTimestamp(new Date());
       setResult({
         score: reaction,
         scoreLabel: 'ms',
@@ -184,11 +192,15 @@ export default function ReactionTimeGame() {
 
       // Submit score to database
       setSubmitting(true);
+      setIsNewHighScore(false);
       const submitResult = await submitScore('reaction-time', reaction);
       setSubmitting(false);
 
       if (submitResult.success) {
         console.log('Score submitted successfully!');
+        if (submitResult.isNewHighScore) {
+          setIsNewHighScore(true);
+        }
         // Refresh top scores after submission - ensure loading state is set
         setLoadingScores(true);
         await fetchTopScores();
@@ -316,103 +328,22 @@ export default function ReactionTimeGame() {
     }
 
     return (
-      <div className="text-center space-y-8">
-        <div>
-          <div className="text-6xl md:text-7xl font-bold text-amber-400 mb-4">
-            {reactionTime}
-            {result.scoreLabel && (
-              <span className="text-3xl md:text-4xl text-[#0a0a0a]/60 ml-2">
-                {result.scoreLabel}
-              </span>
-            )}
-          </div>
-          {submitting && <p className="text-[#0a0a0a]/60 text-base">Saving score...</p>}
-          {!submitting && <p className="text-green-600 text-base">✓ Score saved!</p>}
-          {result.personalBest !== undefined && (
-            <p className="text-[#0a0a0a]/60 text-base md:text-lg mt-2">
-              Personal Best: {result.personalBest}
-              {result.personalBestLabel && ` ${result.personalBestLabel}`}
-            </p>
-          )}
-          {result.message && (
-            <p className="text-[#0a0a0a]/60 text-sm mt-2">{result.message}</p>
-          )}
-        </div>
-
-        {/* Leaderboard Average and Top 5 Scores */}
-        {me?.isLoggedIn && (
-          <div className="bg-amber-400/15 border border-amber-400/30 rounded-xl p-6 md:p-8 max-w-lg mx-auto">
-            {loadingScores ? (
-              <div className="text-center py-4">
-                <p className="text-sm text-[#0a0a0a]/60">Loading scores...</p>
-              </div>
-            ) : (
-              <>
-                {/* Leaderboard Average */}
-                {leaderboardAverage !== null && (
-                  <div className="mb-6">
-                    <p className="text-xs font-semibold text-[#0a0a0a]/70 mb-2 uppercase tracking-wider">
-                      Your Leaderboard Score (Avg of Top 5)
-                    </p>
-                    <p className="text-3xl md:text-4xl font-bold text-amber-500">
-                      {leaderboardAverage.toFixed(0)} ms
-                    </p>
-                  </div>
-                )}
-
-                {/* Top 5 Scores */}
-                <div className="flex flex-wrap items-center justify-center gap-2">
-                  {topScores.map((score, index) => (
-                    <div
-                      key={index}
-                      className={`flex-1 min-w-[80px] max-w-[95px] p-2.5 rounded-xl border-2 ${
-                        score
-                          ? 'bg-white/50 border-amber-400/50 shadow-sm'
-                          : 'bg-white/20 border-white/30 border-dashed'
-                      }`}
-                    >
-                      <div className="text-center">
-                        <div className="text-xs font-semibold text-[#0a0a0a]/60 mb-1">
-                          #{index + 1}
-                        </div>
-                        <div className={`text-sm font-bold ${score ? 'text-[#0a0a0a]' : 'text-[#0a0a0a]/40'}`}>
-                          {score ? `${score.score_value} ms` : '—'}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-        )}
-
-        {!me?.isLoggedIn && (
-          <div className="bg-amber-400/10 border border-amber-400/30 rounded-xl p-4">
-            <p className="text-sm text-[#0a0a0a]/80">
-              <Link href="/" className="text-amber-400 hover:text-amber-300 font-semibold underline">
-                Sign in
-              </Link>
-              {' '}to track your top scores and appear on the leaderboard!
-            </p>
-          </div>
-        )}
-
-        <div className="flex flex-wrap items-center justify-center gap-3">
-          <button
-            onClick={handleRestart}
-            className="px-6 py-3 bg-amber-400 hover:bg-amber-300 text-black font-bold rounded-xl transition-colors"
-          >
-            Play Again
-          </button>
-          <Link
-            href={`/leaderboard/reaction-time`}
-            className="px-6 py-3 bg-[#0a0a0a]/10 hover:bg-[#0a0a0a]/20 text-[#0a0a0a] font-semibold rounded-xl transition-colors border border-[#0a0a0a]/20"
-          >
-            View Leaderboard
-          </Link>
-        </div>
-      </div>
+      <ResultCard
+        gameMetadata={gameMetadata}
+        score={reactionTime ?? 0}
+        scoreLabel="ms"
+        personalBest={bestTime ?? undefined}
+        personalBestLabel="ms"
+        personalAverage={leaderboardAverage}
+        personalAverageLabel="ms"
+        topScores={topScores}
+        loadingScores={loadingScores}
+        message={`Attempts: ${attempts}`}
+        isNewHighScore={isNewHighScore}
+        timestamp={scoreTimestamp}
+        onPlayAgain={handleRestart}
+        isSubmitting={submitting}
+      />
     );
   };
 
@@ -427,13 +358,11 @@ export default function ReactionTimeGame() {
           Click when the screen turns green!
         </p>
       </div>
-      {bestTime && (
-        <div className="flex items-center justify-center gap-3 text-sm">
-          <div className="px-3 py-1 rounded-full bg-amber-400/15 border border-amber-400/25 text-[#0a0a0a]">
-            Best: <span className="font-bold">{bestTime} ms</span>
-          </div>
+      <div className="flex items-center justify-center gap-3 text-sm">
+        <div className="px-3 py-1 rounded-full bg-amber-400/15 border border-amber-400/25 text-[#0a0a0a]">
+          Best: <span className="font-bold">{bestTime !== null ? `${bestTime} ms` : '--'}</span>
         </div>
-      )}
+      </div>
       <button
         onClick={startGame}
         className="px-8 py-4 bg-amber-400 hover:bg-amber-300 text-black font-bold text-lg rounded-xl transition-colors"

@@ -6,6 +6,7 @@ import GameShell, { GameShellState, GameResult as ShellGameResult } from '@/comp
 import { getGameMetadata } from '@/lib/games/registry';
 import { useMe } from '@/app/providers/MeContext';
 import { createClient } from '@/lib/supabase/client';
+import ResultCard from '@/components/ResultCard';
 
 // ============================================================================
 // CONFIGURATION - All tunables in one place
@@ -116,6 +117,8 @@ export default function HanoiGame() {
   const [submitting, setSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [scoreTimestamp, setScoreTimestamp] = useState<Date | undefined>(undefined);
+  const [isNewHighScore, setIsNewHighScore] = useState(false);
   
   // Animation state
   const [errorRod, setErrorRod] = useState<number | null>(null);
@@ -208,6 +211,7 @@ export default function HanoiGame() {
     const extra = Math.max(0, currentMoves - optimal);
     const score = calculateScore(finalElapsed, currentMoves, currentDiskCount);
     
+    setScoreTimestamp(new Date());
     setResult({
       elapsedMs: finalElapsed,
       moves: currentMoves,
@@ -238,6 +242,7 @@ export default function HanoiGame() {
         setSubmitting(true);
         setSubmitStatus('idle');
         setSubmitError(null);
+        setIsNewHighScore(false);
         
         try {
           // Convert milliseconds to seconds with 2 decimal places
@@ -246,6 +251,9 @@ export default function HanoiGame() {
           
           if (response.success) {
             setSubmitStatus('success');
+            if (response.isNewHighScore) {
+              setIsNewHighScore(true);
+            }
           } else {
             setSubmitStatus('error');
             setSubmitError(response.error || 'Failed to submit score');
@@ -264,7 +272,13 @@ export default function HanoiGame() {
 
   // Load best score from localStorage and Supabase
   useEffect(() => {
-    // Load from localStorage first
+    // Only show best scores for logged-in users
+    if (!me?.isLoggedIn || !me?.userId) {
+      setBestScore(null);
+      return;
+    }
+
+    // Load from localStorage as initial value
     const stored = localStorage.getItem('hanoi_best_score');
     let localBest: number | null = null;
     if (stored) {
@@ -274,45 +288,41 @@ export default function HanoiGame() {
       }
     }
 
-    // If user is logged in, fetch from Supabase
-    if (me?.isLoggedIn && me?.userId) {
-      const fetchBestScore = async () => {
-        try {
-          const supabase = createClient();
-          const { data, error } = await supabase
-            .from('scores')
-            .select('score_value')
-            .eq('test_slug', 'hanoi')
-            .eq('user_id', me.userId)
-            .order('score_value', { ascending: true }) // Lower is better
-            .limit(1);
+    // Fetch from Supabase
+    const fetchBestScore = async () => {
+      try {
+        const supabase = createClient();
+        const { data, error } = await supabase
+          .from('scores')
+          .select('score_value')
+          .eq('test_slug', 'hanoi')
+          .eq('user_id', me.userId)
+          .order('score_value', { ascending: true }) // Lower is better
+          .limit(1);
 
-          if (error) throw error;
+        if (error) throw error;
 
-          if (data && data.length > 0) {
-            // Convert seconds to milliseconds
-            const supabaseBest = data[0].score_value * 1000;
-            // Use the better (lower) score
-            if (localBest === null || supabaseBest < localBest) {
-              setBestScore(supabaseBest);
-            } else {
-              setBestScore(localBest);
-            }
-          } else if (localBest !== null) {
+        if (data && data.length > 0) {
+          // Convert seconds to milliseconds
+          const supabaseBest = data[0].score_value * 1000;
+          // Use the better (lower) score
+          if (localBest === null || supabaseBest < localBest) {
+            setBestScore(supabaseBest);
+          } else {
             setBestScore(localBest);
           }
-        } catch (error) {
-          console.error('Error fetching best score from Supabase:', error);
-          if (localBest !== null) {
-            setBestScore(localBest);
-          }
+        } else if (localBest !== null) {
+          setBestScore(localBest);
         }
-      };
+      } catch (error) {
+        console.error('Error fetching best score from Supabase:', error);
+        if (localBest !== null) {
+          setBestScore(localBest);
+        }
+      }
+    };
 
-      fetchBestScore();
-    } else if (localBest !== null) {
-      setBestScore(localBest);
-    }
+    fetchBestScore();
   }, [me?.isLoggedIn, me?.userId]);
 
   // Save best score to localStorage
@@ -737,122 +747,86 @@ export default function HanoiGame() {
   const renderResult = (shellResult: ShellGameResult) => {
     if (!result) return null;
     
-    return (
-      <div className="text-center space-y-6">
-        <div className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] border ${
-          result.completed 
-            ? 'bg-emerald-500/20 text-emerald-400 border-emerald-400/30' 
-            : 'bg-rose-500/20 text-rose-400 border-rose-400/30'
-        }`}>
-          {result.completed 
-            ? (result.mode === 'ranked' ? '🏆 Run Complete' : '✓ Practice Complete')
-            : '⏱️ Time\'s Up'
-          }
-        </div>
-        <div>
-          <h2 className="text-3xl md:text-4xl font-bold text-[#0a0a0a] mb-2">
-            {result.completed ? 'Well done!' : 'Keep practicing!'}
-          </h2>
-          <p className="text-[#0a0a0a]/60">
-            {result.disks} disks • {result.mode === 'ranked' ? 'Ranked' : 'Practice'}
-            {!result.completed && ' • Did Not Finish'}
-          </p>
-        </div>
+    // For Hanoi, create a message with the stats
+    const statsMessage = result.completed 
+      ? `${result.moves} moves • ${result.extraMoves === 0 ? 'Perfect!' : `+${result.extraMoves} extra`}`
+      : 'Did Not Finish';
+    
+    // Practice mode: simplified result card without score saving, sharing, leaderboard
+    if (result.mode === 'practice') {
+      return (
+        <div className="w-full max-w-md mx-auto">
+          <div className="bg-[#0a0a0a] border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-amber-400/20 to-amber-600/10 px-6 py-4 border-b border-white/10">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <img 
+                    src="/goosetrialspfp-removebg-preview.png" 
+                    alt="Goose Trials"
+                    className="w-8 h-8 object-contain"
+                    style={{ imageRendering: 'pixelated' }}
+                  />
+                  <div>
+                    <div className="text-xs text-white/50 uppercase tracking-wider">Practice Mode</div>
+                    <div className="text-lg font-bold text-white">{gameMetadata.title}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
 
-        {/* Results card */}
-        <div className="bg-[#0a0a0a]/10 backdrop-blur rounded-2xl p-6 sm:p-8 max-w-md mx-auto border border-[#0a0a0a]/20">
-          {/* Final score */}
-          <div className="mb-6">
-            <div className="text-[#0a0a0a]/60 text-sm uppercase tracking-wide mb-1">Final Score</div>
-            <div className="text-5xl sm:text-6xl font-mono font-black text-amber-400">
-              {formatTime(result.scoreMs)}
-            </div>
-          </div>
+            {/* Score Section */}
+            <div className="px-6 py-8 text-center">
+              <div className="mb-4">
+                <div className="text-6xl md:text-7xl font-bold mb-1 text-amber-400">
+                  {formatTime(result.scoreMs)}
+                </div>
+                <p className="text-white/50 text-sm mt-2">Practice Complete</p>
+              </div>
 
-          {/* Stats grid */}
-          <div className="grid grid-cols-2 gap-4 text-left">
-            <div className="bg-[#0a0a0a]/5 rounded-xl p-4 border border-[#0a0a0a]/10">
-              <div className="text-[#0a0a0a]/50 text-xs uppercase tracking-wide">Time</div>
-              <div className="text-xl font-mono font-bold text-[#0a0a0a]">{formatTime(result.elapsedMs)}</div>
-            </div>
-            <div className="bg-[#0a0a0a]/5 rounded-xl p-4 border border-[#0a0a0a]/10">
-              <div className="text-[#0a0a0a]/50 text-xs uppercase tracking-wide">Moves</div>
-              <div className="text-xl font-mono font-bold text-[#0a0a0a]">{result.moves}</div>
-            </div>
-            <div className="bg-[#0a0a0a]/5 rounded-xl p-4 border border-[#0a0a0a]/10">
-              <div className="text-[#0a0a0a]/50 text-xs uppercase tracking-wide">Optimal</div>
-              <div className="text-xl font-mono font-bold text-emerald-600">{result.optimalMoves}</div>
-            </div>
-            <div className="bg-[#0a0a0a]/5 rounded-xl p-4 border border-[#0a0a0a]/10">
-              <div className="text-[#0a0a0a]/50 text-xs uppercase tracking-wide">Extra Moves</div>
-              <div className={`text-xl font-mono font-bold ${result.extraMoves === 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                {result.extraMoves === 0 ? '0 ★' : `+${result.extraMoves}`}
+              {/* Stats Message */}
+              <p className="text-white/50 text-sm mb-4">{statsMessage}</p>
+
+              {/* Footer */}
+              <div className="mt-6 pt-4 border-t border-white/10">
+                <p className="text-white/40 text-xs">goosetrials.com</p>
               </div>
             </div>
           </div>
 
-          {/* Score breakdown */}
-          {result.completed && result.extraMoves > 0 && (
-            <div className="mt-4 pt-4 border-t border-[#0a0a0a]/10 text-sm text-[#0a0a0a]/60">
-              {formatTime(result.elapsedMs)} + ({result.extraMoves} × {CONFIG.EXTRA_MOVE_PENALTY_MS}ms) = {formatTime(result.scoreMs)}
+          {/* Actions */}
+          <div className="mt-4 space-y-3">
+            <div className="flex gap-3">
+              <button
+                onClick={() => startGame('practice')}
+                className="flex-1 px-4 py-3 bg-[#0a0a0a] hover:bg-[#1a1a1a] text-white font-bold rounded-xl transition-colors border border-white/20"
+              >
+                Practice Again
+              </button>
+              <button
+                onClick={() => startGame('ranked')}
+                className="flex-1 px-4 py-3 bg-amber-400 hover:bg-amber-300 text-black font-bold rounded-xl transition-colors"
+              >
+                Play Ranked
+              </button>
             </div>
-          )}
-          {result.completed && result.extraMoves === 0 && (
-            <div className="mt-4 pt-4 border-t border-[#0a0a0a]/10 text-sm text-emerald-600">
-              ★ Perfect! Solved in optimal moves!
-            </div>
-          )}
-          {!result.completed && (
-            <div className="mt-4 pt-4 border-t border-[#0a0a0a]/10 text-sm text-rose-600">
-              Time ran out before completing the puzzle.
-            </div>
-          )}
-        </div>
-
-        {/* Action buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-          <button
-            onClick={() => startGame(result.mode)}
-            className={`px-8 py-4 font-bold text-lg rounded-xl transition ${
-              result.mode === 'ranked'
-                ? 'bg-gradient-to-r from-amber-400 to-orange-400 hover:from-amber-300 hover:to-orange-300 text-black shadow-lg shadow-amber-400/25'
-                : 'bg-[#0a0a0a]/10 hover:bg-[#0a0a0a]/20 text-[#0a0a0a] border border-[#0a0a0a]/20'
-            }`}
-          >
-            Play Again
-          </button>
-          <a
-            href={`/leaderboard/hanoi`}
-            className="px-8 py-4 bg-[#0a0a0a]/10 hover:bg-[#0a0a0a]/20 text-[#0a0a0a] font-semibold text-lg rounded-xl transition border border-[#0a0a0a]/20"
-          >
-            View Leaderboard
-          </a>
-        </div>
-
-        {/* Submission status */}
-        {result.mode === 'ranked' && result.completed && (
-          <div>
-            {submitting && (
-              <p className="text-amber-400 text-sm flex items-center justify-center gap-2">
-                <span className="inline-block w-4 h-4 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
-                Submitting score...
-              </p>
-            )}
-            {!submitting && submitStatus === 'success' && (
-              <p className="text-emerald-600 text-sm">✓ Score submitted to leaderboard!</p>
-            )}
-            {!submitting && submitStatus === 'error' && (
-              <p className="text-rose-600 text-sm">✗ {submitError || 'Failed to submit score'}</p>
-            )}
           </div>
-        )}
-        {result.mode === 'practice' && (
-          <p className="text-[#0a0a0a]/50 text-sm">Practice runs are not submitted to the leaderboard.</p>
-        )}
-        {result.mode === 'ranked' && !result.completed && (
-          <p className="text-[#0a0a0a]/50 text-sm">Incomplete runs are not submitted to the leaderboard.</p>
-        )}
-      </div>
+        </div>
+      );
+    }
+    
+    // Ranked mode: full ResultCard with all features
+    return (
+      <ResultCard
+        gameMetadata={gameMetadata}
+        score={formatTime(result.scoreMs)}
+        personalBest={bestScore !== null ? formatTime(bestScore) : undefined}
+        message={statsMessage}
+        isNewHighScore={isNewHighScore}
+        timestamp={scoreTimestamp}
+        onPlayAgain={() => startGame(result.mode)}
+        isSubmitting={submitting}
+      />
     );
   };
 

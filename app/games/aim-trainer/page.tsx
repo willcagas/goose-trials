@@ -6,6 +6,7 @@ import { useAimTrainer } from './useAimTrainer';
 import GameShell, { GameShellState, GameResult } from '@/components/GameShell';
 import { getGameMetadata } from '@/lib/games/registry';
 import { useMe } from '@/app/providers/MeContext';
+import ResultCard from '@/components/ResultCard';
 
 const formatMs = (value: number | null) => {
     if (value === null) return '--';
@@ -25,6 +26,7 @@ export default function AimTrainerGame() {
         accuracy,
         submitting,
         submitState,
+        isNewHighScore,
         canStart,
         phaseLabel,
         boardRef,
@@ -166,43 +168,18 @@ export default function AimTrainerGame() {
     );
 
     const renderResult = (result: GameResult) => (
-        <div className="text-center space-y-6">
-            <div>
-                <h2 className="text-2xl md:text-3xl font-bold text-[#0a0a0a] mb-2">Run Complete</h2>
-                <div className="text-5xl md:text-6xl font-bold text-amber-400 mb-2">
-                    {result.score}
-                    {result.scoreLabel && (
-                        <span className="text-2xl md:text-3xl text-[#0a0a0a]/60 ml-2">
-                            {result.scoreLabel}
-                        </span>
-                    )}
-                </div>
-                {submitting && <p className="text-[#0a0a0a]/60 text-base">Saving score...</p>}
-                {!submitting && submitState === 'success' && <p className="text-green-600 text-base">✓ Score saved!</p>}
-                {result.message && (
-                    <p className="text-[#0a0a0a]/70 text-base mt-2">{result.message}</p>
-                )}
-                {result.personalBest !== undefined && (
-                    <p className="text-[#0a0a0a]/60 text-sm md:text-base mt-2">
-                        Personal Best: {result.personalBest} {result.personalBestLabel}
-                    </p>
-                )}
-            </div>
-            <div className="flex flex-wrap items-center justify-center gap-3">
-                <button
-                    onClick={startRun}
-                    className="px-6 py-3 bg-amber-400 hover:bg-amber-300 text-black font-bold rounded-xl transition-colors"
-                >
-                    Play Again
-                </button>
-                <a
-                    href={`/leaderboard/aim-trainer`}
-                    className="px-6 py-3 bg-[#0a0a0a]/10 hover:bg-[#0a0a0a]/20 text-[#0a0a0a] font-semibold rounded-xl transition-colors border border-[#0a0a0a]/20"
-                >
-                    View Leaderboard
-                </a>
-            </div>
-        </div>
+        <ResultCard
+            gameMetadata={gameMetadata}
+            score={result.score}
+            scoreLabel="hits"
+            personalBest={bestHits ?? undefined}
+            personalBestLabel="hits"
+            message={`Accuracy: ${accuracy}% · Misses: ${misses}`}
+            isNewHighScore={isNewHighScore}
+            timestamp={new Date()}
+            onPlayAgain={startRun}
+            isSubmitting={submitting}
+        />
     );
 
     const gameMetadata = getGameMetadata('aim-trainer');

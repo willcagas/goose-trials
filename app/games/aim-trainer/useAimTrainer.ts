@@ -22,6 +22,7 @@ export function useAimTrainer(me?: { isLoggedIn?: boolean; userId?: string | nul
   const [submitState, setSubmitState] = useState<'idle' | 'success' | 'error'>(
     'idle'
   );
+  const [isNewHighScore, setIsNewHighScore] = useState(false);
   const [boardSize, setBoardSize] = useState<{
     width: number;
     height: number;
@@ -43,7 +44,13 @@ export function useAimTrainer(me?: { isLoggedIn?: boolean; userId?: string | nul
   }, [hits, misses]);
 
   useEffect(() => {
-    // First load from localStorage
+    // Only show best scores for logged-in users
+    if (!me?.isLoggedIn || !me?.userId) {
+      setBestHits(null);
+      return;
+    }
+
+    // Load from localStorage as initial value
     const stored = localStorage.getItem('aim_trainer_best_hits');
     let localBest: number | null = null;
     if (stored) {
@@ -54,33 +61,31 @@ export function useAimTrainer(me?: { isLoggedIn?: boolean; userId?: string | nul
       }
     }
 
-    // If user is logged in, fetch best score from Supabase
-    if (me?.isLoggedIn && me?.userId) {
-      const fetchBestScore = async () => {
-        try {
-          const supabase = createClient();
-          const { data, error } = await supabase
-            .from('scores')
-            .select('score_value')
-            .eq('test_slug', 'aim-trainer')
-            .eq('user_id', me.userId)
-            .order('score_value', { ascending: false }) // Higher is better
-            .limit(1);
+    // Fetch best score from Supabase
+    const fetchBestScore = async () => {
+      try {
+        const supabase = createClient();
+        const { data, error } = await supabase
+          .from('scores')
+          .select('score_value')
+          .eq('test_slug', 'aim-trainer')
+          .eq('user_id', me.userId)
+          .order('score_value', { ascending: false }) // Higher is better
+          .limit(1);
 
-          if (!error && data && data.length > 0) {
-            const dbBest = data[0].score_value;
-            // Use the higher of localStorage and database
-            if (localBest === null || dbBest > localBest) {
-              setBestHits(dbBest);
-            }
+        if (!error && data && data.length > 0) {
+          const dbBest = data[0].score_value;
+          // Use the higher of localStorage and database
+          if (localBest === null || dbBest > localBest) {
+            setBestHits(dbBest);
           }
-        } catch (error) {
-          console.error('Error fetching best score from Supabase:', error);
         }
-      };
+      } catch (error) {
+        console.error('Error fetching best score from Supabase:', error);
+      }
+    };
 
-      fetchBestScore();
-    }
+    fetchBestScore();
   }, [me?.isLoggedIn, me?.userId]);
 
   useEffect(() => {
@@ -114,9 +119,13 @@ export function useAimTrainer(me?: { isLoggedIn?: boolean; userId?: string | nul
 
     setSubmitting(true);
     setSubmitState('idle');
+    setIsNewHighScore(false);
     const result = await submitScore('aim-trainer', finalHits);
     setSubmitting(false);
     setSubmitState(result.success ? 'success' : 'error');
+    if (result.success && result.isNewHighScore) {
+      setIsNewHighScore(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -213,6 +222,7 @@ export function useAimTrainer(me?: { isLoggedIn?: boolean; userId?: string | nul
     setTimeLeftMs(ROUND_DURATION_MS);
     setSubmitState('idle');
     setSubmitting(false);
+    setIsNewHighScore(false);
     startTimeRef.current = null;
     hitsRef.current = 0;
     missesRef.current = 0;
@@ -297,6 +307,7 @@ export function useAimTrainer(me?: { isLoggedIn?: boolean; userId?: string | nul
     accuracy,
     submitting,
     submitState,
+    isNewHighScore,
     canStart,
     phaseLabel,
     boardRef,
