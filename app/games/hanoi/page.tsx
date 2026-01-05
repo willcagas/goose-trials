@@ -6,6 +6,7 @@ import GameShell, { GameShellState, GameResult as ShellGameResult } from '@/comp
 import { getGameMetadata } from '@/lib/games/registry';
 import { useMe } from '@/app/providers/MeContext';
 import { createClient } from '@/lib/supabase/client';
+import ResultCard from '@/components/ResultCard';
 
 // ============================================================================
 // CONFIGURATION - All tunables in one place
@@ -116,6 +117,8 @@ export default function HanoiGame() {
   const [submitting, setSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [scoreTimestamp, setScoreTimestamp] = useState<Date | undefined>(undefined);
+  const [isNewHighScore, setIsNewHighScore] = useState(false);
   
   // Animation state
   const [errorRod, setErrorRod] = useState<number | null>(null);
@@ -208,6 +211,7 @@ export default function HanoiGame() {
     const extra = Math.max(0, currentMoves - optimal);
     const score = calculateScore(finalElapsed, currentMoves, currentDiskCount);
     
+    setScoreTimestamp(new Date());
     setResult({
       elapsedMs: finalElapsed,
       moves: currentMoves,
@@ -238,6 +242,7 @@ export default function HanoiGame() {
         setSubmitting(true);
         setSubmitStatus('idle');
         setSubmitError(null);
+        setIsNewHighScore(false);
         
         try {
           // Convert milliseconds to seconds with 2 decimal places
@@ -246,6 +251,9 @@ export default function HanoiGame() {
           
           if (response.success) {
             setSubmitStatus('success');
+            if (response.isNewHighScore) {
+              setIsNewHighScore(true);
+            }
           } else {
             setSubmitStatus('error');
             setSubmitError(response.error || 'Failed to submit score');
@@ -737,122 +745,22 @@ export default function HanoiGame() {
   const renderResult = (shellResult: ShellGameResult) => {
     if (!result) return null;
     
+    // For Hanoi, create a message with the stats
+    const statsMessage = result.completed 
+      ? `${result.moves} moves • ${result.extraMoves === 0 ? 'Perfect!' : `+${result.extraMoves} extra`}`
+      : 'Did Not Finish';
+    
     return (
-      <div className="text-center space-y-6">
-        <div className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] border ${
-          result.completed 
-            ? 'bg-emerald-500/20 text-emerald-400 border-emerald-400/30' 
-            : 'bg-rose-500/20 text-rose-400 border-rose-400/30'
-        }`}>
-          {result.completed 
-            ? (result.mode === 'ranked' ? '🏆 Run Complete' : '✓ Practice Complete')
-            : '⏱️ Time\'s Up'
-          }
-        </div>
-        <div>
-          <h2 className="text-3xl md:text-4xl font-bold text-[#0a0a0a] mb-2">
-            {result.completed ? 'Well done!' : 'Keep practicing!'}
-          </h2>
-          <p className="text-[#0a0a0a]/60">
-            {result.disks} disks • {result.mode === 'ranked' ? 'Ranked' : 'Practice'}
-            {!result.completed && ' • Did Not Finish'}
-          </p>
-        </div>
-
-        {/* Results card */}
-        <div className="bg-[#0a0a0a]/10 backdrop-blur rounded-2xl p-6 sm:p-8 max-w-md mx-auto border border-[#0a0a0a]/20">
-          {/* Final score */}
-          <div className="mb-6">
-            <div className="text-[#0a0a0a]/60 text-sm uppercase tracking-wide mb-1">Final Score</div>
-            <div className="text-5xl sm:text-6xl font-mono font-black text-amber-400">
-              {formatTime(result.scoreMs)}
-            </div>
-          </div>
-
-          {/* Stats grid */}
-          <div className="grid grid-cols-2 gap-4 text-left">
-            <div className="bg-[#0a0a0a]/5 rounded-xl p-4 border border-[#0a0a0a]/10">
-              <div className="text-[#0a0a0a]/50 text-xs uppercase tracking-wide">Time</div>
-              <div className="text-xl font-mono font-bold text-[#0a0a0a]">{formatTime(result.elapsedMs)}</div>
-            </div>
-            <div className="bg-[#0a0a0a]/5 rounded-xl p-4 border border-[#0a0a0a]/10">
-              <div className="text-[#0a0a0a]/50 text-xs uppercase tracking-wide">Moves</div>
-              <div className="text-xl font-mono font-bold text-[#0a0a0a]">{result.moves}</div>
-            </div>
-            <div className="bg-[#0a0a0a]/5 rounded-xl p-4 border border-[#0a0a0a]/10">
-              <div className="text-[#0a0a0a]/50 text-xs uppercase tracking-wide">Optimal</div>
-              <div className="text-xl font-mono font-bold text-emerald-600">{result.optimalMoves}</div>
-            </div>
-            <div className="bg-[#0a0a0a]/5 rounded-xl p-4 border border-[#0a0a0a]/10">
-              <div className="text-[#0a0a0a]/50 text-xs uppercase tracking-wide">Extra Moves</div>
-              <div className={`text-xl font-mono font-bold ${result.extraMoves === 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                {result.extraMoves === 0 ? '0 ★' : `+${result.extraMoves}`}
-              </div>
-            </div>
-          </div>
-
-          {/* Score breakdown */}
-          {result.completed && result.extraMoves > 0 && (
-            <div className="mt-4 pt-4 border-t border-[#0a0a0a]/10 text-sm text-[#0a0a0a]/60">
-              {formatTime(result.elapsedMs)} + ({result.extraMoves} × {CONFIG.EXTRA_MOVE_PENALTY_MS}ms) = {formatTime(result.scoreMs)}
-            </div>
-          )}
-          {result.completed && result.extraMoves === 0 && (
-            <div className="mt-4 pt-4 border-t border-[#0a0a0a]/10 text-sm text-emerald-600">
-              ★ Perfect! Solved in optimal moves!
-            </div>
-          )}
-          {!result.completed && (
-            <div className="mt-4 pt-4 border-t border-[#0a0a0a]/10 text-sm text-rose-600">
-              Time ran out before completing the puzzle.
-            </div>
-          )}
-        </div>
-
-        {/* Action buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-          <button
-            onClick={() => startGame(result.mode)}
-            className={`px-8 py-4 font-bold text-lg rounded-xl transition ${
-              result.mode === 'ranked'
-                ? 'bg-gradient-to-r from-amber-400 to-orange-400 hover:from-amber-300 hover:to-orange-300 text-black shadow-lg shadow-amber-400/25'
-                : 'bg-[#0a0a0a]/10 hover:bg-[#0a0a0a]/20 text-[#0a0a0a] border border-[#0a0a0a]/20'
-            }`}
-          >
-            Play Again
-          </button>
-          <a
-            href={`/leaderboard/hanoi`}
-            className="px-8 py-4 bg-[#0a0a0a]/10 hover:bg-[#0a0a0a]/20 text-[#0a0a0a] font-semibold text-lg rounded-xl transition border border-[#0a0a0a]/20"
-          >
-            View Leaderboard
-          </a>
-        </div>
-
-        {/* Submission status */}
-        {result.mode === 'ranked' && result.completed && (
-          <div>
-            {submitting && (
-              <p className="text-amber-400 text-sm flex items-center justify-center gap-2">
-                <span className="inline-block w-4 h-4 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
-                Submitting score...
-              </p>
-            )}
-            {!submitting && submitStatus === 'success' && (
-              <p className="text-emerald-600 text-sm">✓ Score submitted to leaderboard!</p>
-            )}
-            {!submitting && submitStatus === 'error' && (
-              <p className="text-rose-600 text-sm">✗ {submitError || 'Failed to submit score'}</p>
-            )}
-          </div>
-        )}
-        {result.mode === 'practice' && (
-          <p className="text-[#0a0a0a]/50 text-sm">Practice runs are not submitted to the leaderboard.</p>
-        )}
-        {result.mode === 'ranked' && !result.completed && (
-          <p className="text-[#0a0a0a]/50 text-sm">Incomplete runs are not submitted to the leaderboard.</p>
-        )}
-      </div>
+      <ResultCard
+        gameMetadata={gameMetadata}
+        score={formatTime(result.scoreMs)}
+        personalBest={bestScore !== null ? formatTime(bestScore) : undefined}
+        message={statsMessage}
+        isNewHighScore={isNewHighScore}
+        timestamp={scoreTimestamp}
+        onPlayAgain={() => startGame(result.mode)}
+        isSubmitting={submitting}
+      />
     );
   };
 

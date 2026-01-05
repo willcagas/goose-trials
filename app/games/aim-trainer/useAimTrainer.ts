@@ -22,6 +22,7 @@ export function useAimTrainer(me?: { isLoggedIn?: boolean; userId?: string | nul
   const [submitState, setSubmitState] = useState<'idle' | 'success' | 'error'>(
     'idle'
   );
+  const [isNewHighScore, setIsNewHighScore] = useState(false);
   const [boardSize, setBoardSize] = useState<{
     width: number;
     height: number;
@@ -114,9 +115,13 @@ export function useAimTrainer(me?: { isLoggedIn?: boolean; userId?: string | nul
 
     setSubmitting(true);
     setSubmitState('idle');
+    setIsNewHighScore(false);
     const result = await submitScore('aim-trainer', finalHits);
     setSubmitting(false);
     setSubmitState(result.success ? 'success' : 'error');
+    if (result.success && result.isNewHighScore) {
+      setIsNewHighScore(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -213,6 +218,7 @@ export function useAimTrainer(me?: { isLoggedIn?: boolean; userId?: string | nul
     setTimeLeftMs(ROUND_DURATION_MS);
     setSubmitState('idle');
     setSubmitting(false);
+    setIsNewHighScore(false);
     startTimeRef.current = null;
     hitsRef.current = 0;
     missesRef.current = 0;
@@ -297,6 +303,7 @@ export function useAimTrainer(me?: { isLoggedIn?: boolean; userId?: string | nul
     accuracy,
     submitting,
     submitState,
+    isNewHighScore,
     canStart,
     phaseLabel,
     boardRef,
