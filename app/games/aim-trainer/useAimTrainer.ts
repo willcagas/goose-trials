@@ -233,7 +233,7 @@ export function useAimTrainer(me?: { isLoggedIn?: boolean; userId?: string | nul
     setTimeLeftMs(ROUND_DURATION_MS);
     setSubmitState('idle');
     setSubmitting(false);
-    startTimeRef.current = performance.now();
+    startTimeRef.current = null;
     hitsRef.current = 0;
     missesRef.current = 0;
     targetIdRef.current = 0;
@@ -261,6 +261,9 @@ export function useAimTrainer(me?: { isLoggedIn?: boolean; userId?: string | nul
   const handleHit = (event: PointerEvent<HTMLButtonElement>) => {
     event.stopPropagation();
     if (phase !== 'running') return;
+    if (startTimeRef.current === null) {
+      startTimeRef.current = performance.now();
+    }
     const nextHits = hitsRef.current + 1;
     hitsRef.current = nextHits;
     setHits(nextHits);
