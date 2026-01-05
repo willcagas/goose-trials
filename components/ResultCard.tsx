@@ -350,7 +350,7 @@ export default function ResultCard({
               <div className={`text-6xl md:text-7xl font-bold mb-1 ${showHighScoreAnimation ? 'text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-amber-300 to-yellow-400 animate-pulse' : 'text-amber-400'}`}>
                 {score}
                 {scoreLabel && (
-                  <span className={`text-2xl md:text-3xl ml-2 ${showHighScoreAnimation ? 'text-amber-300/70' : 'text-white/50'}`}>
+                  <span className={`text-2xl md:text-3xl ml-2 ${showHighScoreAnimation ? 'text-amber-300/70' : 'text-white'}`}>
                     {scoreLabel}
                   </span>
                 )}
@@ -467,13 +467,13 @@ export default function ResultCard({
         </div>
 
         {/* Actions Section - outside the captured card */}
-        <div className="mt-4 space-y-3">
+        <div className="mt-6 space-y-3">
           {/* Primary Actions Row */}
           <div className="flex gap-3">
             {/* Play Again */}
             <button
               onClick={onPlayAgain}
-              className="flex-1 px-4 py-3 bg-amber-400 hover:bg-amber-300 text-black font-bold rounded-xl transition-colors"
+              className="flex-1 px-5 py-3.5 bg-amber-400 hover:bg-amber-300 active:bg-amber-500 text-black font-bold rounded-xl transition-all shadow-lg shadow-amber-400/20 hover:shadow-amber-400/30 hover:scale-[1.02] active:scale-[0.98]"
             >
               Play Again
             </button>
@@ -483,7 +483,7 @@ export default function ResultCard({
               <button
                 onClick={() => setShowShareMenu(!showShareMenu)}
                 disabled={isGenerating}
-                className="w-full px-4 py-3 bg-[#0a0a0a] hover:bg-[#1a1a1a] text-white font-semibold rounded-xl transition-colors border border-white/20 flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full px-5 py-3.5 bg-amber-400 hover:bg-amber-300 active:bg-amber-500 text-black font-bold rounded-xl transition-all shadow-lg shadow-amber-400/20 hover:shadow-amber-400/30 flex items-center justify-center gap-2 disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98]"
               >
                 {isGenerating ? (
                   <>
@@ -547,16 +547,26 @@ export default function ResultCard({
           {isLoggedIn ? (
             <Link
               href={`/leaderboard/${gameMetadata.slug}`}
-              className="block w-full px-4 py-3 bg-[#0a0a0a] hover:bg-[#1a1a1a] text-white/70 hover:text-white font-semibold rounded-xl transition-colors border border-white/10 text-center"
+              className="block w-full px-5 py-3.5 bg-[#2a2a2a] hover:bg-[#363636] active:bg-[#2a2a2a] text-white font-medium rounded-xl transition-all text-center group hover:scale-[1.02] active:scale-[0.98]"
             >
-              View Leaderboard →
+              <span className="inline-flex items-center gap-2">
+                View Leaderboard
+                <svg className="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </span>
             </Link>
           ) : (
             <button
               onClick={() => setShowLoginModal(true)}
-              className="w-full px-4 py-3 bg-gradient-to-r from-amber-400/20 to-amber-600/20 hover:from-amber-400/30 hover:to-amber-600/30 text-amber-400 font-semibold rounded-xl transition-all border border-amber-400/30 text-center"
+              className="w-full px-5 py-3.5 bg-[#2a2a2a] hover:bg-[#363636] active:bg-[#2a2a2a] text-white font-medium rounded-xl transition-all text-center group hover:scale-[1.02] active:scale-[0.98]"
             >
-              Sign in to see your rank →
+              <span className="inline-flex items-center gap-2">
+                Sign in to see your rank
+                <svg className="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </span>
             </button>
           )}
         </div>
