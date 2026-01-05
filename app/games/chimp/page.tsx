@@ -6,6 +6,7 @@ import GameShell, { GameShellState, GameResult } from '@/components/GameShell';
 import { getGameMetadata } from '@/lib/games/registry';
 import { useMe } from '@/app/providers/MeContext';
 import { createClient } from '@/lib/supabase/client';
+import ResultCard from '@/components/ResultCard';
 
 type Phase = 'idle' | 'showing' | 'hidden' | 'failed';
 
@@ -68,6 +69,8 @@ export default function ChimpGamePage() {
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<GameResult | undefined>(undefined);
   const [memorizeProgress, setMemorizeProgress] = useState(0);
+  const [scoreTimestamp, setScoreTimestamp] = useState<Date | undefined>(undefined);
+  const [isNewHighScore, setIsNewHighScore] = useState(false);
 
   const hideTimerRef = useRef<NodeJS.Timeout | null>(null);
   const progressAnimationRef = useRef<number | null>(null);
@@ -209,6 +212,7 @@ export default function ChimpGamePage() {
 
     if (valueClicked !== nextExpected) {
       setPhase('failed');
+      setScoreTimestamp(new Date());
       const finalScore = Math.max(level - 1, 0);
       setResult({
         score: finalScore,
@@ -219,11 +223,15 @@ export default function ChimpGamePage() {
 
       if (finalScore > 0) {
         setSubmitting(true);
+        setIsNewHighScore(false);
         const submitResult = await submitScore('chimp', finalScore);
         setSubmitting(false);
         
         if (submitResult.success) {
           console.log('Score submitted successfully!');
+          if (submitResult.isNewHighScore) {
+            setIsNewHighScore(true);
+          }
         } else {
           console.error('Failed to submit score:', submitResult.error);
         }
@@ -359,40 +367,17 @@ export default function ChimpGamePage() {
   );
 
   const renderResult = (result: GameResult) => (
-    <div className="text-center space-y-6">
-      <div>
-        <h2 className="text-2xl md:text-3xl font-bold text-[#0a0a0a] mb-2">Game Over</h2>
-        <div className="text-5xl md:text-6xl font-bold text-amber-400 mb-2">
-          {result.score}
-          {result.scoreLabel && (
-            <span className="text-2xl md:text-3xl text-[#0a0a0a]/60 ml-2">
-              {result.scoreLabel}
-            </span>
-          )}
-        </div>
-        {submitting && <p className="text-[#0a0a0a]/60 text-base">Saving score...</p>}
-        {!submitting && <p className="text-green-600 text-base">✓ Score saved!</p>}
-        {result.personalBest !== undefined && (
-          <p className="text-[#0a0a0a]/60 text-sm md:text-base mt-2">
-            Personal Best: {result.personalBest} {result.personalBestLabel}
-          </p>
-        )}
-      </div>
-      <div className="flex flex-wrap items-center justify-center gap-3">
-        <button
-          onClick={() => startRun(4)}
-          className="px-6 py-3 bg-amber-400 hover:bg-amber-300 text-black font-bold rounded-xl transition-colors"
-        >
-          Play Again
-        </button>
-        <a
-          href={`/leaderboard/chimp`}
-          className="px-6 py-3 bg-[#0a0a0a]/10 hover:bg-[#0a0a0a]/20 text-[#0a0a0a] font-semibold rounded-xl transition-colors border border-[#0a0a0a]/20"
-        >
-          View Leaderboard
-        </a>
-      </div>
-    </div>
+    <ResultCard
+      gameMetadata={gameMetadata}
+      score={result.score}
+      scoreLabel="levels"
+      personalBest={bestLevel > 0 ? bestLevel : undefined}
+      personalBestLabel="levels"
+      isNewHighScore={isNewHighScore}
+      timestamp={scoreTimestamp}
+      onPlayAgain={() => startRun(4)}
+      isSubmitting={submitting}
+    />
   );
 
   const gameMetadata = getGameMetadata('chimp');
