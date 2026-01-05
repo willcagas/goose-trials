@@ -7,6 +7,11 @@ import LoginModal from './LoginModal';
 import { GameMetadata } from '@/lib/games/registry';
 import { toPng } from 'html-to-image';
 
+interface TopScore {
+  score_value: number;
+  created_at: string;
+}
+
 export interface ResultCardProps {
   // Game info
   gameMetadata: GameMetadata;
@@ -16,7 +21,13 @@ export interface ResultCardProps {
   scoreLabel?: string;
   personalBest?: number | string;
   personalBestLabel?: string;
+  personalAverage?: number | null;
+  personalAverageLabel?: string;
   message?: string;
+  
+  // Top 5 scores for sidebar display
+  topScores?: (TopScore | null)[];
+  loadingScores?: boolean;
   
   // High score celebration
   isNewHighScore?: boolean;
@@ -72,7 +83,11 @@ export default function ResultCard({
   scoreLabel,
   personalBest,
   personalBestLabel,
+  personalAverage,
+  personalAverageLabel,
   message,
+  topScores,
+  loadingScores = false,
   isNewHighScore = false,
   username: propUsername,
   universityName,
@@ -349,14 +364,27 @@ export default function ResultCard({
               )}
             </div>
 
-            {/* Personal Best */}
-            {personalBest !== undefined && (
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-full mb-4">
-                <span className="text-white/60 text-sm">Personal Best:</span>
-                <span className="text-amber-400 font-bold">
-                  {personalBest}
-                  {personalBestLabel && ` ${personalBestLabel}`}
-                </span>
+            {/* Personal Best & Average */}
+            {(personalBest !== undefined || personalAverage !== undefined) && (
+              <div className="flex items-center justify-center gap-3 flex-wrap mb-4">
+                {personalBest !== undefined && (
+                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-full">
+                    <span className="text-white/60 text-sm">Personal Best:</span>
+                    <span className="text-amber-400 font-bold">
+                      {personalBest}
+                      {personalBestLabel && ` ${personalBestLabel}`}
+                    </span>
+                  </div>
+                )}
+                {personalAverage !== undefined && personalAverage !== null && (
+                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-amber-400/10 border border-amber-400/30 rounded-full">
+                    <span className="text-white/60 text-sm">Personal Avg:</span>
+                    <span className="text-amber-400 font-bold">
+                      {Math.round(personalAverage)}
+                      {personalAverageLabel && ` ${personalAverageLabel}`}
+                    </span>
+                  </div>
+                )}
               </div>
             )}
 
@@ -385,6 +413,51 @@ export default function ResultCard({
                 </div>
               )}
             </div>
+
+            {/* Top 5 Scores */}
+            {topScores && topScores.length > 0 && (
+              <div className="mt-6 pt-4 border-t border-white/10">
+                <div className="text-white/50 text-xs uppercase tracking-wider mb-3">Your Top 5 Scores</div>
+                <div className="space-y-1.5">
+                  {loadingScores ? (
+                    <div className="flex items-center justify-center py-4">
+                      <svg className="w-5 h-5 animate-spin text-amber-400" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    </div>
+                  ) : (
+                    topScores.map((scoreItem, index) => (
+                      <div 
+                        key={index}
+                        className={`flex items-center justify-between px-3 py-2 rounded-lg ${
+                          index === 0 ? 'bg-amber-400/10 border border-amber-400/30' : 'bg-white/5'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs font-bold ${index === 0 ? 'text-amber-400' : 'text-white/40'}`}>
+                            #{index + 1}
+                          </span>
+                          {scoreItem ? (
+                            <span className={`font-medium ${index === 0 ? 'text-amber-400' : 'text-white/80'}`}>
+                              {scoreItem.score_value}
+                              {scoreLabel && <span className="text-white/50 ml-1">{scoreLabel}</span>}
+                            </span>
+                          ) : (
+                            <span className="text-white/30">--</span>
+                          )}
+                        </div>
+                        {scoreItem && (
+                          <span className="text-white/30 text-xs">
+                            {new Date(scoreItem.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          </span>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Shareable footer - visible in image */}
             <div className="mt-6 pt-4 border-t border-white/10">

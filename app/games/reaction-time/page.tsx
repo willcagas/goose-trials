@@ -334,6 +334,10 @@ export default function ReactionTimeGame() {
         scoreLabel="ms"
         personalBest={bestTime ?? undefined}
         personalBestLabel="ms"
+        personalAverage={leaderboardAverage}
+        personalAverageLabel="ms"
+        topScores={topScores}
+        loadingScores={loadingScores}
         message={`Attempts: ${attempts}`}
         isNewHighScore={isNewHighScore}
         timestamp={scoreTimestamp}
