@@ -356,7 +356,7 @@ export default function HomePage() {
               <p className="text-gray-500">No rankings available.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="max-w-4xl mx-auto space-y-3">
               {(() => {
                 // Define the order of trials to match the trials section
                 const trialOrder = [
@@ -367,7 +367,7 @@ export default function HomePage() {
                   'pathfinding',
                   'hanoi'
                 ];
-                
+
                 // Sort tests to match trial order
                 const sortedTests = [...tests].sort((a, b) => {
                   const indexA = trialOrder.indexOf(a.slug);
@@ -378,13 +378,13 @@ export default function HomePage() {
                   if (indexB === -1) return -1;
                   return indexA - indexB;
                 });
-                
+
                 return sortedTests.map((test) => {
                 const leaders = leaderboards[test.slug] || [];
                 const playerCount = leaders.length;
                 const userEntry = user ? leaders.find(entry => entry.is_you) : null;
                 const userRank = userEntry ? userEntry.rank : null;
-                
+
                 return (
                   <Link
                     key={test.slug}
@@ -392,52 +392,42 @@ export default function HomePage() {
                     onClick={(e) => e.stopPropagation()}
                     className="group block cursor-pointer"
                   >
-                    <div className="relative overflow-hidden p-6 rounded-2xl bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 hover:border-amber-400 hover:scale-105 active:scale-[0.98] transition-all shadow-sm hover:shadow-xl h-full flex flex-col cursor-pointer">
-                      {/* Trophy Icon with Number Badge */}
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="relative">
-                          <Trophy className="w-10 h-10 text-amber-400 group-hover:scale-110 transition-transform duration-300" />
-                          {playerCount > 0 && (
-                            <div className="absolute -top-2 -right-2 w-6 h-6 bg-amber-400 rounded-full border-2 border-white flex items-center justify-center">
-                              <span className="text-xs font-bold text-white">{playerCount}</span>
+                    <div className="relative overflow-hidden px-6 py-4 rounded-xl bg-white border border-gray-200 hover:border-amber-400 hover:shadow-md active:scale-[0.99] transition-all cursor-pointer">
+                      <div className="flex items-center justify-between gap-4">
+                        {/* Left: Trophy Icon & Title */}
+                        <div className="flex items-center gap-4 flex-1 min-w-0">
+                          <Trophy className="w-6 h-6 text-amber-400 flex-shrink-0 group-hover:scale-110 transition-transform" />
+                          <h3 className="text-lg font-bold text-gray-900 uppercase group-hover:text-amber-600 transition-colors truncate">
+                            {test.name}
+                          </h3>
+                        </div>
+
+                        {/* Right: Stats */}
+                        <div className="flex items-center gap-6 flex-shrink-0">
+                          {/* Player Count */}
+                          <div className="text-right">
+                            <div className="text-xs text-gray-500 uppercase tracking-wide">Players</div>
+                            <div className="text-lg font-bold text-gray-900">
+                              {playerCount > 0 ? playerCount : '—'}
+                            </div>
+                          </div>
+
+                          {/* User Rank (if logged in) */}
+                          {user && (
+                            <div className="text-right min-w-[80px]">
+                              <div className="text-xs text-amber-600 uppercase tracking-wide">Your Rank</div>
+                              <div className="text-lg font-bold text-amber-700">
+                                {userRank ? `#${userRank}` : '—'}
+                              </div>
                             </div>
                           )}
+
+                          {/* Arrow */}
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 text-amber-400 group-hover:translate-x-1 transition-transform">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                          </svg>
                         </div>
-                        <h3 className="text-xl font-bold text-gray-900 uppercase group-hover:text-amber-600 transition-colors flex-1 text-right">
-                          {test.name}
-                        </h3>
                       </div>
-                      
-                      {/* Stats Section */}
-                      <div className="flex-1 space-y-3 mb-4">
-                        {/* Player Count Stat */}
-                        <div className="p-3 bg-white rounded-lg border border-gray-200">
-                          <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">Players</div>
-                          <div className="text-2xl font-bold text-gray-900">
-                            {playerCount > 0 ? playerCount : '—'}
-                          </div>
-                        </div>
-                        
-                        {/* User Rank Stat (if logged in) */}
-                        {user && (
-                          <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
-                            <div className="text-xs text-amber-600 uppercase tracking-wide mb-1">Your Global Rank</div>
-                            <div className="text-2xl font-bold text-amber-700">
-                              {userRank ? `#${userRank}` : '—'}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                      
-                        {/* See Rankings Button */}
-                        <div className="mt-auto pt-4 border-t border-gray-200">
-                          <div className="flex items-center justify-center gap-2 text-lg font-bold text-amber-600 group-hover:text-amber-500 transition-colors">
-                            <span>View Full Leaderboard</span>
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4 group-hover:translate-x-1 transition-transform">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-                            </svg>
-                          </div>
-                        </div>
                     </div>
                   </Link>
                 );
