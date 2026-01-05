@@ -122,7 +122,7 @@ export default function HanoiGame() {
   const [lastMovedDisk, setLastMovedDisk] = useState<{ rod: number; disk: number } | null>(null);
   
   // Timer refs
-  const startTimeRef = useRef<number>(0);
+  const startTimeRef = useRef<number | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const maxTimeRef = useRef<NodeJS.Timeout | null>(null);
   
@@ -174,22 +174,12 @@ export default function HanoiGame() {
     setDiskCount(disks);
     initializeGame(disks);
     setGameState('playing');
-    startTimeRef.current = Date.now();
+    startTimeRef.current = null;
     
     // Reset submission state
     setSubmitting(false);
     setSubmitStatus('idle');
     setSubmitError(null);
-    
-    // Start timer
-    timerRef.current = setInterval(() => {
-      setElapsedMs(Date.now() - startTimeRef.current);
-    }, 10);
-    
-    // Max time auto-end (DNF)
-    maxTimeRef.current = setTimeout(() => {
-      endGame(false); // false = did not complete
-    }, CONFIG.MAX_RUN_MS);
   }, [initializeGame]);
 
   // End the game - uses refs to avoid stale closures in timeout
@@ -211,7 +201,9 @@ export default function HanoiGame() {
     const currentDiskCount = diskCountRef.current;
     const currentGameMode = gameModeRef.current;
     
-    const finalElapsed = completed ? Date.now() - startTimeRef.current : CONFIG.MAX_RUN_MS;
+    const finalElapsed = completed && startTimeRef.current !== null
+      ? Date.now() - startTimeRef.current
+      : CONFIG.MAX_RUN_MS;
     const optimal = getOptimalMoves(currentDiskCount);
     const extra = Math.max(0, currentMoves - optimal);
     const score = calculateScore(finalElapsed, currentMoves, currentDiskCount);
@@ -348,6 +340,18 @@ export default function HanoiGame() {
     };
   }, []);
 
+  const startTimerIfNeeded = useCallback(() => {
+    if (startTimeRef.current !== null) return;
+    startTimeRef.current = Date.now();
+    timerRef.current = setInterval(() => {
+      if (startTimeRef.current === null) return;
+      setElapsedMs(Date.now() - startTimeRef.current);
+    }, 10);
+    maxTimeRef.current = setTimeout(() => {
+      endGame(false); // false = did not complete
+    }, CONFIG.MAX_RUN_MS);
+  }, [endGame]);
+
   // Handle rod interaction (click or keyboard)
   const handleRodAction = useCallback((rodIndex: number) => {
     if (gameState !== 'playing') {
@@ -374,6 +378,7 @@ export default function HanoiGame() {
         // Attempt move using helper - only increment moves if legal
         const newRods = moveDisk(rods, selectedRod, rodIndex);
         if (newRods !== null) {
+          startTimerIfNeeded();
           // Track which disk just moved for animation
           const movedDisk = rods[selectedRod][rods[selectedRod].length - 1];
           setLastMovedDisk({ rod: rodIndex, disk: movedDisk });
@@ -392,7 +397,7 @@ export default function HanoiGame() {
         }
       }
     }
-  }, [gameState, selectedRod, rods, triggerHaptic]);
+  }, [gameState, selectedRod, rods, triggerHaptic, startTimerIfNeeded]);
 
   // Legacy click handler for backwards compatibility
   const handleRodClick = (rodIndex: number) => handleRodAction(rodIndex);
@@ -870,4 +875,3 @@ export default function HanoiGame() {
     />
   );
 }
-
