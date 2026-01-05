@@ -1,5 +1,8 @@
-import {SessionProvider} from '@/app/providers/SessionContext';
-import {MeProvider} from '@/app/providers/MeContext';
+import { Suspense } from 'react';
+import { SessionProvider } from '@/app/providers/SessionContext';
+import { MeProvider } from '@/app/providers/MeContext';
+import { PHProvider } from '@/app/providers/PostHogProvider';
+import PostHogPageView from '@/app/PostHogPageView';
 import UsernamePrompt from '@/components/UsernamePrompt';
 import './globals.css';
 
@@ -10,12 +13,17 @@ export default function RootLayout({children,}: {children: React.ReactNode;}) {
   return (
     <html lang="en">
       <body>
+        <PHProvider>
+          <Suspense fallback={null}>
+            <PostHogPageView />
+          </Suspense>
           <SessionProvider>
             <MeProvider>
               {children}
               <UsernamePrompt />
             </MeProvider>
           </SessionProvider>
+        </PHProvider>
       </body>
     </html>
   )

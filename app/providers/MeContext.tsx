@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { useSession } from './SessionContext';
+import posthog from 'posthog-js';
 
 export interface MeData {
   isLoggedIn: boolean;
@@ -50,6 +51,13 @@ export function MeProvider({ children }: { children: React.ReactNode }) {
       const data: MeData = await response.json();
       setMe(data);
       lastFetchedUserIdRef.current = data.userId;
+      
+      // Update PostHog user properties with username
+      if (data.isLoggedIn && data.userId && data.username) {
+        posthog.people.set({
+          username: data.username,
+        });
+      }
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Unknown error');
       setError(error);

@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
 import { completeOnboarding } from '@/lib/guest/onboarding';
+import posthog from 'posthog-js';
 
 interface SessionContextType {
     user: User | null;
@@ -175,9 +176,15 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
             // Trigger onboarding on sign in or initial session (when user is already logged in on page load)
             if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && result?.id) {
+                // Identify user in PostHog for analytics
+                posthog.identify(result.id, {
+                    email: result.email,
+                });
                 await triggerOnboardingIfNeeded(result.id);
             }
             if (event === 'SIGNED_OUT') {
+                // Reset PostHog user identity
+                posthog.reset();
                 // Reset onboarding state when user signs out
                 isOnboardingInProgressRef.current = false;
                 clearOnboardingFlag(previousUserId);
@@ -192,6 +199,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     const signOut = async () => {
         const supabase = createClient();
         const userIdToClear = currentUserIdRef.current;
+        
+        // Reset PostHog user identity
+        posthog.reset();
         
         // Reset onboarding state before signing out
         isOnboardingInProgressRef.current = false;
