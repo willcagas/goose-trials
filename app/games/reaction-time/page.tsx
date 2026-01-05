@@ -458,7 +458,7 @@ export default function ReactionTimeGame() {
       renderResult={renderResult}
       result={result}
       statusText={getStatusText()}
-      maxWidth="full"
+      maxWidth="2xl"
     />
   );
 }
