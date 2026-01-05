@@ -124,8 +124,11 @@ export default function AimTrainerGame() {
     const renderGame = () => (
         <div className="w-full">
             <div className="bg-[#0a0a0a]/10 border border-[#0a0a0a]/20 shadow-xl p-6 rounded-xl">
-                <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-[#0a0a0a]/70 mb-4">
+                <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-[#0a0a0a]/70 mb-4 gap-3">
                     <span>{phaseLabel}</span>
+                    <span className="tabular-nums" aria-live="polite">
+                        Time left {formatMs(timeLeftMs)}
+                    </span>
                     <span>{Math.round(ROUND_DURATION_MS / 1000)}s Round</span>
                 </div>
                 <div className="flex justify-center">
