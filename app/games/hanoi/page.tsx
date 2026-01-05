@@ -838,6 +838,7 @@ export default function HanoiGame() {
       gameState={getShellState()}
       onStart={() => startGame('ranked')}
       onRestart={restartGame}
+      showRestart={true}
       onQuit={quitGame}
       renderGame={renderGame}
       renderReady={renderReady}

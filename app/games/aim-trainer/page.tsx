@@ -190,6 +190,7 @@ export default function AimTrainerGame() {
             gameState={getShellState()}
             onStart={startRun}
             onRestart={startRun}
+            showRestart={true}
             onQuit={resetRun}
             renderGame={renderGame}
             renderReady={renderReady}
