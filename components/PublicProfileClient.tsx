@@ -92,7 +92,7 @@ export default function PublicProfileClient({
             {/* CTAs based on auth state */}
             {user ? (
               <Link
-                href="/leaderboard/reaction-time"
+                href="/#rankings"
                 className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-amber-400 text-gray-900 font-bold uppercase tracking-wide rounded-full hover:bg-amber-300 transition-colors"
               >
                 View Leaderboards

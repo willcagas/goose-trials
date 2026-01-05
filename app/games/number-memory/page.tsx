@@ -35,7 +35,13 @@ export default function NumberMemoryGamePage() {
 
   // Load best score from localStorage and Supabase on mount
   useEffect(() => {
-    // First load from localStorage
+    // Only show best scores for logged-in users
+    if (!me?.isLoggedIn || !me?.userId) {
+      setBestScore(0);
+      return;
+    }
+
+    // Load from localStorage as initial value
     const stored = localStorage.getItem('number_memory_best');
     let localBest = 0;
     if (stored !== null) {
@@ -43,31 +49,29 @@ export default function NumberMemoryGamePage() {
       setBestScore(localBest);
     }
 
-    // If user is logged in, fetch best score from Supabase
-    if (me?.isLoggedIn && me?.userId) {
-      const fetchBestScore = async () => {
-        try {
-          const supabase = createClient();
-          const { data, error } = await supabase
-            .from('scores')
-            .select('score_value')
-            .eq('test_slug', 'number-memory')
-            .eq('user_id', me.userId)
-            .order('score_value', { ascending: false }) // Higher is better
-            .limit(1);
+    // Fetch best score from Supabase
+    const fetchBestScore = async () => {
+      try {
+        const supabase = createClient();
+        const { data, error } = await supabase
+          .from('scores')
+          .select('score_value')
+          .eq('test_slug', 'number-memory')
+          .eq('user_id', me.userId)
+          .order('score_value', { ascending: false }) // Higher is better
+          .limit(1);
 
-          if (!error && data && data.length > 0) {
-            const dbBest = data[0].score_value;
-            // Use the higher of localStorage and database
-            setBestScore(Math.max(localBest, dbBest));
-          }
-        } catch (error) {
-          console.error('Error fetching best score from Supabase:', error);
+        if (!error && data && data.length > 0) {
+          const dbBest = data[0].score_value;
+          // Use the higher of localStorage and database
+          setBestScore(Math.max(localBest, dbBest));
         }
-      };
+      } catch (error) {
+        console.error('Error fetching best score from Supabase:', error);
+      }
+    };
 
-      fetchBestScore();
-    }
+    fetchBestScore();
   }, [me?.isLoggedIn, me?.userId]);
 
   // Save best score to localStorage when it changes
@@ -370,7 +374,7 @@ export default function NumberMemoryGamePage() {
       </div>
       <div className="flex items-center justify-center gap-3 text-sm">
         <div className="px-3 py-1 rounded-full bg-amber-400/15 border border-amber-400/25 text-[#0a0a0a]">
-          Best: <span className="font-bold">{bestScore}</span>
+          Best: <span className="font-bold">{bestScore > 0 ? bestScore : '--'}</span>
         </div>
       </div>
       <button

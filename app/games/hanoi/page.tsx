@@ -272,7 +272,13 @@ export default function HanoiGame() {
 
   // Load best score from localStorage and Supabase
   useEffect(() => {
-    // Load from localStorage first
+    // Only show best scores for logged-in users
+    if (!me?.isLoggedIn || !me?.userId) {
+      setBestScore(null);
+      return;
+    }
+
+    // Load from localStorage as initial value
     const stored = localStorage.getItem('hanoi_best_score');
     let localBest: number | null = null;
     if (stored) {
@@ -282,45 +288,41 @@ export default function HanoiGame() {
       }
     }
 
-    // If user is logged in, fetch from Supabase
-    if (me?.isLoggedIn && me?.userId) {
-      const fetchBestScore = async () => {
-        try {
-          const supabase = createClient();
-          const { data, error } = await supabase
-            .from('scores')
-            .select('score_value')
-            .eq('test_slug', 'hanoi')
-            .eq('user_id', me.userId)
-            .order('score_value', { ascending: true }) // Lower is better
-            .limit(1);
+    // Fetch from Supabase
+    const fetchBestScore = async () => {
+      try {
+        const supabase = createClient();
+        const { data, error } = await supabase
+          .from('scores')
+          .select('score_value')
+          .eq('test_slug', 'hanoi')
+          .eq('user_id', me.userId)
+          .order('score_value', { ascending: true }) // Lower is better
+          .limit(1);
 
-          if (error) throw error;
+        if (error) throw error;
 
-          if (data && data.length > 0) {
-            // Convert seconds to milliseconds
-            const supabaseBest = data[0].score_value * 1000;
-            // Use the better (lower) score
-            if (localBest === null || supabaseBest < localBest) {
-              setBestScore(supabaseBest);
-            } else {
-              setBestScore(localBest);
-            }
-          } else if (localBest !== null) {
+        if (data && data.length > 0) {
+          // Convert seconds to milliseconds
+          const supabaseBest = data[0].score_value * 1000;
+          // Use the better (lower) score
+          if (localBest === null || supabaseBest < localBest) {
+            setBestScore(supabaseBest);
+          } else {
             setBestScore(localBest);
           }
-        } catch (error) {
-          console.error('Error fetching best score from Supabase:', error);
-          if (localBest !== null) {
-            setBestScore(localBest);
-          }
+        } else if (localBest !== null) {
+          setBestScore(localBest);
         }
-      };
+      } catch (error) {
+        console.error('Error fetching best score from Supabase:', error);
+        if (localBest !== null) {
+          setBestScore(localBest);
+        }
+      }
+    };
 
-      fetchBestScore();
-    } else if (localBest !== null) {
-      setBestScore(localBest);
-    }
+    fetchBestScore();
   }, [me?.isLoggedIn, me?.userId]);
 
   // Save best score to localStorage
