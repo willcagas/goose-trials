@@ -316,13 +316,12 @@ export default function ReactionTimeGame() {
     }
 
     return (
-      <div className="text-center space-y-6">
+      <div className="text-center space-y-8">
         <div>
-          <h2 className="text-2xl md:text-3xl font-bold text-[#0a0a0a] mb-2">Run Complete</h2>
-          <div className="text-5xl md:text-6xl font-bold text-amber-400 mb-2">
+          <div className="text-6xl md:text-7xl font-bold text-amber-400 mb-4">
             {reactionTime}
             {result.scoreLabel && (
-              <span className="text-2xl md:text-3xl text-[#0a0a0a]/60 ml-2">
+              <span className="text-3xl md:text-4xl text-[#0a0a0a]/60 ml-2">
                 {result.scoreLabel}
               </span>
             )}
@@ -330,7 +329,7 @@ export default function ReactionTimeGame() {
           {submitting && <p className="text-[#0a0a0a]/60 text-base">Saving score...</p>}
           {!submitting && <p className="text-green-600 text-base">✓ Score saved!</p>}
           {result.personalBest !== undefined && (
-            <p className="text-[#0a0a0a]/60 text-sm md:text-base mt-2">
+            <p className="text-[#0a0a0a]/60 text-base md:text-lg mt-2">
               Personal Best: {result.personalBest}
               {result.personalBestLabel && ` ${result.personalBestLabel}`}
             </p>
@@ -342,7 +341,7 @@ export default function ReactionTimeGame() {
 
         {/* Leaderboard Average and Top 5 Scores */}
         {me?.isLoggedIn && (
-          <div className="bg-amber-400/15 border border-amber-400/30 rounded-xl p-3 md:p-4 max-w-md mx-auto">
+          <div className="bg-amber-400/15 border border-amber-400/30 rounded-xl p-6 md:p-8 max-w-lg mx-auto">
             {loadingScores ? (
               <div className="text-center py-4">
                 <p className="text-sm text-[#0a0a0a]/60">Loading scores...</p>
@@ -351,32 +350,32 @@ export default function ReactionTimeGame() {
               <>
                 {/* Leaderboard Average */}
                 {leaderboardAverage !== null && (
-                  <div className="mb-3">
-                    <p className="text-xs font-semibold text-[#0a0a0a]/70 mb-1 uppercase tracking-wide">
+                  <div className="mb-6">
+                    <p className="text-xs font-semibold text-[#0a0a0a]/70 mb-2 uppercase tracking-wider">
                       Your Leaderboard Score (Avg of Top 5)
                     </p>
-                    <p className="text-2xl md:text-3xl font-bold text-amber-400">
+                    <p className="text-3xl md:text-4xl font-bold text-amber-500">
                       {leaderboardAverage.toFixed(0)} ms
                     </p>
                   </div>
                 )}
 
                 {/* Top 5 Scores */}
-                <div className="flex flex-wrap items-center justify-center gap-1.5">
+                <div className="flex flex-wrap items-center justify-center gap-2">
                   {topScores.map((score, index) => (
                     <div
                       key={index}
-                      className={`flex-1 min-w-[70px] max-w-[85px] p-1.5 rounded-lg border ${
+                      className={`flex-1 min-w-[80px] max-w-[95px] p-2.5 rounded-xl border-2 ${
                         score
-                          ? 'bg-amber-400/20 border-amber-400/40'
-                          : 'bg-[#0a0a0a]/5 border-[#0a0a0a]/10 border-dashed'
+                          ? 'bg-white/50 border-amber-400/50 shadow-sm'
+                          : 'bg-white/20 border-white/30 border-dashed'
                       }`}
                     >
                       <div className="text-center">
-                        <div className="text-[10px] font-semibold text-[#0a0a0a]/60 mb-0.5">
+                        <div className="text-xs font-semibold text-[#0a0a0a]/60 mb-1">
                           #{index + 1}
                         </div>
-                        <div className={`text-xs font-bold ${score ? 'text-[#0a0a0a]' : 'text-[#0a0a0a]/40'}`}>
+                        <div className={`text-sm font-bold ${score ? 'text-[#0a0a0a]' : 'text-[#0a0a0a]/40'}`}>
                           {score ? `${score.score_value} ms` : '—'}
                         </div>
                       </div>
@@ -458,7 +457,8 @@ export default function ReactionTimeGame() {
       renderResult={renderResult}
       result={result}
       statusText={getStatusText()}
-      maxWidth="full"
+      maxWidth={getShellState() === 'PLAYING' ? 'full' : '2xl'}
+      gameClassName={getShellState() === 'PLAYING' ? '!px-0 !py-0' : ''}
     />
   );
 }

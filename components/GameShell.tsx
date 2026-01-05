@@ -44,9 +44,10 @@ export interface GameShellProps {
   // Optional props
   showBackButton?: boolean; // Show "Back to games" button (default: true)
   maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'full'; // Max width of game area (default: '2xl')
+  headerFooterMaxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl' | '6xl' | '7xl' | 'full'; // Max width of header/footer (optional, defaults to maxWidth behavior)
   className?: string; // Additional classes for the shell container
   gameClassName?: string; // Additional classes for the game panel area
-  
+
   // Allow games to disable global keybinds if needed
   disableKeybinds?: boolean;
 }
@@ -75,6 +76,7 @@ export default function GameShell({
   statusText,
   showBackButton = true,
   maxWidth = '2xl',
+  headerFooterMaxWidth,
   className,
   gameClassName,
   disableKeybinds = false,
@@ -148,9 +150,8 @@ export default function GameShell({
         }
       }
 
-      // ?: Toggle help (works even when keybinds are disabled)
-      // Note: On most keyboards, "?" is Shift+/, so e.key will be '?' when Shift is held
-      if (e.key === '?' && !e.repeat) {
+      // H: Toggle help (works even when keybinds are disabled)
+      if ((e.key === 'h' || e.key === 'H') && !e.repeat) {
         e.preventDefault();
         setShowHelp(!showHelp);
       }
@@ -235,7 +236,7 @@ export default function GameShell({
   // Get status text for footer
   const getStatusText = () => {
     if (statusText) return statusText;
-    
+
     switch (gameState) {
       case 'IDLE':
         return 'Press Space to start';
@@ -258,14 +259,22 @@ export default function GameShell({
     lg: 'max-w-lg',
     xl: 'max-w-xl',
     '2xl': 'max-w-2xl',
+    '3xl': 'max-w-3xl',
+    '4xl': 'max-w-4xl',
+    '5xl': 'max-w-5xl',
+    '6xl': 'max-w-6xl',
+    '7xl': 'max-w-7xl',
     full: 'max-w-full',
   };
+
+  // Determine header/footer max width - use prop if provided, otherwise default to xl for larger widths
+  const headerFooterWidth = headerFooterMaxWidth || (maxWidth === 'full' || maxWidth === '2xl' ? 'xl' : maxWidth);
 
   return (
     <div className={cn('min-h-screen bg-[#0a0a0a] text-white relative', className)}>
       {/* Header */}
       <header className="relative z-10 border-b border-white/10 bg-[#1a1a1a]">
-        <div className={cn('mx-auto px-4 md:px-6 py-4', maxWidthClasses[maxWidth])}>
+        <div className={cn('mx-auto px-4 md:px-6 py-4', maxWidthClasses[headerFooterWidth])}>
           <div className="flex items-center justify-between gap-4">
             {/* Left: Back button */}
             <div className="flex items-center gap-4">
@@ -273,7 +282,7 @@ export default function GameShell({
                 <Link
                   href="/"
                   onClick={handleBackClick}
-                  className="px-3 py-2 bg-white/10 hover:bg-white/20 text-white text-sm font-semibold rounded-lg transition-colors border border-white/20 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 focus:ring-offset-[#0a0a0a]"
+                  className="px-3 py-2 bg-white/10 hover:bg-white/20 text-white text-sm font-semibold rounded-lg transition-colors border border-white/20"
                 >
                   ← Back
                 </Link>
@@ -291,7 +300,7 @@ export default function GameShell({
             {/* Right: Help button */}
             <button
               onClick={() => setShowHelp(true)}
-              className="p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 focus:ring-offset-[#0a0a0a]"
+              className="p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
               aria-label="Show help"
             >
               <HelpCircle className="w-5 h-5 md:w-6 md:h-6" />
@@ -304,30 +313,40 @@ export default function GameShell({
       <main
         ref={gamePanelRef}
         className={cn(
-          'flex-1 flex items-center justify-center px-0 py-0 min-h-[calc(100vh-8rem)] bg-[#fafafa]',
+          'flex-1 flex items-center justify-center px-4 md:px-6 py-8 md:py-12 min-h-[calc(100vh-8rem)] bg-[#fafafa]',
           gameClassName
         )}
       >
-        <div className={cn('w-full h-full', maxWidthClasses[maxWidth])}>
+        <div className={cn('w-full', maxWidthClasses[maxWidth])}>
           {renderGamePanel()}
         </div>
       </main>
 
       {/* Footer */}
       <footer className="relative z-10 border-t border-white/10 bg-[#1a1a1a]">
-        <div className={cn('mx-auto px-4 md:px-6 py-3', maxWidthClasses[maxWidth])}>
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-xs md:text-sm text-white/60">
-            <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
-              <span>Space: start</span>
-              <span>•</span>
-              <span>R: restart</span>
-              <span>•</span>
-              <span>Esc: exit</span>
-              <span>•</span>
-              <span>?: help</span>
-            </div>
-            <div className="text-white/80 font-medium">
-              {getStatusText()}
+        <div className={cn('mx-auto px-4 md:px-6 py-3', maxWidthClasses[headerFooterWidth])}>
+          <div className="flex items-center justify-center gap-3 sm:gap-4 text-xs md:text-sm">
+            {gameState === 'IDLE' && (
+              <div className="flex items-center gap-1.5">
+                <kbd className="px-2 py-1 bg-white/10 border border-white/20 rounded text-white/90 font-mono text-xs shadow-sm">Space</kbd>
+                <span className="text-white/50">start</span>
+              </div>
+            )}
+            {gameState !== 'IDLE' && gameState !== 'COUNTDOWN' && (
+              <div className="flex items-center gap-1.5">
+                <kbd className="px-2 py-1 bg-white/10 border border-white/20 rounded text-white/90 font-mono text-xs shadow-sm">R</kbd>
+                <span className="text-white/50">restart</span>
+              </div>
+            )}
+            {(gameState === 'PLAYING' || gameState === 'PAUSED' || gameState === 'FINISHED') && (
+              <div className="flex items-center gap-1.5">
+                <kbd className="px-2 py-1 bg-white/10 border border-white/20 rounded text-white/90 font-mono text-xs shadow-sm">Esc</kbd>
+                <span className="text-white/50">exit</span>
+              </div>
+            )}
+            <div className="flex items-center gap-1.5">
+              <kbd className="px-2 py-1 bg-white/10 border border-white/20 rounded text-white/90 font-mono text-xs shadow-sm">H</kbd>
+              <span className="text-white/50">help</span>
             </div>
           </div>
         </div>

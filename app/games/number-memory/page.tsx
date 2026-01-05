@@ -309,17 +309,12 @@ export default function NumberMemoryGamePage() {
 
     if (phase === 'input') {
       return (
-        <div className="text-center space-y-6 w-full">
-          <div className="mb-8">
-            <div className="flex justify-center items-center mb-4">
-              <div className="text-5xl md:text-6xl font-mono font-black text-amber-400/20 select-none tabular-nums">
-                {'•'.repeat(currentDigits)}
-              </div>
-            </div>
-            <p className="text-[#0a0a0a]/70 text-base mb-6">Enter the {currentDigits}-digit number</p>
+        <div className="text-center space-y-8 w-full">
+          <div className="mb-4">
+            <p className="text-[#0a0a0a]/60 text-sm mb-6">What was the number?</p>
           </div>
-          
-          <div className="space-y-4">
+
+          <div className="space-y-6">
             <div className="flex justify-center items-center w-full">
               <input
                 ref={inputRef}
@@ -331,16 +326,18 @@ export default function NumberMemoryGamePage() {
                 onPaste={handlePaste}
                 onKeyDown={handleKeyDown}
                 maxLength={currentDigits}
-                className="px-6 py-4 text-4xl md:text-5xl font-mono text-center bg-[#0a0a0a]/10 border-2 border-amber-400/30 rounded-xl text-[#0a0a0a] placeholder-[#0a0a0a]/40 focus:outline-none focus:border-amber-400 transition-colors tabular-nums"
-                style={{ width: `${Math.max(currentDigits * 2.5, 10)}rem`, maxWidth: '100%' }}
-                placeholder="Type number..."
+                className="px-4 py-3 text-5xl md:text-6xl font-mono text-center bg-transparent border-b-2 border-gray-300 text-gray-900 focus:outline-none focus:border-amber-400 transition-colors tabular-nums"
+                style={{ width: `${Math.min(currentDigits * 2.8 + 2, 20)}rem`, maxWidth: '90vw' }}
+                placeholder=""
+                autoComplete="off"
+                autoFocus
               />
             </div>
-            
+
             <button
               onClick={handleSubmit}
               disabled={inputValue.trim() === ''}
-              className="px-8 py-4 bg-amber-400 text-black font-bold text-lg rounded-xl hover:bg-amber-300 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-8 py-3 bg-amber-400 text-black font-semibold text-base rounded-lg hover:bg-amber-500 transition disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Submit
             </button>
