@@ -271,7 +271,7 @@ export default function HanoiGame() {
       
       doSubmit();
     }
-  }, [gameState, result]);
+  }, [gameState, result, bestScore]);
 
   // Load best score from localStorage and Supabase
   useEffect(() => {
