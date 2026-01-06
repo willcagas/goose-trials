@@ -231,7 +231,9 @@ export default function NumberMemoryGamePage() {
       if (finalScore > 0) {
         setSubmitting(true);
         setIsNewHighScore(false);
-        const submitResult = await submitScore('number-memory', finalScore);
+        // Pass previous best to avoid race condition with isNewHighScore
+        const previousBest = bestScore > 0 ? bestScore : null;
+        const submitResult = await submitScore('number-memory', finalScore, previousBest);
         setSubmitting(false);
 
         if (submitResult.success) {

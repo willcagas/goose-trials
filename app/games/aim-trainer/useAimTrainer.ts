@@ -120,13 +120,15 @@ export function useAimTrainer(me?: { isLoggedIn?: boolean; userId?: string | nul
     setSubmitting(true);
     setSubmitState('idle');
     setIsNewHighScore(false);
-    const result = await submitScore('aim-trainer', finalHits);
+    // Pass previous best to avoid race condition with isNewHighScore
+    // Note: We use the current bestHits value BEFORE the setBestHits update above takes effect
+    const result = await submitScore('aim-trainer', finalHits, bestHits);
     setSubmitting(false);
     setSubmitState(result.success ? 'success' : 'error');
     if (result.success && result.isNewHighScore) {
       setIsNewHighScore(true);
     }
-  }, []);
+  }, [bestHits]);
 
   useEffect(() => {
     if (phase !== 'running') return;
