@@ -628,7 +628,7 @@ export default function LeaderboardTestPage() {
         <div className="mb-6 md:mb-8">
           <button
             onClick={handleBackClick}
-            className="text-gray-600 hover:text-gray-900 mb-3 md:mb-4 inline-block text-sm md:text-base"
+            className="text-gray-600 hover:text-gray-900 mb-3 md:mb-4 inline-block text-sm md:text-base whitespace-nowrap"
           >
             ← Back
           </button>

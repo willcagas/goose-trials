@@ -72,11 +72,29 @@ function moveDisk(
   return newRods;
 }
 
+// Generate optimal solution for Tower of Hanoi
+function generateSolution(disks: number): Array<{ from: number; to: number }> {
+  const moves: Array<{ from: number; to: number }> = [];
+  
+  function hanoi(n: number, from: number, to: number, aux: number) {
+    if (n === 1) {
+      moves.push({ from, to });
+    } else {
+      hanoi(n - 1, from, aux, to);
+      moves.push({ from, to });
+      hanoi(n - 1, aux, to, from);
+    }
+  }
+  
+  hanoi(disks, 0, 2, 1);
+  return moves;
+}
+
 // ============================================================================
 // TYPES
 // ============================================================================
 type GameState = 'intro' | 'playing' | 'results';
-type GameMode = 'practice' | 'ranked';
+type GameMode = 'practice' | 'ranked' | 'tutorial';
 type Rod = number[]; // Array of disk sizes, bottom to top
 
 interface GameResult {
@@ -124,6 +142,13 @@ export default function HanoiGame() {
   const [errorRod, setErrorRod] = useState<number | null>(null);
   const [lastMovedDisk, setLastMovedDisk] = useState<{ rod: number; disk: number } | null>(null);
   
+  // Tutorial mode: solution and current hint
+  const [solution, setSolution] = useState<Array<{ from: number; to: number }>>([]);
+  const [currentHintIndex, setCurrentHintIndex] = useState(0);
+  
+  // Practice/Tutorial dropdown state
+  const [showPracticeMenu, setShowPracticeMenu] = useState(false);
+  
   // Timer refs
   const startTimeRef = useRef<number | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -139,6 +164,21 @@ export default function HanoiGame() {
   useEffect(() => { gameModeRef.current = gameMode; }, [gameMode]);
   useEffect(() => { diskCountRef.current = diskCount; }, [diskCount]);
   useEffect(() => { movesRef.current = moves; }, [moves]);
+  
+  // Close practice menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (showPracticeMenu && !target.closest('.practice-menu-container')) {
+        setShowPracticeMenu(false);
+      }
+    };
+    
+    if (showPracticeMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showPracticeMenu]);
 
   // Haptic feedback helper (mobile only, optional)
   const triggerHaptic = useCallback((type: 'light' | 'medium' | 'error') => {
@@ -173,12 +213,22 @@ export default function HanoiGame() {
     // Reset restart flag when game actually starts
     isRestartingRef.current = false;
     
-    const disks = mode === 'practice' ? CONFIG.TUTORIAL_DISKS : CONFIG.RANKED_DISKS;
+    const disks = mode === 'practice' || mode === 'tutorial' ? CONFIG.TUTORIAL_DISKS : CONFIG.RANKED_DISKS;
     setGameMode(mode);
     setDiskCount(disks);
     initializeGame(disks);
     setGameState('playing');
     startTimeRef.current = null;
+    
+    // Generate solution for tutorial mode
+    if (mode === 'tutorial') {
+      const sol = generateSolution(disks);
+      setSolution(sol);
+      setCurrentHintIndex(0);
+    } else {
+      setSolution([]);
+      setCurrentHintIndex(0);
+    }
     
     // Reset submission state
     setSubmitting(false);
@@ -236,7 +286,7 @@ export default function HanoiGame() {
     }
   }, [rods, gameState, diskCount, endGame]);
 
-  // Auto-submit score when results are reached in ranked mode
+  // Auto-submit score when results are reached in ranked mode (not tutorial or practice)
   useEffect(() => {
     if (gameState === 'results' && result && result.mode === 'ranked' && result.completed) {
       const doSubmit = async () => {
@@ -391,7 +441,10 @@ export default function HanoiGame() {
         // Attempt move using helper - only increment moves if legal
         const newRods = moveDisk(rods, selectedRod, rodIndex);
         if (newRods !== null) {
-          startTimerIfNeeded();
+          // Don't start timer in tutorial mode
+          if (gameMode !== 'tutorial') {
+            startTimerIfNeeded();
+          }
           // Track which disk just moved for animation
           const movedDisk = rods[selectedRod][rods[selectedRod].length - 1];
           setLastMovedDisk({ rod: rodIndex, disk: movedDisk });
@@ -401,6 +454,14 @@ export default function HanoiGame() {
           setMoves(m => m + 1);
           setSelectedRod(null);
           triggerHaptic('medium');
+          
+          // Update hint in tutorial mode if move matches
+          if (gameMode === 'tutorial' && solution.length > 0 && currentHintIndex < solution.length) {
+            const expectedMove = solution[currentHintIndex];
+            if (selectedRod === expectedMove.from && rodIndex === expectedMove.to) {
+              setCurrentHintIndex(prev => prev + 1);
+            }
+          }
         } else {
           // Illegal move - show error feedback
           setErrorRod(rodIndex);
@@ -460,6 +521,9 @@ export default function HanoiGame() {
 
   const getStatusText = () => {
     if (gameState === 'playing') {
+      if (gameMode === 'tutorial') {
+        return `${moves}/${getOptimalMoves(diskCount)} moves`;
+      }
       return `${formatTime(elapsedMs)} • ${moves}/${getOptimalMoves(diskCount)} moves`;
     }
     if (gameState === 'results' && submitting) {
@@ -557,6 +621,12 @@ export default function HanoiGame() {
     const rodLabels = ['A', 'B', 'C'];
     const keyHints = ['1', '2', '3'];
     
+    // Tutorial mode hints
+    const showHint = gameMode === 'tutorial' && solution.length > 0 && currentHintIndex < solution.length;
+    const hint = showHint ? solution[currentHintIndex] : null;
+    const isHintFrom = hint?.from === rodIndex;
+    const isHintTo = hint?.to === rodIndex;
+    
     // Calculate heights
     const poleHeight = (diskCount + 1) * 32; // Height for pole
     
@@ -590,11 +660,15 @@ export default function HanoiGame() {
             ? 'bg-rose-100/80 ring-2 ring-rose-400 animate-shake'
             : isSelected
             ? 'bg-amber-50/80 ring-2 ring-amber-400 shadow-lg shadow-amber-400/20'
+            : isHintFrom
+            ? 'bg-cyan-50/80 ring-2 ring-cyan-400 shadow-lg shadow-cyan-400/20'
+            : isHintTo
+            ? 'bg-emerald-50/80 ring-2 ring-emerald-400 shadow-lg shadow-emerald-400/20'
             : hasDisks
             ? 'bg-white/60 hover:bg-white/80 hover:shadow-md backdrop-blur'
             : 'bg-white/40 hover:bg-white/60 backdrop-blur'
           }
-          border ${isError ? 'border-rose-300' : isSelected ? 'border-amber-300' : 'border-white/70'}
+          border ${isError ? 'border-rose-300' : isSelected ? 'border-amber-300' : isHintFrom ? 'border-cyan-300' : isHintTo ? 'border-emerald-300' : 'border-white/70'}
         `}
         disabled={gameState !== 'playing'}
       >
@@ -631,19 +705,32 @@ export default function HanoiGame() {
         </div>
         
         {/* Label with keyboard hint */}
-        <div className="mt-3 flex items-center gap-1.5">
-          <span className={`font-bold text-sm transition-colors duration-150 ${
-            isError ? 'text-rose-500' : isSelected ? 'text-amber-400' : 'text-amber-400/60'
-          }`}>
-            {rodLabels[rodIndex]}
-          </span>
-          <kbd className={`hidden sm:inline-block text-xs px-1.5 py-0.5 rounded border transition-colors duration-150 ${
-            isSelected 
-              ? 'bg-amber-400/20 border-amber-400/40 text-amber-400' 
-              : 'bg-white/10 border-amber-400/20 text-amber-400/70'
-          }`}>
-            {keyHints[rodIndex]}
-          </kbd>
+        <div className="mt-3 flex flex-col items-center gap-1.5">
+          <div className="flex items-center gap-1.5">
+            <span className={`font-bold text-sm transition-colors duration-150 ${
+              isError ? 'text-rose-500' : isSelected ? 'text-amber-400' : isHintFrom ? 'text-cyan-500' : isHintTo ? 'text-emerald-500' : 'text-amber-400/60'
+            }`}>
+              {rodLabels[rodIndex]}
+            </span>
+            <kbd className={`hidden sm:inline-block text-xs px-1.5 py-0.5 rounded border transition-colors duration-150 ${
+              isSelected 
+                ? 'bg-amber-400/20 border-amber-400/40 text-amber-400' 
+                : isHintFrom
+                ? 'bg-cyan-400/20 border-cyan-400/40 text-cyan-400'
+                : isHintTo
+                ? 'bg-emerald-400/20 border-emerald-400/40 text-emerald-400'
+                : 'bg-white/10 border-amber-400/20 text-amber-400/70'
+            }`}>
+              {keyHints[rodIndex]}
+            </kbd>
+          </div>
+          {/* Tutorial hint text */}
+          {isHintFrom && (
+            <span className="text-xs font-semibold text-cyan-600 animate-pulse">Move from here</span>
+          )}
+          {isHintTo && (
+            <span className="text-xs font-semibold text-emerald-600 animate-pulse">Move to here</span>
+          )}
         </div>
         
         {/* Error message */}
@@ -681,16 +768,43 @@ export default function HanoiGame() {
       <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
         <button
           onClick={() => startGame('ranked')}
-          className="px-8 py-4 bg-amber-400 hover:bg-amber-300 text-black font-bold text-lg rounded-xl transition-colors"
+          className="px-8 py-4 bg-amber-400 hover:bg-amber-300 text-black font-bold text-lg rounded-xl transition-colors whitespace-nowrap"
         >
           Press Space / Tap Start
         </button>
-        <button
-          onClick={() => startGame('practice')}
-          className="px-6 py-4 bg-white hover:bg-amber-50 text-black font-bold text-lg rounded-xl transition-colors border border-amber-400"
-        >
-          Practice ({CONFIG.TUTORIAL_DISKS} disks)
-        </button>
+        <div className="relative practice-menu-container">
+          <button
+            onClick={() => setShowPracticeMenu(!showPracticeMenu)}
+            className="px-6 py-4 bg-white hover:bg-amber-50 text-black font-bold text-lg rounded-xl transition-colors border border-amber-400 whitespace-nowrap flex items-center gap-2"
+          >
+            Practice ({CONFIG.TUTORIAL_DISKS} disks)
+            <svg className={`w-4 h-4 transition-transform ${showPracticeMenu ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {showPracticeMenu && (
+            <div className="absolute top-full left-0 mt-2 w-full bg-white border border-amber-400 rounded-xl shadow-lg overflow-hidden z-10">
+              <button
+                onClick={() => {
+                  startGame('practice');
+                  setShowPracticeMenu(false);
+                }}
+                className="w-full px-6 py-3 text-left hover:bg-amber-50 text-black font-semibold text-base transition-colors"
+              >
+                Practice ({CONFIG.TUTORIAL_DISKS} disks)
+              </button>
+              <button
+                onClick={() => {
+                  startGame('tutorial');
+                  setShowPracticeMenu(false);
+                }}
+                className="w-full px-6 py-3 text-left hover:bg-amber-50 text-black font-semibold text-base transition-colors border-t border-amber-400/30"
+              >
+                Tutorial ({CONFIG.TUTORIAL_DISKS} disks)
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -700,16 +814,18 @@ export default function HanoiGame() {
       {/* Header with stats */}
       <header className="text-center space-y-4">
         <div className="inline-flex items-center gap-2 rounded-full bg-[#0a0a0a]/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#0a0a0a] border border-[#0a0a0a]/20">
-          {gameMode === 'ranked' ? '⚡ Ranked' : '🎯 Practice'}
+          {gameMode === 'ranked' ? '⚡ Ranked' : gameMode === 'tutorial' ? '📚 Tutorial' : '🎯 Practice'}
         </div>
         <h1 className="text-2xl md:text-3xl font-semibold leading-tight text-[#0a0a0a]">
           Move all disks to rod C.
         </h1>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 place-items-center">
-          <div className="order-1 sm:order-none rounded-full bg-[#0a0a0a]/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#0a0a0a] border border-[#0a0a0a]/20 tabular-nums whitespace-nowrap">
-            {formatTime(elapsedMs)}
-          </div>
-          <div className={`order-3 sm:order-none col-span-2 sm:col-span-1 rounded-full bg-[#0a0a0a]/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] border border-[#0a0a0a]/20 tabular-nums whitespace-nowrap ${
+          {gameMode !== 'tutorial' && (
+            <div className="order-1 sm:order-none rounded-full bg-[#0a0a0a]/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#0a0a0a] border border-[#0a0a0a]/20 tabular-nums whitespace-nowrap">
+              {formatTime(elapsedMs)}
+            </div>
+          )}
+          <div className={`order-3 sm:order-none ${gameMode === 'tutorial' ? 'col-span-2 sm:col-span-1' : 'col-span-2 sm:col-span-1'} rounded-full bg-[#0a0a0a]/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] border border-[#0a0a0a]/20 tabular-nums whitespace-nowrap ${
             moves <= getOptimalMoves(diskCount) ? 'text-emerald-600' : 'text-[#0a0a0a]/70'
           }`}>
             {moves} / {getOptimalMoves(diskCount)} moves
@@ -730,10 +846,15 @@ export default function HanoiGame() {
       {/* Instructions */}
       <div className="text-center text-[#0a0a0a]/70 text-sm space-y-1">
         <p className="min-h-[2.5rem] sm:min-h-0">
-          {selectedRod !== null 
-            ? 'Click a rod to move the disk there, or click again to deselect'
-            : 'Click a rod to select its top disk'
-          }
+          {gameMode === 'tutorial' && solution.length > 0 && currentHintIndex < solution.length ? (
+            <span className="text-cyan-600 font-semibold">
+              Hint: Move from rod {String.fromCharCode(65 + solution[currentHintIndex].from)} to rod {String.fromCharCode(65 + solution[currentHintIndex].to)}
+            </span>
+          ) : selectedRod !== null ? (
+            'Click a rod to move the disk there, or click again to deselect'
+          ) : (
+            'Click a rod to select its top disk'
+          )}
         </p>
         <p className="hidden sm:block text-xs text-[#0a0a0a]/50">
           <kbd className="px-1.5 py-0.5 bg-[#0a0a0a]/10 border border-[#0a0a0a]/20 rounded text-[#0a0a0a]/70">1</kbd>
@@ -753,8 +874,8 @@ export default function HanoiGame() {
       ? `${result.moves} moves • ${result.extraMoves === 0 ? 'Perfect!' : `+${result.extraMoves} extra`}`
       : 'Did Not Finish';
     
-    // Practice mode: simplified result card without score saving, sharing, leaderboard
-    if (result.mode === 'practice') {
+    // Practice/Tutorial mode: simplified result card without score saving, sharing, leaderboard
+    if (result.mode === 'practice' || result.mode === 'tutorial') {
       return (
         <div className="w-full max-w-md mx-auto">
           <div className="bg-[#0a0a0a] border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
@@ -769,7 +890,9 @@ export default function HanoiGame() {
                     style={{ imageRendering: 'pixelated' }}
                   />
                   <div>
-                    <div className="text-xs text-white/50 uppercase tracking-wider">Practice Mode</div>
+                    <div className="text-xs text-white/50 uppercase tracking-wider">
+                      {result.mode === 'tutorial' ? 'Tutorial Mode' : 'Practice Mode'}
+                    </div>
                     <div className="text-lg font-bold text-white">{gameMetadata.title}</div>
                   </div>
                 </div>
@@ -799,11 +922,19 @@ export default function HanoiGame() {
           <div className="mt-4 space-y-3">
             <div className="flex gap-3">
               <button
-                onClick={() => startGame('practice')}
+                onClick={() => startGame(result.mode)}
                 className="flex-1 px-4 py-3 bg-[#0a0a0a] hover:bg-[#1a1a1a] text-white font-bold rounded-xl transition-colors border border-white/20"
               >
-                Practice Again
+                {result.mode === 'tutorial' ? 'Try Tutorial Again' : 'Practice Again'}
               </button>
+              {result.mode === 'tutorial' && (
+                <button
+                  onClick={() => startGame('practice')}
+                  className="flex-1 px-4 py-3 bg-[#0a0a0a] hover:bg-[#1a1a1a] text-white font-bold rounded-xl transition-colors border border-white/20"
+                >
+                  Practice (No Hints)
+                </button>
+              )}
               <button
                 onClick={() => startGame('ranked')}
                 className="flex-1 px-4 py-3 bg-amber-400 hover:bg-amber-300 text-black font-bold rounded-xl transition-colors"
