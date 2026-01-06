@@ -36,6 +36,7 @@ export default function PercentileGraph({
 }: DistributionGraphProps) {
   const [data, setData] = useState<DistributionData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showTooltip, setShowTooltip] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -273,7 +274,7 @@ export default function PercentileGraph({
           </text>
 
           {/* User's position marker - Yellow dot on the curve */}
-          {userX !== null && userY !== null && (
+          {userX !== null && userY !== null && userScore !== null && (
             <>
               {/* Vertical dashed line */}
               <line
@@ -286,28 +287,78 @@ export default function PercentileGraph({
                 strokeDasharray="6 4"
                 opacity="0.5"
               />
-              {/* Yellow dot on the curve */}
-              <circle
-                cx={userX}
-                cy={userY}
-                r="8"
-                fill="#fbbf24"
-                stroke="#fff"
-                strokeWidth="2"
-              />
-              {/* Outer glow effect */}
-              <circle
-                cx={userX}
-                cy={userY}
-                r="12"
-                fill="none"
-                stroke="#fbbf24"
-                strokeWidth="2"
-                opacity="0.3"
-              />
+              {/* Interactive yellow dot on the curve */}
+              <g
+                onMouseEnter={() => setShowTooltip(true)}
+                onMouseLeave={() => setShowTooltip(false)}
+                style={{ cursor: 'pointer' }}
+              >
+                {/* Yellow dot */}
+                <circle
+                  cx={userX}
+                  cy={userY}
+                  r="8"
+                  fill="#fbbf24"
+                  stroke="#fff"
+                  strokeWidth="2"
+                />
+                {/* Outer glow effect */}
+                <circle
+                  cx={userX}
+                  cy={userY}
+                  r="12"
+                  fill="none"
+                  stroke="#fbbf24"
+                  strokeWidth="2"
+                  opacity="0.3"
+                />
+                {/* Invisible larger hitbox for easier hovering */}
+                <circle
+                  cx={userX}
+                  cy={userY}
+                  r="20"
+                  fill="transparent"
+                />
+              </g>
               <text x={userX} y={padding.top - 10} textAnchor="middle" fontSize="12" fill="#fbbf24" fontWeight="bold">
                 {username ? `${username}'s Score` : 'Your Score'}
               </text>
+
+              {/* Tooltip */}
+              {showTooltip && (
+                <g>
+                  <rect
+                    x={userX - 80}
+                    y={userY - 60}
+                    width="160"
+                    height="50"
+                    rx="6"
+                    fill="#1f2937"
+                    stroke="#fbbf24"
+                    strokeWidth="2"
+                    opacity="0.95"
+                  />
+                  <text
+                    x={userX}
+                    y={userY - 38}
+                    textAnchor="middle"
+                    fontSize="13"
+                    fill="#fbbf24"
+                    fontWeight="bold"
+                  >
+                    {formatScore(userScore)}
+                  </text>
+                  <text
+                    x={userX}
+                    y={userY - 22}
+                    textAnchor="middle"
+                    fontSize="12"
+                    fill="#d1d5db"
+                  >
+                    {userPercentile !== null ? `${userPercentile.toFixed(1)}th percentile` : 'N/A'}
+                  </text>
+                </g>
+              )}
             </>
           )}
         </svg>

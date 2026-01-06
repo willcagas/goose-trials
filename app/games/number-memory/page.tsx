@@ -314,19 +314,26 @@ export default function NumberMemoryGamePage() {
   // Render game UI
   const renderGame = () => {
     if (phase === 'showing') {
+      // Calculate responsive font size that shrinks as digits increase
+      // Desktop: starts at 12rem (192px) and shrinks proportionally based on digit count
+      const baseFontSize = 192; // 12rem in pixels
+      // More aggressive scaling for longer numbers
+      const desktopFontSize = baseFontSize * Math.min(1, 8 / currentNumber.length);
+      const mobileFontSize = 90 / currentNumber.length;
+
       return (
         <div className="text-center space-y-6">
           <div className="flex justify-center items-center w-full px-4">
-            <div 
-              className="font-mono font-black text-amber-400 select-none tabular-nums text-center max-w-full"
+            <div
+              className="font-mono font-black text-amber-400 select-none tabular-nums whitespace-nowrap"
               style={{
-                fontSize: `min(12rem, ${90 / currentNumber.length}vw)`,
+                fontSize: `clamp(2rem, ${mobileFontSize}vw, ${desktopFontSize}px)`,
                 lineHeight: '1.1'
               }}
             >
               {currentNumber}
+            </div>
           </div>
-        </div>
           <div className="w-full max-w-md mx-auto">
             <div className="h-2 bg-amber-950/20 rounded-full overflow-hidden">
               <div

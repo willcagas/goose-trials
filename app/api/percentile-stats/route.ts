@@ -70,16 +70,34 @@ export async function GET(request: NextRequest) {
     let userPercentile: number | null = null;
 
     if (userId) {
-      const { data: userScores } = await supabase
-        .from('scores')
-        .select('score_value')
-        .eq('test_slug', testSlug)
-        .eq('user_id', userId)
-        .order('score_value', { ascending: gameMeta.lowerIsBetter })
-        .limit(1);
+      if (testSlug === 'reaction-time') {
+        // For reaction-time, use average of top 5 scores
+        const { data: userScores } = await supabase
+          .from('scores')
+          .select('score_value')
+          .eq('test_slug', testSlug)
+          .eq('user_id', userId)
+          .order('score_value', { ascending: true }) // Lower is better
+          .limit(5);
 
-      if (userScores && userScores.length > 0) {
-        userBestScore = userScores[0].score_value;
+        if (userScores && userScores.length > 0) {
+          // Calculate average of available scores (could be less than 5)
+          const sum = userScores.reduce((acc, s) => acc + s.score_value, 0);
+          userBestScore = sum / userScores.length;
+        }
+      } else {
+        // For other tests, use best single score
+        const { data: userScores } = await supabase
+          .from('scores')
+          .select('score_value')
+          .eq('test_slug', testSlug)
+          .eq('user_id', userId)
+          .order('score_value', { ascending: gameMeta.lowerIsBetter })
+          .limit(1);
+
+        if (userScores && userScores.length > 0) {
+          userBestScore = userScores[0].score_value;
+        }
       }
     }
 
@@ -121,7 +139,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Generate smooth normal distribution curve
-    // For reaction-time, use fixed bounds: 0ms to 500ms
+    // For reaction-time, use 0ms lower bound, but extend upper bound to fit data and user score
     // For aim-trainer, use fixed bounds: 0ms to 225ms
     // For other games, use the data range with max leaderboard score as upper bound
     let lowerBound: number;
@@ -129,7 +147,9 @@ export async function GET(request: NextRequest) {
 
     if (testSlug === 'reaction-time') {
       lowerBound = 0;
-      upperBound = 500;
+      // Use the maximum of: 500ms (default), maxScore, or userBestScore
+      const maxBound = Math.max(500, maxScore, userBestScore || 0);
+      upperBound = maxBound;
     } else if (testSlug === 'aim-trainer') {
       lowerBound = 0;
       upperBound = 225;
