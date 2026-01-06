@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { submitScore } from '@/lib/db/scores';
 import { MAX_TARGET, MIN_TARGET, ROUND_DURATION_MS } from './constants';
 import type { Phase, Target } from './types';
+import { MAX_SIMULTANEOUS_TARGETS } from './types';
 import { createClient } from '@/lib/supabase/client';
 
 const clamp = (min: number, value: number, max: number) =>
@@ -12,12 +13,10 @@ export function useAimTrainer(me?: { isLoggedIn?: boolean; userId?: string | nul
   const [phase, setPhase] = useState<Phase>('idle');
   const [hits, setHits] = useState(0);
   const [misses, setMisses] = useState(0);
-  const [target, setTarget] = useState<Target | null>(null);
-  const [targetFeedback, setTargetFeedback] = useState<'hit' | 'miss' | null>(
-    null
-  );
+  const [targets, setTargets] = useState<Target[]>([]);
+  const [targetFeedback, setTargetFeedback] = useState<Map<number, 'hit' | 'miss'>>(new Map());
   const [timeLeftMs, setTimeLeftMs] = useState(ROUND_DURATION_MS);
-  const [bestHits, setBestHits] = useState<number | null>(null);
+  const [bestScore, setBestScore] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitState, setSubmitState] = useState<'idle' | 'success' | 'error'>(
     'idle'
@@ -33,9 +32,9 @@ export function useAimTrainer(me?: { isLoggedIn?: boolean; userId?: string | nul
   const hitsRef = useRef(0);
   const missesRef = useRef(0);
   const targetIdRef = useRef(0);
-  const lastTargetRef = useRef<{ x: number; y: number } | null>(null);
+  const existingTargetsRef = useRef<Target[]>([]);
   const finishingRef = useRef(false);
-  const feedbackTimeoutRef = useRef<number | null>(null);
+  const feedbackTimeoutsRef = useRef<Map<number, number>>(new Map());
 
   const accuracy = useMemo(() => {
     const attempts = hits + misses;
@@ -43,21 +42,25 @@ export function useAimTrainer(me?: { isLoggedIn?: boolean; userId?: string | nul
     return Math.round((hits / attempts) * 100);
   }, [hits, misses]);
 
+  const calculatedScore = useMemo(() => {
+    return Math.round(hits * (accuracy / 100));
+  }, [hits, accuracy]);
+
   useEffect(() => {
     // Only show best scores for logged-in users
     if (!me?.isLoggedIn || !me?.userId) {
-      setBestHits(null);
+      setBestScore(null);
       return;
     }
 
     // Load from localStorage as initial value
-    const stored = localStorage.getItem('aim_trainer_best_hits');
+    const stored = localStorage.getItem('aim_trainer_best_score');
     let localBest: number | null = null;
     if (stored) {
       const parsed = Number(stored);
       if (!Number.isNaN(parsed)) {
         localBest = parsed;
-        setBestHits(parsed);
+        setBestScore(parsed);
       }
     }
 
@@ -77,7 +80,7 @@ export function useAimTrainer(me?: { isLoggedIn?: boolean; userId?: string | nul
           const dbBest = data[0].score_value;
           // Use the higher of localStorage and database
           if (localBest === null || dbBest > localBest) {
-            setBestHits(dbBest);
+            setBestScore(dbBest);
           }
         }
       } catch (error) {
@@ -89,16 +92,16 @@ export function useAimTrainer(me?: { isLoggedIn?: boolean; userId?: string | nul
   }, [me?.isLoggedIn, me?.userId]);
 
   useEffect(() => {
-    if (bestHits !== null) {
-      localStorage.setItem('aim_trainer_best_hits', String(bestHits));
+    if (bestScore !== null) {
+      localStorage.setItem('aim_trainer_best_score', String(bestScore));
     }
-  }, [bestHits]);
+  }, [bestScore]);
 
   useEffect(() => {
     return () => {
-      if (feedbackTimeoutRef.current !== null) {
-        window.clearTimeout(feedbackTimeoutRef.current);
-      }
+      feedbackTimeoutsRef.current.forEach((timeout) => {
+        window.clearTimeout(timeout);
+      });
     };
   }, []);
 
@@ -106,29 +109,34 @@ export function useAimTrainer(me?: { isLoggedIn?: boolean; userId?: string | nul
     if (finishingRef.current || startTimeRef.current === null) return;
     finishingRef.current = true;
     const finalHits = hitsRef.current;
+    const finalMisses = missesRef.current;
+    const finalAttempts = finalHits + finalMisses;
+    const finalAccuracy = finalAttempts === 0 ? 100 : Math.round((finalHits / finalAttempts) * 100);
+    const finalScore = Math.round(finalHits * (finalAccuracy / 100));
+
     setPhase('complete');
-    setTarget(null);
-    setTargetFeedback(null);
+    setTargets([]);
+    setTargetFeedback(new Map());
     setTimeLeftMs(0);
-    setBestHits((prev) =>
-      prev === null || finalHits > prev ? finalHits : prev
+    setBestScore((prev) =>
+      prev === null || finalScore > prev ? finalScore : prev
     );
-    if (feedbackTimeoutRef.current !== null) {
-      window.clearTimeout(feedbackTimeoutRef.current);
-    }
+    feedbackTimeoutsRef.current.forEach((timeout) => {
+      window.clearTimeout(timeout);
+    });
+    feedbackTimeoutsRef.current.clear();
 
     setSubmitting(true);
     setSubmitState('idle');
     setIsNewHighScore(false);
     // Pass previous best to avoid race condition with isNewHighScore
-    // Note: We use the current bestHits value BEFORE the setBestHits update above takes effect
-    const result = await submitScore('aim-trainer', finalHits, bestHits);
+    const result = await submitScore('aim-trainer', finalScore, bestScore);
     setSubmitting(false);
     setSubmitState(result.success ? 'success' : 'error');
     if (result.success && result.isNewHighScore) {
       setIsNewHighScore(true);
     }
-  }, [bestHits]);
+  }, [bestScore]);
 
   useEffect(() => {
     if (phase !== 'running') return;
@@ -168,56 +176,83 @@ export function useAimTrainer(me?: { isLoggedIn?: boolean; userId?: string | nul
     return () => observer.disconnect();
   }, [phase]); // Re-run when phase changes so we observe the correct board
 
-  const spawnTarget = useCallback(() => {
-    if (!boardSize) return;
+  const spawnTarget = useCallback((existingTargets?: Target[]) => {
+    if (!boardSize) return null;
     const base = Math.min(boardSize.width, boardSize.height);
     const size = clamp(
       MIN_TARGET,
       Math.round(base * 0.16),
       MAX_TARGET
     );
-      const padding = 12 + size / 2;
-      const minX = padding;
-      const maxX = boardSize.width - padding;
-      const minY = padding;
-      const maxY = boardSize.height - padding;
+    const padding = 12 + size / 2;
+    const minX = padding;
+    const maxX = boardSize.width - padding;
+    const minY = padding;
+    const maxY = boardSize.height - padding;
 
-      if (maxX <= minX || maxY <= minY) return;
+    if (maxX <= minX || maxY <= minY) return null;
 
-      let x = minX + Math.random() * (maxX - minX);
-      let y = minY + Math.random() * (maxY - minY);
+    let x = minX + Math.random() * (maxX - minX);
+    let y = minY + Math.random() * (maxY - minY);
 
-      const last = lastTargetRef.current;
-      if (last) {
-        for (let attempt = 0; attempt < 6; attempt += 1) {
-          const distance = Math.hypot(x - last.x, y - last.y);
-          if (distance > size * 1.4) break;
-          x = minX + Math.random() * (maxX - minX);
-          y = minY + Math.random() * (maxY - minY);
+    // Ensure NO overlap with existing targets
+    // Two circles overlap if distance between centers < sum of radii
+    // Use passed existingTargets or fallback to ref
+    const currentTargets = existingTargets ?? existingTargetsRef.current;
+    const radius = size / 2;
+
+    for (let attempt = 0; attempt < 100; attempt += 1) {
+      let hasOverlap = false;
+      for (const target of currentTargets) {
+        const targetRadius = target.size / 2;
+        const distance = Math.hypot(x - target.x, y - target.y);
+        const minDistance = radius + targetRadius + 10; // Add 10px buffer
+
+        if (distance < minDistance) {
+          hasOverlap = true;
+          break;
         }
       }
+      if (!hasOverlap) break;
+      x = minX + Math.random() * (maxX - minX);
+      y = minY + Math.random() * (maxY - minY);
+    }
 
-      const nextTarget = {
-        id: targetIdRef.current++,
-        x,
-        y,
-        size,
-      };
-      lastTargetRef.current = { x, y };
-    setTarget(nextTarget);
+    const nextTarget = {
+      id: targetIdRef.current++,
+      x,
+      y,
+      size,
+    };
+
+    return nextTarget;
   }, [boardSize]);
 
+  // Maintain exactly MAX_SIMULTANEOUS_TARGETS targets at all times
   useEffect(() => {
-    if (phase !== 'running' || target || !boardSize) return;
-    spawnTarget();
-  }, [boardSize, phase, spawnTarget, target]);
+    if (phase !== 'running' || !boardSize) return;
+
+    const currentCount = targets.length;
+    if (currentCount < MAX_SIMULTANEOUS_TARGETS) {
+      const newTargets = [...targets];
+      for (let i = currentCount; i < MAX_SIMULTANEOUS_TARGETS; i++) {
+        // Pass newTargets so each spawn knows about previously spawned targets in this loop
+        const newTarget = spawnTarget(newTargets);
+        if (newTarget) {
+          newTargets.push(newTarget);
+        }
+      }
+      existingTargetsRef.current = newTargets;
+      setTargets(newTargets);
+    }
+  }, [boardSize, phase, spawnTarget, targets]);
 
   const resetRun = () => {
     setPhase('idle');
     setHits(0);
     setMisses(0);
-    setTarget(null);
-    setTargetFeedback(null);
+    setTargets([]);
+    setTargetFeedback(new Map());
     setTimeLeftMs(ROUND_DURATION_MS);
     setSubmitState('idle');
     setSubmitting(false);
@@ -226,19 +261,20 @@ export function useAimTrainer(me?: { isLoggedIn?: boolean; userId?: string | nul
     hitsRef.current = 0;
     missesRef.current = 0;
     targetIdRef.current = 0;
-    lastTargetRef.current = null;
+    existingTargetsRef.current = [];
     finishingRef.current = false;
-    if (feedbackTimeoutRef.current !== null) {
-      window.clearTimeout(feedbackTimeoutRef.current);
-    }
+    feedbackTimeoutsRef.current.forEach((timeout) => {
+      window.clearTimeout(timeout);
+    });
+    feedbackTimeoutsRef.current.clear();
   };
 
   const startRun = () => {
     setPhase('running');
     setHits(0);
     setMisses(0);
-    setTarget(null);
-    setTargetFeedback(null);
+    setTargets([]);
+    setTargetFeedback(new Map());
     setTimeLeftMs(ROUND_DURATION_MS);
     setSubmitState('idle');
     setSubmitting(false);
@@ -246,45 +282,60 @@ export function useAimTrainer(me?: { isLoggedIn?: boolean; userId?: string | nul
     hitsRef.current = 0;
     missesRef.current = 0;
     targetIdRef.current = 0;
-    lastTargetRef.current = null;
+    existingTargetsRef.current = [];
     finishingRef.current = false;
-    if (feedbackTimeoutRef.current !== null) {
-      window.clearTimeout(feedbackTimeoutRef.current);
-    }
-    spawnTarget();
+    feedbackTimeoutsRef.current.forEach((timeout) => {
+      window.clearTimeout(timeout);
+    });
+    feedbackTimeoutsRef.current.clear();
   };
 
   const registerMiss = () => {
     if (phase !== 'running') return;
     missesRef.current += 1;
     setMisses(missesRef.current);
-    setTargetFeedback('miss');
-    if (feedbackTimeoutRef.current !== null) {
-      window.clearTimeout(feedbackTimeoutRef.current);
-    }
-    feedbackTimeoutRef.current = window.setTimeout(() => {
-      setTargetFeedback(null);
-    }, 120);
   };
 
-  const handleHit = (event: PointerEvent<HTMLButtonElement>) => {
+  const handleHit = (event: PointerEvent<HTMLButtonElement>, targetId: number) => {
     event.stopPropagation();
     if (phase !== 'running') return;
     if (startTimeRef.current === null) {
       startTimeRef.current = performance.now();
     }
+
+    // Increment hits
     const nextHits = hitsRef.current + 1;
     hitsRef.current = nextHits;
     setHits(nextHits);
-    setTargetFeedback('hit');
-    if (feedbackTimeoutRef.current !== null) {
-      window.clearTimeout(feedbackTimeoutRef.current);
-    }
-    feedbackTimeoutRef.current = window.setTimeout(() => {
-      setTargetFeedback(null);
+
+    // Set feedback for this target
+    setTargetFeedback((prev) => {
+      const newMap = new Map(prev);
+      newMap.set(targetId, 'hit');
+      return newMap;
+    });
+
+    // Clear feedback after animation
+    const timeout = window.setTimeout(() => {
+      setTargetFeedback((prev) => {
+        const newMap = new Map(prev);
+        newMap.delete(targetId);
+        return newMap;
+      });
     }, 120);
+    feedbackTimeoutsRef.current.set(targetId, timeout);
+
     if (finishingRef.current) return;
-    spawnTarget();
+
+    // Remove the hit target and spawn a new one
+    setTargets((prev) => {
+      const filtered = prev.filter((t) => t.id !== targetId);
+      // Pass the filtered array to ensure no overlap with remaining targets
+      const newTarget = spawnTarget(filtered);
+      const updated = newTarget ? [...filtered, newTarget] : filtered;
+      existingTargetsRef.current = updated;
+      return updated;
+    });
   };
 
   const handleBoardPointerDown = () => {
@@ -299,10 +350,11 @@ export function useAimTrainer(me?: { isLoggedIn?: boolean; userId?: string | nul
     phase,
     hits,
     misses,
-    target,
+    targets,
     targetFeedback,
     timeLeftMs,
-    bestHits,
+    bestScore,
+    calculatedScore,
     accuracy,
     submitting,
     submitState,

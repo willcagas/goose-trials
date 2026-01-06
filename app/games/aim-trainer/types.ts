@@ -6,3 +6,5 @@ export type Target = {
   y: number;
   size: number;
 };
+
+export const MAX_SIMULTANEOUS_TARGETS = 3;
