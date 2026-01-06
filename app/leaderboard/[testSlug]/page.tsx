@@ -666,6 +666,31 @@ export default function LeaderboardTestPage() {
           </div>
         </div>
 
+        {/* Signup CTA - Show when not logged in */}
+        {!me?.isLoggedIn && !meLoading && (
+          <div className="mb-6">
+            <button
+              onClick={() => setShowLogin(true)}
+              className="w-full px-4 py-3 md:px-6 md:py-4 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-gray-900 font-bold rounded-xl transition-all shadow-lg hover:shadow-xl active:scale-[0.98] flex items-center justify-center gap-2 md:gap-3 group"
+            >
+              <span className="text-sm md:text-base lg:text-lg text-center leading-tight">
+                <span className="hidden sm:inline">Sign up to see your university rank or country rank</span>
+                <span className="sm:hidden">Sign up to see your university & country rank</span>
+              </span>
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                fill="none" 
+                viewBox="0 0 24 24" 
+                strokeWidth={2.5} 
+                stroke="currentColor" 
+                className="w-4 h-4 md:w-5 md:h-5 flex-shrink-0 transform group-hover:translate-x-1 transition-transform"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+              </svg>
+            </button>
+          </div>
+        )}
+
         {/* Scope Toggle */}
         <div className="mb-6">
           <div className="flex gap-2 md:gap-4 border-b border-gray-200 overflow-x-auto">
