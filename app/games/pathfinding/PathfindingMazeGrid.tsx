@@ -51,12 +51,15 @@ export default function PathfindingMazeGrid({
 
   return (
     <div
-      className={`absolute inset-0 grid rounded-2xl overflow-hidden bg-white/70 shadow-inner z-10 ${
+      className={`absolute inset-0 grid rounded-2xl overflow-hidden bg-white/70 shadow-inner z-10 select-none ${
         phase === 'input' ? 'cursor-crosshair' : 'cursor-default'
       }`}
       style={{
         gridTemplateColumns: `repeat(${mazeSize}, minmax(0, 1fr))`,
         gridTemplateRows: `repeat(${mazeSize}, minmax(0, 1fr))`,
+        userSelect: 'none',
+        WebkitUserSelect: 'none',
+        MozUserSelect: 'none',
       }}
       ref={gridRef}
       onPointerMove={handlePointerMove}
@@ -86,12 +89,18 @@ export default function PathfindingMazeGrid({
             >
               <button
                 type="button"
-                className={`h-[66%] w-[66%] rounded-full transition-all duration-150 shadow-sm flex items-center justify-center text-[10px] font-semibold uppercase ${circleTone} ${
+                className={`h-[66%] w-[66%] rounded-full transition-all duration-150 shadow-sm flex items-center justify-center text-[10px] font-semibold uppercase select-none ${circleTone} ${
                   phase === 'input'
                     ? 'hover:scale-105 active:scale-95'
                     : 'opacity-80'
                 }`}
+                style={{
+                  userSelect: 'none',
+                  WebkitUserSelect: 'none',
+                  MozUserSelect: 'none',
+                }}
                 onPointerDown={(event) => {
+                  event.preventDefault();
                   event.currentTarget.setPointerCapture(event.pointerId);
                   onPointerDown(rowIndex, colIndex);
                 }}
