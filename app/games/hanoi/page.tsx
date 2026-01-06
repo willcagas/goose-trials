@@ -128,6 +128,7 @@ export default function HanoiGame() {
   const startTimeRef = useRef<number | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const maxTimeRef = useRef<NodeJS.Timeout | null>(null);
+  const suppressClickRef = useRef(false);
   
   // Refs to track current game state for timeout callback (avoid stale closures)
   const gameModeRef = useRef<GameMode>(gameMode);
@@ -561,6 +562,10 @@ export default function HanoiGame() {
       <button
         type="button"
         onClick={() => {
+          if (suppressClickRef.current) {
+            suppressClickRef.current = false;
+            return;
+          }
           if (gameState === 'playing') {
             handleRodClick(rodIndex);
           }
@@ -568,13 +573,7 @@ export default function HanoiGame() {
         onPointerDown={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          if (gameState === 'playing') {
-            handleRodClick(rodIndex);
-          }
-        }}
-        onMouseDown={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
+          suppressClickRef.current = true;
           if (gameState === 'playing') {
             handleRodClick(rodIndex);
           }
@@ -704,16 +703,16 @@ export default function HanoiGame() {
         <h1 className="text-2xl md:text-3xl font-semibold leading-tight text-[#0a0a0a]">
           Move all disks to rod C.
         </h1>
-        <div className="flex flex-wrap items-center justify-center gap-3">
-          <div className="rounded-full bg-[#0a0a0a]/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#0a0a0a] border border-[#0a0a0a]/20">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 place-items-center">
+          <div className="order-1 sm:order-none rounded-full bg-[#0a0a0a]/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#0a0a0a] border border-[#0a0a0a]/20 tabular-nums whitespace-nowrap">
             {formatTime(elapsedMs)}
           </div>
-          <div className={`rounded-full bg-[#0a0a0a]/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] border border-[#0a0a0a]/20 ${
+          <div className={`order-3 sm:order-none col-span-2 sm:col-span-1 rounded-full bg-[#0a0a0a]/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] border border-[#0a0a0a]/20 tabular-nums whitespace-nowrap ${
             moves <= getOptimalMoves(diskCount) ? 'text-emerald-600' : 'text-[#0a0a0a]/70'
           }`}>
             {moves} / {getOptimalMoves(diskCount)} moves
           </div>
-          <div className="rounded-full bg-[#0a0a0a]/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#0a0a0a] border border-[#0a0a0a]/20">
+          <div className="order-2 sm:order-none rounded-full bg-[#0a0a0a]/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#0a0a0a] border border-[#0a0a0a]/20 tabular-nums whitespace-nowrap">
             {diskCount} disks
           </div>
         </div>
@@ -728,7 +727,7 @@ export default function HanoiGame() {
 
       {/* Instructions */}
       <div className="text-center text-[#0a0a0a]/70 text-sm space-y-1">
-        <p>
+        <p className="min-h-[2.5rem] sm:min-h-0">
           {selectedRod !== null 
             ? 'Click a rod to move the disk there, or click again to deselect'
             : 'Click a rod to select its top disk'
