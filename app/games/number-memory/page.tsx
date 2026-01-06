@@ -316,11 +316,17 @@ export default function NumberMemoryGamePage() {
     if (phase === 'showing') {
       return (
         <div className="text-center space-y-6">
-          <div className="flex justify-center items-center">
-            <div className="text-8xl md:text-[12rem] font-mono font-black text-amber-400 select-none tabular-nums">
+          <div className="flex justify-center items-center w-full px-4">
+            <div 
+              className="font-mono font-black text-amber-400 select-none tabular-nums text-center max-w-full"
+              style={{
+                fontSize: `min(12rem, ${90 / currentNumber.length}vw)`,
+                lineHeight: '1.1'
+              }}
+            >
               {currentNumber}
-            </div>
           </div>
+        </div>
           <div className="w-full max-w-md mx-auto">
             <div className="h-2 bg-amber-950/20 rounded-full overflow-hidden">
               <div
