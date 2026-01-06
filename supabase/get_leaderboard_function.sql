@@ -1,9 +1,9 @@
 DROP FUNCTION IF EXISTS get_leaderboard(TEXT, INT, UUID, UUID);
+DROP FUNCTION IF EXISTS get_leaderboard(TEXT, INT, UUID);
 
 CREATE FUNCTION get_leaderboard(
   p_test_slug TEXT,
   p_limit INT DEFAULT 50,
-  p_user_id UUID DEFAULT NULL,
   p_university_id UUID DEFAULT NULL
 )
 RETURNS TABLE (
@@ -18,10 +18,15 @@ RETURNS TABLE (
   is_you BOOLEAN
 )
 LANGUAGE plpgsql
+SECURITY DEFINER
 AS $func$
 DECLARE
   v_lower_is_better BOOLEAN;
+  v_current_user_id UUID;
 BEGIN
+  -- Get the current user ID from auth context
+  v_current_user_id := auth.uid();
+
   -- Get lower_is_better from tests table
   SELECT lower_is_better INTO v_lower_is_better
   FROM tests
@@ -69,7 +74,7 @@ BEGIN
       uas.avg_score as best_score,
       uas.achieved_at::TIMESTAMP,
       ROW_NUMBER() OVER (ORDER BY uas.avg_score ASC) as rank,
-      (uas.user_id = p_user_id) as is_you
+      (uas.user_id = v_current_user_id) as is_you
     FROM user_average_scores uas
     JOIN profiles p ON p.id = uas.user_id
     ORDER BY uas.avg_score ASC
@@ -106,7 +111,7 @@ BEGIN
         bs.best_score,
         bs.achieved_at::TIMESTAMP,
         ROW_NUMBER() OVER (ORDER BY bs.best_score ASC) as rank,
-        (bs.user_id = p_user_id) as is_you
+        (bs.user_id = v_current_user_id) as is_you
       FROM best_scores bs
       JOIN profiles p ON p.id = bs.user_id
       ORDER BY bs.best_score ASC
@@ -141,7 +146,7 @@ BEGIN
         bs.best_score,
         bs.achieved_at::TIMESTAMP,
         ROW_NUMBER() OVER (ORDER BY bs.best_score DESC) as rank,
-        (bs.user_id = p_user_id) as is_you
+        (bs.user_id = v_current_user_id) as is_you
       FROM best_scores bs
       JOIN profiles p ON p.id = bs.user_id
       ORDER BY bs.best_score DESC
@@ -150,4 +155,3 @@ BEGIN
   END IF;
 END;
 $func$;
-

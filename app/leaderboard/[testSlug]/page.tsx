@@ -302,8 +302,6 @@ export default function LeaderboardTestPage() {
     }
   }, [meLoading, loadLeaderboards]);
 
-
-
   // Handle percentile graph expansion
   const handlePercentileClick = (userId: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -526,11 +524,15 @@ export default function LeaderboardTestPage() {
                     {currentData.map((entry) => {
                       const isHighlighted = highlightUsername && entry.username?.toLowerCase() === highlightUsername.toLowerCase();
                       return (
-                      <React.Fragment key={entry.user_id}>
+                      <React.Fragment key={`${entry.rank}-${entry.username || 'anon'}`}>
                         {/* Main Row */}
                         <tr
-                          onClick={(e) => {
-                            handlePercentileClick(entry.user_id, e);
+                          onClick={() => {
+                            if (expandedPercentileUserId === entry.user_id) {
+                              setExpandedPercentileUserId(null);
+                            } else {
+                              setExpandedPercentileUserId(entry.user_id);
+                            }
                           }}
                           className={`${
                             isHighlighted
@@ -610,13 +612,11 @@ export default function LeaderboardTestPage() {
                         </td>
                       </tr>
 
-                      {/* Expanded Row - Stats (Percentile Graph + Top 5 for reaction-time) */}
+                      {/* Expanded Row - Stats (Percentile Graph) */}
                       {expandedPercentileUserId === entry.user_id && (
                         <tr className="animate-slideDown">
                           <td colSpan={(scope === 'global' || scope === 'country') ? 6 : 5} className="px-3 md:px-6 py-4 md:py-6 overflow-hidden">
                             <div className="animate-fadeIn space-y-6">
-
-
                               {/* Percentile Graph */}
                               <PercentileGraph
                                 testSlug={testSlug}

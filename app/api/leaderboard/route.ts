@@ -3,22 +3,14 @@
  * GET /api/leaderboard?test_slug=<slug>&university_id=<uuid>
  * 
  * Calls the get_leaderboard RPC function
+ * Note: is_you flag is determined by auth.uid() in the SQL function
  */
 
-import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { getLeaderboard } from '@/lib/db/leaderboard';
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    
-    // Get authenticated user (optional - for is_you flag)
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    const userId = user?.id || null;
-
     // Get query parameters
     const { searchParams } = new URL(request.url);
     const testSlug = searchParams.get('test_slug');
@@ -32,11 +24,10 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get leaderboard data
+    // Get leaderboard data (is_you determined by auth context in SQL)
     const { data, error } = await getLeaderboard({
       testSlug,
       limit,
-      userId,
       universityId: universityId || null,
     });
 
