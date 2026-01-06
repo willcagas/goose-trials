@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import ShareProfileButton from '@/components/ShareProfileButton';
+import AvatarSelectorModal from '@/components/AvatarSelectorModal';
+import Image from 'next/image';
 
 interface UniversityInfo {
   id: string;
@@ -29,8 +31,10 @@ export default function ProfilePage() {
   const { user, loading: sessionLoading } = useSession();
   const { me, loading: meLoading } = useMe();
   const router = useRouter();
-  
+
   const [universityInfo, setUniversityInfo] = useState<UniversityInfo | null>(null);
+  const [showAvatarSelector, setShowAvatarSelector] = useState(false);
+  const [currentAvatarUrl, setCurrentAvatarUrl] = useState<string | null>(null);
 
   // Redirect if not logged in
   useEffect(() => {
@@ -53,6 +57,20 @@ export default function ProfilePage() {
       loadUniversityInfo();
     }
   }, [me?.universityId, meLoading]);
+
+  // Set avatar URL from me context
+  useEffect(() => {
+    if (me?.avatarUrl) {
+      setCurrentAvatarUrl(me.avatarUrl);
+    }
+  }, [me?.avatarUrl]);
+
+  // Handle avatar update
+  const handleAvatarSelected = (newAvatarUrl: string) => {
+    setCurrentAvatarUrl(newAvatarUrl);
+    // Reload page to refresh me context
+    window.location.reload();
+  };
 
   if (sessionLoading || meLoading) {
     return (
@@ -84,6 +102,42 @@ export default function ProfilePage() {
 
           {/* Profile Card */}
           <div className="bg-white/5 border border-white/10 rounded-2xl p-6 md:p-8 space-y-6">
+            {/* Avatar Section */}
+            <div>
+              <label className="block text-white/60 text-sm uppercase tracking-wide mb-3">
+                Avatar
+              </label>
+              <div className="flex items-center gap-4">
+                {/* Avatar Display */}
+                <div className="w-20 h-20 rounded-full bg-amber-400/20 border-2 border-amber-400/40 flex items-center justify-center overflow-hidden">
+                  {currentAvatarUrl ? (
+                    <Image
+                      src={currentAvatarUrl}
+                      alt="Your avatar"
+                      width={80}
+                      height={80}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-2xl text-amber-400 font-bold">
+                      {me?.username ? me.username[0].toUpperCase() : '?'}
+                    </span>
+                  )}
+                </div>
+
+                {/* Change Avatar Button */}
+                <button
+                  onClick={() => setShowAvatarSelector(true)}
+                  className="px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold text-sm rounded-lg transition-colors"
+                >
+                  Change Avatar
+                </button>
+              </div>
+            </div>
+
+            {/* Divider */}
+            <div className="border-t border-white/10" />
+
             {/* Username Section */}
             <div>
               <label className="block text-white/60 text-sm uppercase tracking-wide mb-2">
@@ -162,6 +216,14 @@ export default function ProfilePage() {
           Built by students at the University of Waterloo.
         </p>
       </footer>
+
+      {/* Avatar Selector Modal */}
+      <AvatarSelectorModal
+        isOpen={showAvatarSelector}
+        onClose={() => setShowAvatarSelector(false)}
+        currentAvatarUrl={currentAvatarUrl}
+        onAvatarSelected={handleAvatarSelected}
+      />
     </div>
   );
 }

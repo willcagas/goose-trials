@@ -5,6 +5,8 @@ import { useSession } from '@/app/providers/SessionContext';
 import Navbar from '@/components/Navbar';
 import ProfileCard, { type ProfileData } from '@/components/ProfileCard';
 import LoginModal from '@/components/LoginModal';
+import PercentileGraph from '@/components/PercentileGraph';
+import { GAMES_REGISTRY } from '@/lib/games/registry';
 import Link from 'next/link';
 import type { UserHighlight } from '@/lib/db/user-highlights';
 
@@ -65,6 +67,74 @@ export default function PublicProfileClient({
             universityName={universityInfo?.name}
             universityCountryCode={universityInfo?.alpha_two_code}
           />
+
+          {/* Detailed Stats Section */}
+          {highlights.length > 0 && (
+            <div className="mt-8 space-y-6">
+              <h2 className="text-2xl font-bold text-white uppercase tracking-wide">
+                Performance Stats
+              </h2>
+
+              {/* Stats Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Total Games Played */}
+                <div className="bg-white/5 border border-white/10 rounded-xl p-6">
+                  <div className="text-white/60 text-sm uppercase tracking-wide mb-2">
+                    Games Played
+                  </div>
+                  <div className="text-3xl font-bold text-white">
+                    {highlights.length}
+                  </div>
+                </div>
+
+                {/* Top 3 Finishes */}
+                <div className="bg-white/5 border border-white/10 rounded-xl p-6">
+                  <div className="text-white/60 text-sm uppercase tracking-wide mb-2">
+                    Top 3 Finishes
+                  </div>
+                  <div className="text-3xl font-bold text-amber-400">
+                    {highlights.filter(h => h.rank && h.rank <= 3).length}
+                  </div>
+                </div>
+
+                {/* Best Rank */}
+                <div className="bg-white/5 border border-white/10 rounded-xl p-6">
+                  <div className="text-white/60 text-sm uppercase tracking-wide mb-2">
+                    Best Rank
+                  </div>
+                  <div className="text-3xl font-bold text-white">
+                    {Math.min(...highlights.filter(h => h.rank).map(h => h.rank!)) === Infinity
+                      ? '—'
+                      : `#${Math.min(...highlights.filter(h => h.rank).map(h => h.rank!))}`}
+                  </div>
+                </div>
+              </div>
+
+              {/* Performance Graphs */}
+              <div className="space-y-6 mt-8">
+                <h3 className="text-xl font-bold text-white uppercase tracking-wide">
+                  Score Distributions
+                </h3>
+                {highlights.map((highlight) => {
+                  const game = GAMES_REGISTRY[highlight.test_slug];
+                  return (
+                    <div key={highlight.test_slug} className="bg-white/5 border border-white/10 rounded-xl p-6">
+                      <h4 className="text-lg font-bold text-white mb-4">
+                        {game?.title || highlight.test_slug}
+                      </h4>
+                      <PercentileGraph
+                        testSlug={highlight.test_slug}
+                        userId={profile.id}
+                        username={profile.username}
+                        unit={game?.unit || null}
+                        lowerIsBetter={game?.lowerIsBetter || false}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Action Buttons */}
           <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">

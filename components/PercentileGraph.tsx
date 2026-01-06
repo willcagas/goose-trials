@@ -186,7 +186,7 @@ export default function PercentileGraph({
           Based on {totalScores.toLocaleString()} scores
           {userPercentile !== null && (
             <span className="ml-2 text-amber-400 font-semibold">
-              • {username || 'You are'} in the {userPercentile.toFixed(0)}th percentile
+              • {username ? `${username} is` : 'You are'} in the {userPercentile.toFixed(0)}th percentile
             </span>
           )}
         </p>
@@ -306,7 +306,7 @@ export default function PercentileGraph({
                 opacity="0.3"
               />
               <text x={userX} y={padding.top - 10} textAnchor="middle" fontSize="12" fill="#fbbf24" fontWeight="bold">
-                Your Score
+                {username ? `${username}'s Score` : 'Your Score'}
               </text>
             </>
           )}

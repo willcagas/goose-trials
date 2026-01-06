@@ -5,7 +5,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server';
-import { getAllGameSlugs, type GameSlug } from '@/lib/games/registry';
+import { getAllGameSlugs, getGameMetadata, type GameSlug } from '@/lib/games/registry';
 
 export interface UserHighlight {
   test_slug: GameSlug;
@@ -152,9 +152,8 @@ export async function getUserHighlightsSimple(
  * Check if lower score is better for a given test
  */
 function isLowerBetter(testSlug: GameSlug): boolean {
-  // Tests where lower is better (time-based or penalty-based)
-  const lowerIsBetter: GameSlug[] = ['reaction-time', 'hanoi'];
-  return lowerIsBetter.includes(testSlug);
+  const game = getGameMetadata(testSlug);
+  return game.lowerIsBetter;
 }
 
 /**
