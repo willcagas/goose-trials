@@ -7,4 +7,4 @@ export type Target = {
   size: number;
 };
 
-export const MAX_SIMULTANEOUS_TARGETS = 3;
+export const MAX_SIMULTANEOUS_TARGETS = 1;

@@ -52,42 +52,183 @@ const createGrid = (size: number): Cell[][] => {
   );
 };
 
-const generateMaze = (size: number): Cell[][] => {
+const generateMaze = (size: number, targetTurns: number): Cell[][] => {
+  // Generate a solution path with exactly targetTurns turns first
+  const solutionPath = generatePathWithTurns(size, targetTurns);
+
+  // Create grid and carve out the solution path
   const grid = createGrid(size);
+  for (let i = 0; i < solutionPath.length - 1; i++) {
+    const from = solutionPath[i];
+    const to = solutionPath[i + 1];
+    const dir = getDirection(from, to);
+    if (!dir) continue;
+
+    const oppositeDir = directions.find(d => d.direction === dir)?.opposite;
+    if (!oppositeDir) continue;
+
+    grid[from.row][from.col].walls[dir] = false;
+    grid[to.row][to.col].walls[oppositeDir as Direction] = false;
+  }
+
+  // Mark solution path as visited
   const visited = Array.from({ length: size }, () => Array(size).fill(false));
-  const stack: Position[] = [{ row: 0, col: 0 }];
-  visited[0][0] = true;
+  for (const pos of solutionPath) {
+    visited[pos.row][pos.col] = true;
+  }
 
-  while (stack.length > 0) {
-    const current = stack[stack.length - 1];
-    const neighbors = directions
-      .map((dir) => ({
-        row: current.row + dir.dr,
-        col: current.col + dir.dc,
-        dir,
-      }))
-      .filter(
-        (next) =>
-          next.row >= 0 &&
-          next.row < size &&
-          next.col >= 0 &&
-          next.col < size &&
-          !visited[next.row][next.col]
-      );
+  // Fill rest of maze using DFS starting from random positions on solution path
+  const pathPositions = [...solutionPath];
+  shuffleArray(pathPositions);
 
-    if (neighbors.length === 0) {
-      stack.pop();
-      continue;
+  for (const startPos of pathPositions) {
+    const stack: Position[] = [startPos];
+
+    while (stack.length > 0) {
+      const current = stack[stack.length - 1];
+      const neighbors = directions
+        .map((dir) => ({
+          row: current.row + dir.dr,
+          col: current.col + dir.dc,
+          dir,
+        }))
+        .filter(
+          (next) =>
+            next.row >= 0 &&
+            next.row < size &&
+            next.col >= 0 &&
+            next.col < size &&
+            !visited[next.row][next.col]
+        );
+
+      if (neighbors.length === 0) {
+        stack.pop();
+        continue;
+      }
+
+      const next = neighbors[Math.floor(Math.random() * neighbors.length)];
+      grid[current.row][current.col].walls[next.dir.direction] = false;
+      grid[next.row][next.col].walls[next.dir.opposite] = false;
+      visited[next.row][next.col] = true;
+      stack.push({ row: next.row, col: next.col });
     }
-
-    const next = neighbors[Math.floor(Math.random() * neighbors.length)];
-    grid[current.row][current.col].walls[next.dir.direction] = false;
-    grid[next.row][next.col].walls[next.dir.opposite] = false;
-    visited[next.row][next.col] = true;
-    stack.push({ row: next.row, col: next.col });
   }
 
   return grid;
+};
+
+const generatePathWithTurns = (size: number, targetTurns: number): Position[] => {
+  // Use a more complex algorithm that can generate paths with many turns
+  // by moving in all 4 directions and creating a winding path
+  const start: Position = { row: 0, col: 0 };
+  const end: Position = { row: size - 1, col: size - 1 };
+
+  // For small turn counts or impossible cases, use simple path
+  const manhattanDist = Math.abs(end.row - start.row) + Math.abs(end.col - start.col);
+  if (targetTurns === 0 || manhattanDist < 2) {
+    // Generate straight path
+    const path: Position[] = [start];
+    let curr = { ...start };
+    while (curr.row < end.row) {
+      curr = { row: curr.row + 1, col: curr.col };
+      path.push({ ...curr });
+    }
+    while (curr.col < end.col) {
+      curr = { row: curr.row, col: curr.col + 1 };
+      path.push({ ...curr });
+    }
+    return path;
+  }
+
+  // Try to generate a path with exact turns using backtracking
+  const visited = Array.from({ length: size }, () => Array(size).fill(false));
+  visited[start.row][start.col] = true;
+
+  const findPath = (
+    current: Position,
+    path: Position[],
+    currentDir: Direction | null,
+    turnsUsed: number
+  ): Position[] | null => {
+    // Reached end - check if we have exact turns
+    if (current.row === end.row && current.col === end.col) {
+      return turnsUsed === targetTurns ? path : null;
+    }
+
+    // Pruning: if we've used too many turns already, stop
+    if (turnsUsed > targetTurns) return null;
+
+    // Pruning: if we can't possibly reach target turns
+    const remainingDist = Math.abs(end.row - current.row) + Math.abs(end.col - current.col);
+    const turnsLeft = targetTurns - turnsUsed;
+    // We need at least remainingDist steps; max turns possible is remainingDist - 1
+    if (turnsLeft > remainingDist - 1) return null;
+
+    // Try all 4 directions in random order
+    const dirs = [...directions];
+    shuffleArray(dirs);
+
+    for (const dir of dirs) {
+      const next: Position = {
+        row: current.row + dir.dr,
+        col: current.col + dir.dc,
+      };
+
+      // Check bounds and visited
+      if (
+        next.row < 0 ||
+        next.row >= size ||
+        next.col < 0 ||
+        next.col >= size ||
+        visited[next.row][next.col]
+      ) {
+        continue;
+      }
+
+      // Calculate turns if we move in this direction
+      const nextDir = dir.direction;
+      const willTurn = currentDir !== null && currentDir !== nextDir;
+      const nextTurns = turnsUsed + (willTurn ? 1 : 0);
+
+      // Mark as visited
+      visited[next.row][next.col] = true;
+      const newPath = [...path, next];
+
+      const result = findPath(next, newPath, nextDir, nextTurns);
+      if (result) return result;
+
+      // Backtrack
+      visited[next.row][next.col] = false;
+    }
+
+    return null;
+  };
+
+  // Try to find a path with exact turns
+  const result = findPath(start, [start], null, 0);
+
+  if (result) return result;
+
+  // Fallback: generate a simple path if backtracking fails
+  console.warn(`Could not generate path with exactly ${targetTurns} turns for size ${size}`);
+  const path: Position[] = [start];
+  let curr = { ...start };
+  while (curr.row < end.row) {
+    curr = { row: curr.row + 1, col: curr.col };
+    path.push({ ...curr });
+  }
+  while (curr.col < end.col) {
+    curr = { row: curr.row, col: curr.col + 1 };
+    path.push({ ...curr });
+  }
+  return path;
+};
+
+const shuffleArray = <T,>(array: T[]): void => {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
 };
 
 const getDirection = (from: Position, to: Position): Direction | null => {
@@ -139,7 +280,7 @@ export default function PathfindingGame() {
   const [score, setScore] = useState(0);
   const [bestScore, setBestScore] = useState(0);
   const [mazeSize, setMazeSize] = useState(BASE_SIZE);
-  const [maze, setMaze] = useState<Cell[][]>(() => generateMaze(BASE_SIZE));
+  const [maze, setMaze] = useState<Cell[][]>(() => generateMaze(BASE_SIZE, 1));
   const [playerPath, setPlayerPath] = useState<Position[]>([]);
   const [showMaze, setShowMaze] = useState(false);
   const [isDrawing, setIsDrawing] = useState(false);
@@ -278,8 +419,9 @@ export default function PathfindingGame() {
 
   const beginRound = (nextRound: number) => {
     const size = BASE_SIZE + nextRound - 1;
+    const targetTurns = nextRound; // Number of turns = round number
     setMazeSize(size);
-    setMaze(generateMaze(size));
+    setMaze(generateMaze(size, targetTurns));
     const startingPath = [{ row: 0, col: 0 }];
     pathRef.current = startingPath;
     setPlayerPath(startingPath);
@@ -363,6 +505,18 @@ export default function PathfindingGame() {
     if (!last) return;
     if (last.row === row && last.col === col) return;
 
+    // Check if clicking on a previous position in the path (backtracking)
+    const posKey = `${row}-${col}`;
+    const pathIndex = currentPath.findIndex(pos => `${pos.row}-${pos.col}` === posKey);
+
+    if (pathIndex >= 0 && pathIndex < currentPath.length - 1) {
+      // Backtracking: remove all positions after the clicked position
+      const newPath = currentPath.slice(0, pathIndex + 1);
+      pathRef.current = newPath;
+      setPlayerPath(newPath);
+      return;
+    }
+
     const next = { row, col };
     const direction = getDirection(last, next);
     if (!direction) return;
@@ -410,7 +564,7 @@ export default function PathfindingGame() {
     setRound(1);
     extraLivesRef.current = EXTRA_LIVES_PER_MAZE;
     setMazeSize(BASE_SIZE);
-    setMaze(generateMaze(BASE_SIZE));
+    setMaze(generateMaze(BASE_SIZE, 1));
     pathRef.current = [];
     setPlayerPath([]);
     setShowMaze(false);
