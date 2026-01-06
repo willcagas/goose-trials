@@ -209,9 +209,8 @@ export default function LeaderboardTestPage() {
   // Determine default scope (only once when me data first loads)
   useEffect(() => {
     if (!meLoading && !scopeInitialized) {
-      if (me?.universityId) {
-        setScope('campus');
-      }
+      // Always default to global view
+      setScope('global');
       setScopeInitialized(true);
     }
   }, [meLoading, me?.universityId, scopeInitialized]);
