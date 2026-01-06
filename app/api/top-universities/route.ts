@@ -1,22 +1,22 @@
 /**
- * API Route: Get Leaderboard (Individual Players)
- * GET /api/leaderboard?test_slug=<slug>&university_id=<uuid>&country_code=<alpha_two_code>
+ * API Route: Get Top Universities Leaderboard
+ * GET /api/top-universities?test_slug=<slug>&country_code=<alpha_two_code>&limit=<n>&min_players=<n>
  * 
- * Calls the get_leaderboard RPC function
- * Note: is_you flag is determined by auth.uid() in the SQL function
+ * Calls the get_top_universities RPC function
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getLeaderboard } from '@/lib/db/leaderboard';
+import { getTopUniversities } from '@/lib/db/leaderboard';
 
 export async function GET(request: NextRequest) {
   try {
     // Get query parameters
     const { searchParams } = new URL(request.url);
     const testSlug = searchParams.get('test_slug');
-    const universityId = searchParams.get('university_id');
     const countryCode = searchParams.get('country_code');
     const limit = parseInt(searchParams.get('limit') || '50', 10);
+    const minPlayers = parseInt(searchParams.get('min_players') || '5', 10);
+    const topN = parseInt(searchParams.get('top_n') || '5', 10);
 
     if (!testSlug) {
       return NextResponse.json(
@@ -25,11 +25,12 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get leaderboard data (is_you determined by auth context in SQL)
-    const { data, error } = await getLeaderboard({
+    // Get top universities leaderboard data
+    const { data, error } = await getTopUniversities({
       testSlug,
       limit,
-      universityId: universityId || null,
+      topN,
+      minPlayers,
       countryCode: countryCode || null,
     });
 
@@ -42,7 +43,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ data });
   } catch (error) {
-    console.error('Unexpected error in /api/leaderboard:', error);
+    console.error('Unexpected error in /api/top-universities:', error);
     return NextResponse.json(
       {
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -51,3 +52,4 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+

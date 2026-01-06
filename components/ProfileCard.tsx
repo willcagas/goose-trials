@@ -40,22 +40,6 @@ function formatScore(testSlug: GameSlug, score: number): string {
   }
 }
 
-// Format rank display
-function formatRank(rank: number | null, total: number): string {
-  if (rank === null) return '—';
-  return `#${rank} / ${total}`;
-}
-
-// Get ordinal suffix for rank
-function getOrdinalSuffix(rank: number): string {
-  const j = rank % 10;
-  const k = rank % 100;
-  if (j === 1 && k !== 11) return 'st';
-  if (j === 2 && k !== 12) return 'nd';
-  if (j === 3 && k !== 13) return 'rd';
-  return 'th';
-}
-
 // Generate avatar placeholder from username
 function getAvatarPlaceholder(username: string | null): string {
   if (!username) return '?';
@@ -185,6 +169,16 @@ export default function ProfileCard({
   );
 }
 
+// Get ordinal suffix for rank
+function getOrdinalSuffix(rank: number): string {
+  const j = rank % 10;
+  const k = rank % 100;
+  if (j === 1 && k !== 11) return 'st';
+  if (j === 2 && k !== 12) return 'nd';
+  if (j === 3 && k !== 13) return 'rd';
+  return 'th';
+}
+
 // Individual highlight card
 function HighlightCard({
   highlight,
@@ -194,14 +188,15 @@ function HighlightCard({
   compact: boolean;
 }) {
   const game = GAMES_REGISTRY[highlight.test_slug];
-  const isTopRank = highlight.rank !== null && highlight.rank <= 3;
+  const hasUniRank = highlight.university_rank !== null;
+  const isTopUniRank = hasUniRank && highlight.university_rank! <= 3;
   
   return (
     <div
       className={`
         bg-white/5 border border-white/10 rounded-xl
         ${compact ? 'p-3' : 'p-4'}
-        ${isTopRank ? 'border-amber-400/30 bg-amber-400/5' : ''}
+        ${isTopUniRank ? 'border-amber-400/30 bg-amber-400/5' : ''}
       `}
     >
       {/* Game Title */}
@@ -219,33 +214,36 @@ function HighlightCard({
         className={`
           font-mono font-bold text-white
           ${compact ? 'text-lg mt-1' : 'text-xl md:text-2xl mt-2'}
-          ${isTopRank ? 'text-amber-400' : ''}
+          ${isTopUniRank ? 'text-amber-400' : ''}
         `}
       >
         {formatScore(highlight.test_slug, highlight.best_score)}
       </div>
       
-      {/* Rank */}
-      {highlight.rank !== null && (
-        <div
-          className={`
-            text-white/50
-            ${compact ? 'text-xs mt-1' : 'text-sm mt-2'}
-          `}
-        >
-          {isTopRank ? (
-            <span className="text-amber-400/80 font-semibold">
-              {highlight.rank}
-              <sup>{getOrdinalSuffix(highlight.rank)}</sup>
-              <span className="text-white/40 font-normal ml-1">
-                / {highlight.total_players}
+      {/* Scoped Ranks */}
+      <div className={`${compact ? 'mt-1 space-y-0.5' : 'mt-2 space-y-1'}`}>
+        {/* University Rank */}
+        {highlight.university_rank !== null && (
+          <div className={`text-white/50 ${compact ? 'text-xs' : 'text-sm'}`}>
+            <span className={isTopUniRank ? 'text-amber-400/80 font-semibold' : ''}>
+              {highlight.university_rank}
+              <sup>{getOrdinalSuffix(highlight.university_rank)}</sup>
+              <span className={`${isTopUniRank ? 'text-white/40' : 'text-white/30'} font-normal ml-1`}>
+                on campus
               </span>
             </span>
-          ) : (
-            formatRank(highlight.rank, highlight.total_players)
-          )}
-        </div>
-      )}
+          </div>
+        )}
+        
+        {/* Country Rank */}
+        {highlight.country_rank !== null && (
+          <div className={`text-white/40 ${compact ? 'text-xs' : 'text-xs'}`}>
+            {highlight.country_rank}
+            <sup>{getOrdinalSuffix(highlight.country_rank)}</sup>
+            <span className="ml-1">in country</span>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

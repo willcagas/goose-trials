@@ -10,6 +10,8 @@ export interface MeData {
   universityId: string | null;
   username: string | null;
   avatarUrl: string | null;
+  countryCode: string | null;
+  countryName: string | null;
 }
 
 interface MeContextType {
@@ -68,6 +70,8 @@ export function MeProvider({ children }: { children: React.ReactNode }) {
         universityId: null,
         username: null,
         avatarUrl: null,
+        countryCode: null,
+        countryName: null,
       });
       lastFetchedUserIdRef.current = null;
     } finally {

@@ -34,9 +34,6 @@ export async function GET(
       );
     }
 
-    // Fetch user highlights (best scores with ranks)
-    const highlights = (await getUserHighlightsWithRanks(profile.id, 6)).filter(h => h.test_slug !== 'reaction-time');
-
     // Fetch university info if user has one
     let universityInfo = null;
     if (profile.university_id) {
@@ -51,6 +48,14 @@ export async function GET(
         universityInfo = university;
       }
     }
+
+    // Fetch user highlights with scoped ranks (country and university)
+    const highlights = (await getUserHighlightsWithRanks(
+      profile.id, 
+      6,
+      profile.university_id,
+      universityInfo?.alpha_two_code
+    )).filter(h => h.test_slug !== 'reaction-time');
 
     return NextResponse.json({
       profile: {

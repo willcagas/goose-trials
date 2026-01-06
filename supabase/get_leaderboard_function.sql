@@ -1,10 +1,12 @@
+DROP FUNCTION IF EXISTS get_leaderboard(TEXT, INT, UUID, UUID, TEXT);
 DROP FUNCTION IF EXISTS get_leaderboard(TEXT, INT, UUID, UUID);
 DROP FUNCTION IF EXISTS get_leaderboard(TEXT, INT, UUID);
 
 CREATE FUNCTION get_leaderboard(
   p_test_slug TEXT,
   p_limit INT DEFAULT 50,
-  p_university_id UUID DEFAULT NULL
+  p_university_id UUID DEFAULT NULL,
+  p_country_code TEXT DEFAULT NULL
 )
 RETURNS TABLE (
   test_slug TEXT,
@@ -53,6 +55,12 @@ BEGIN
           WHERE p.id = s.user_id
           AND p.university_id = p_university_id
         ))
+        AND (p_country_code IS NULL OR EXISTS (
+          SELECT 1 FROM profiles p
+          JOIN universities u ON u.id = p.university_id
+          WHERE p.id = s.user_id
+          AND u.alpha_two_code = p_country_code
+        ))
     ),
     user_average_scores AS (
       SELECT
@@ -100,6 +108,12 @@ BEGIN
             WHERE p.id = s.user_id
             AND p.university_id = p_university_id
           ))
+          AND (p_country_code IS NULL OR EXISTS (
+            SELECT 1 FROM profiles p
+            JOIN universities u ON u.id = p.university_id
+            WHERE p.id = s.user_id
+            AND u.alpha_two_code = p_country_code
+          ))
         GROUP BY s.user_id
       )
       SELECT
@@ -134,6 +148,12 @@ BEGIN
             SELECT 1 FROM profiles p
             WHERE p.id = s.user_id
             AND p.university_id = p_university_id
+          ))
+          AND (p_country_code IS NULL OR EXISTS (
+            SELECT 1 FROM profiles p
+            JOIN universities u ON u.id = p.university_id
+            WHERE p.id = s.user_id
+            AND u.alpha_two_code = p_country_code
           ))
         GROUP BY s.user_id
       )

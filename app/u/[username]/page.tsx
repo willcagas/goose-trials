@@ -71,9 +71,6 @@ export default async function PublicProfilePage({ params }: PageProps) {
     );
   }
 
-  // Fetch user highlights (best scores with ranks) - get all games
-  const highlights = await getUserHighlightsWithRanks(profile.id, 20);
-
   // Fetch university info if user has one
   let universityInfo = null;
   if (profile.university_id) {
@@ -88,6 +85,14 @@ export default async function PublicProfilePage({ params }: PageProps) {
       universityInfo = university;
     }
   }
+
+  // Fetch user highlights with scoped ranks (country and university)
+  const highlights = await getUserHighlightsWithRanks(
+    profile.id, 
+    20,
+    profile.university_id,
+    universityInfo?.alpha_two_code
+  );
 
   return (
     <PublicProfileClient

@@ -267,7 +267,7 @@ export default function HomePage() {
           </h1>
           <div className="flex flex-col items-center mb-10 md:mb-14 text-center">
             <h2 className="text-lg sm:text-xl md:text-2xl text-white/90 font-semibold mb-3 max-w-2xl">
-              Battle your campus. Benchmark the world.
+              Battle your campus. Climb the ranks.
             </h2>
             <p className="text-sm sm:text-base md:text-lg text-white/60 font-medium">
               Six quick games. One leaderboard. See where you rank.
@@ -343,7 +343,7 @@ export default function HomePage() {
               The <span className="text-amber-400">Rankings</span>
             </h2>
             <p className="text-gray-600 text-lg">
-              Compare your scores with players from your university, country, and across the globe.
+              Compare your scores with players from your university and country.
             </p>
           </div>
 
@@ -382,8 +382,6 @@ export default function HomePage() {
                 return sortedTests.map((test) => {
                 const leaders = leaderboards[test.slug] || [];
                 const playerCount = leaders.length;
-                const userEntry = user ? leaders.find(entry => entry.is_you) : null;
-                const userRank = userEntry ? userEntry.rank : null;
 
                 return (
                   <Link
@@ -411,16 +409,6 @@ export default function HomePage() {
                               {playerCount > 0 ? playerCount : '—'}
                             </div>
                           </div>
-
-                          {/* User Rank (if logged in) */}
-                          {user && (
-                            <div className="text-right min-w-[80px]">
-                              <div className="text-xs text-amber-600 uppercase tracking-wide">Your Rank</div>
-                              <div className="text-lg font-bold text-amber-700">
-                                {userRank ? `#${userRank}` : '—'}
-                              </div>
-                            </div>
-                          )}
 
                           {/* Arrow */}
                           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 text-amber-400 group-hover:translate-x-1 transition-transform">

@@ -76,7 +76,7 @@ export default function PublicProfileClient({
               </h2>
 
               {/* Stats Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {/* Total Games Played */}
                 <div className="bg-white/5 border border-white/10 rounded-xl p-6">
                   <div className="text-white/60 text-sm uppercase tracking-wide mb-2">
@@ -87,25 +87,55 @@ export default function PublicProfileClient({
                   </div>
                 </div>
 
-                {/* Top 3 Finishes */}
+                {/* Best Country Rank */}
                 <div className="bg-white/5 border border-white/10 rounded-xl p-6">
                   <div className="text-white/60 text-sm uppercase tracking-wide mb-2">
-                    Top 3 Finishes
+                    Best Country Rank
                   </div>
                   <div className="text-3xl font-bold text-amber-400">
-                    {highlights.filter(h => h.rank && h.rank <= 3).length}
+                    {(() => {
+                      const countryRanks = highlights
+                        .filter(h => h.country_rank !== null)
+                        .map(h => h.country_rank!);
+                      if (countryRanks.length === 0) return '—';
+                      return `#${Math.min(...countryRanks)}`;
+                    })()}
                   </div>
                 </div>
 
-                {/* Best Rank */}
+                {/* Best University Rank */}
                 <div className="bg-white/5 border border-white/10 rounded-xl p-6">
                   <div className="text-white/60 text-sm uppercase tracking-wide mb-2">
-                    Best Rank
+                    Best Campus Rank
                   </div>
-                  <div className="text-3xl font-bold text-white">
-                    {Math.min(...highlights.filter(h => h.rank).map(h => h.rank!)) === Infinity
-                      ? '—'
-                      : `#${Math.min(...highlights.filter(h => h.rank).map(h => h.rank!))}`}
+                  <div className="text-3xl font-bold text-amber-400">
+                    {(() => {
+                      const uniRanks = highlights
+                        .filter(h => h.university_rank !== null)
+                        .map(h => h.university_rank!);
+                      if (uniRanks.length === 0) return '—';
+                      return `#${Math.min(...uniRanks)}`;
+                    })()}
+                  </div>
+                </div>
+
+                {/* Playing Since */}
+                <div className="bg-white/5 border border-white/10 rounded-xl p-6">
+                  <div className="text-white/60 text-sm uppercase tracking-wide mb-2">
+                    Playing Since
+                  </div>
+                  <div className="text-2xl font-bold text-white">
+                    {(() => {
+                      const dates = highlights
+                        .filter(h => h.achieved_at)
+                        .map(h => new Date(h.achieved_at).getTime());
+                      if (dates.length === 0) return '—';
+                      const earliest = new Date(Math.min(...dates));
+                      return earliest.toLocaleDateString('en-US', {
+                        month: 'short',
+                        year: 'numeric',
+                      });
+                    })()}
                   </div>
                 </div>
               </div>

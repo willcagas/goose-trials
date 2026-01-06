@@ -3,6 +3,7 @@ import { getUserTagsForIds } from '@/lib/user-tags.server';
 
 export interface LeaderboardEntry {
   test_slug: string;
+  user_id: string;
   username: string | null;
   avatar_url: string | null;
   university_id: string | null;
@@ -13,14 +14,33 @@ export interface LeaderboardEntry {
   user_tag?: string | null; // UserTagType from server
 }
 
+export interface TopUniversityEntry {
+  test_slug: string;
+  university_id: string;
+  university_name: string;
+  alpha_two_code: string | null;
+  players_considered: number;
+  metric_value: number;
+  rank: number;
+}
+
 export interface GetLeaderboardParams {
   testSlug: string;
   limit?: number;
   universityId?: string | null;
+  countryCode?: string | null;
+}
+
+export interface GetTopUniversitiesParams {
+  testSlug: string;
+  limit?: number;
+  topN?: number;
+  minPlayers?: number;
+  countryCode?: string | null;
 }
 
 /**
- * Get leaderboard data for a specific test
+ * Get leaderboard data for a specific test (individual players)
  * 
  * @param params - Leaderboard query parameters
  * @returns Array of leaderboard entries or empty array on error
@@ -31,12 +51,13 @@ export async function getLeaderboard(
   try {
     const supabase = await createClient();
     
-    const { testSlug, limit = 50, universityId = null } = params;
+    const { testSlug, limit = 50, universityId = null, countryCode = null } = params;
 
     const { data, error } = await supabase.rpc('get_leaderboard', {
       p_test_slug: testSlug,
       p_limit: limit,
       p_university_id: universityId,
+      p_country_code: countryCode,
     });
 
     if (error) {
@@ -86,6 +107,49 @@ export async function getLeaderboard(
     return { data: entriesWithTags };
   } catch (error) {
     console.error('Unexpected error in getLeaderboard:', error);
+    return {
+      data: [],
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+/**
+ * Get top universities leaderboard for a specific test
+ * 
+ * @param params - Top universities query parameters
+ * @returns Array of top university entries or empty array on error
+ */
+export async function getTopUniversities(
+  params: GetTopUniversitiesParams
+): Promise<{ data: TopUniversityEntry[]; error?: string }> {
+  try {
+    const supabase = await createClient();
+    
+    const { 
+      testSlug, 
+      limit = 50, 
+      topN = 5, 
+      minPlayers = 5, 
+      countryCode = null 
+    } = params;
+
+    const { data, error } = await supabase.rpc('get_top_universities', {
+      p_test_slug: testSlug,
+      p_limit: limit,
+      p_top_n: topN,
+      p_min_players: minPlayers,
+      p_alpha_two_code: countryCode,
+    });
+
+    if (error) {
+      console.error('Error calling get_top_universities RPC:', error);
+      return { data: [], error: error.message };
+    }
+
+    return { data: data || [] };
+  } catch (error) {
+    console.error('Unexpected error in getTopUniversities:', error);
     return {
       data: [],
       error: error instanceof Error ? error.message : 'Unknown error',

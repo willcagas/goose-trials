@@ -10,9 +10,14 @@ import { getAllGameSlugs, getGameMetadata, type GameSlug } from '@/lib/games/reg
 export interface UserHighlight {
   test_slug: GameSlug;
   best_score: number;
-  rank: number | null; // Global rank for this test
+  rank: number | null; // User's rank for this test (deprecated, use scoped ranks)
   total_players: number;
   achieved_at: string;
+  // Scoped ranks
+  country_rank: number | null;
+  country_total: number;
+  university_rank: number | null;
+  university_total: number;
 }
 
 /**
@@ -94,6 +99,10 @@ export async function getUserHighlights(
         rank,
         total_players: totalPlayers ?? 0,
         achieved_at: userScore.created_at,
+        country_rank: null,
+        country_total: 0,
+        university_rank: null,
+        university_total: 0,
       });
     }
 
@@ -111,14 +120,20 @@ export async function getUserHighlights(
  * Simplified version that doesn't calculate ranks (faster)
  * Used when rank display is not needed
  */
+export interface UserHighlightSimple {
+  test_slug: GameSlug;
+  best_score: number;
+  achieved_at: string;
+}
+
 export async function getUserHighlightsSimple(
   userId: string,
   limit: number = 6
-): Promise<Omit<UserHighlight, 'rank' | 'total_players'>[]> {
+): Promise<UserHighlightSimple[]> {
   try {
     const supabase = await createClient();
     const allSlugs = getAllGameSlugs();
-    const highlights: Omit<UserHighlight, 'rank' | 'total_players'>[] = [];
+    const highlights: UserHighlightSimple[] = [];
 
     for (const testSlug of allSlugs) {
       const { data: userScore, error } = await supabase
@@ -207,11 +222,18 @@ export async function getUserRankForTest(
 }
 
 /**
- * Get highlights with ranks using the leaderboard RPC (more accurate)
+ * Get highlights with scoped ranks (country and university)
+ * 
+ * @param userId - User ID to fetch highlights for
+ * @param limit - Maximum number of highlights to return
+ * @param universityId - User's university ID (optional, for university rank)
+ * @param countryCode - User's country code (optional, for country rank)
  */
 export async function getUserHighlightsWithRanks(
   userId: string,
-  limit: number = 6
+  limit: number = 6,
+  universityId?: string | null,
+  countryCode?: string | null
 ): Promise<UserHighlight[]> {
   try {
     const supabase = await createClient();
@@ -219,28 +241,77 @@ export async function getUserHighlightsWithRanks(
     const highlights: UserHighlight[] = [];
 
     for (const testSlug of allSlugs) {
-      // Use leaderboard RPC which handles ranking correctly
-      const { data: leaderboard, error } = await supabase.rpc('get_leaderboard', {
-        p_test_slug: testSlug,
-        p_limit: 10000,
-        p_university_id: null,
-      });
+      // Get user's best score from the scores table
+      const lowerBetter = isLowerBetter(testSlug);
+      const { data: userScore, error: scoreError } = await supabase
+        .from('scores')
+        .select('score_value, created_at')
+        .eq('test_slug', testSlug)
+        .eq('user_id', userId)
+        .order('score_value', { ascending: lowerBetter })
+        .limit(1)
+        .single();
 
-      if (error || !leaderboard || leaderboard.length === 0) continue;
+      if (scoreError || !userScore) continue;
 
-      // Find user in leaderboard using is_you flag (set by auth.uid() in SQL function)
-      const userEntry = leaderboard.find(
-        (entry: { is_you: boolean }) => entry.is_you
-      );
+      // Initialize rank values
+      let countryRank: number | null = null;
+      let countryTotal = 0;
+      let universityRank: number | null = null;
+      let universityTotal = 0;
 
-      if (!userEntry) continue;
+      // Fetch country leaderboard if country code is provided
+      if (countryCode) {
+        const { data: countryLeaderboard } = await supabase.rpc('get_leaderboard', {
+          p_test_slug: testSlug,
+          p_limit: 10000,
+          p_university_id: null,
+          p_country_code: countryCode,
+        });
+
+        if (countryLeaderboard && countryLeaderboard.length > 0) {
+          countryTotal = countryLeaderboard.length;
+          // Find user by user_id
+          const userCountryEntry = countryLeaderboard.find(
+            (entry: { user_id: string }) => entry.user_id === userId
+          );
+          if (userCountryEntry) {
+            countryRank = userCountryEntry.rank;
+          }
+        }
+      }
+
+      // Fetch university leaderboard if university ID is provided
+      if (universityId) {
+        const { data: uniLeaderboard } = await supabase.rpc('get_leaderboard', {
+          p_test_slug: testSlug,
+          p_limit: 10000,
+          p_university_id: universityId,
+          p_country_code: null,
+        });
+
+        if (uniLeaderboard && uniLeaderboard.length > 0) {
+          universityTotal = uniLeaderboard.length;
+          // Find user by user_id
+          const userUniEntry = uniLeaderboard.find(
+            (entry: { user_id: string }) => entry.user_id === userId
+          );
+          if (userUniEntry) {
+            universityRank = userUniEntry.rank;
+          }
+        }
+      }
 
       highlights.push({
         test_slug: testSlug,
-        best_score: userEntry.best_score,
-        rank: userEntry.rank,
-        total_players: leaderboard.length,
-        achieved_at: userEntry.achieved_at,
+        best_score: userScore.score_value,
+        rank: null, // Deprecated - use scoped ranks
+        total_players: 0, // Deprecated
+        achieved_at: userScore.created_at,
+        country_rank: countryRank,
+        country_total: countryTotal,
+        university_rank: universityRank,
+        university_total: universityTotal,
       });
     }
 
