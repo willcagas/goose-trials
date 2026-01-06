@@ -1,5 +1,6 @@
 'use client';
 
+import { useRef, type PointerEvent } from 'react';
 import type { Cell, GamePhase, Position } from './types';
 
 interface PathfindingMazeGridProps {
@@ -25,6 +26,29 @@ export default function PathfindingMazeGrid({
   onPointerDown,
   onPointerEnter,
 }: PathfindingMazeGridProps) {
+  const gridRef = useRef<HTMLDivElement | null>(null);
+
+  const handlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
+    const rect = gridRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+
+    if (x < 0 || y < 0 || x > rect.width || y > rect.height) return;
+
+    const col = Math.min(
+      mazeSize - 1,
+      Math.max(0, Math.floor((x / rect.width) * mazeSize))
+    );
+    const row = Math.min(
+      mazeSize - 1,
+      Math.max(0, Math.floor((y / rect.height) * mazeSize))
+    );
+
+    onPointerEnter(row, col);
+  };
+
   return (
     <div
       className={`absolute inset-0 grid rounded-2xl overflow-hidden bg-white/70 shadow-inner z-10 ${
@@ -34,6 +58,8 @@ export default function PathfindingMazeGrid({
         gridTemplateColumns: `repeat(${mazeSize}, minmax(0, 1fr))`,
         gridTemplateRows: `repeat(${mazeSize}, minmax(0, 1fr))`,
       }}
+      ref={gridRef}
+      onPointerMove={handlePointerMove}
     >
       {maze.map((row, rowIndex) =>
         row.map((_, colIndex) => {
@@ -65,7 +91,10 @@ export default function PathfindingMazeGrid({
                     ? 'hover:scale-105 active:scale-95'
                     : 'opacity-80'
                 }`}
-                onPointerDown={() => onPointerDown(rowIndex, colIndex)}
+                onPointerDown={(event) => {
+                  event.currentTarget.setPointerCapture(event.pointerId);
+                  onPointerDown(rowIndex, colIndex);
+                }}
                 onPointerEnter={() => onPointerEnter(rowIndex, colIndex)}
               >
                 {isStart ? 'S' : isEnd ? 'F' : ''}
