@@ -272,6 +272,23 @@ export default function NumberMemoryGamePage() {
 
   // Handle restart
   function handleRestart() {
+    // Clear any pending display timer and progress animation to avoid
+    // orphaned callbacks firing after restart (which caused the reported
+    // glitch where the UI would jump to the input screen unexpectedly).
+    if (displayTimerRef.current !== null) {
+      clearTimeout(displayTimerRef.current);
+      displayTimerRef.current = null;
+    }
+
+    if (progressAnimationRef.current !== null) {
+      cancelAnimationFrame(progressAnimationRef.current);
+      progressAnimationRef.current = null;
+    }
+
+    progressStartTimeRef.current = null;
+    isShowingPhaseRef.current = false;
+    setMemorizeProgress(100);
+
     setPhase('idle');
     setCurrentDigits(3);
     setHighestRecalled(0);
