@@ -71,10 +71,15 @@ export async function submitGuestScore(
  * Submit a score for either an authenticated user or a guest
  * Automatically detects if user is logged in and uses user_id or guest_id accordingly
  * Returns whether this score is a new personal high score
+ * 
+ * @param testSlug - The game identifier
+ * @param scoreValue - The score to submit
+ * @param previousBest - Optional: the client's known previous best score (avoids race conditions)
  */
 export async function submitScore(
   testSlug: string,
-  scoreValue: number
+  scoreValue: number,
+  previousBest?: number | null
 ): Promise<SubmitScoreResult> {
   try {
     const supabase = createClient();
@@ -89,13 +94,8 @@ export async function submitScore(
       guest_id: string | null;
     };
 
-    let identifierField: 'user_id' | 'guest_id';
-    let identifierValue: string;
-
     if (user && !authError) {
       // User is authenticated, use user_id
-      identifierField = 'user_id';
-      identifierValue = user.id;
       scoreData = {
         test_slug: testSlug,
         score_value: scoreValue,
@@ -105,8 +105,6 @@ export async function submitScore(
     } else {
       // User is not authenticated, use guest_id
       const guestId = getOrCreateGuestId();
-      identifierField = 'guest_id';
-      identifierValue = guestId;
       scoreData = {
         test_slug: testSlug,
         score_value: scoreValue,
@@ -115,18 +113,17 @@ export async function submitScore(
       };
     }
 
-    // Check for existing best score before inserting
-    const isLowerBetter = LOWER_IS_BETTER_GAMES.includes(testSlug);
-    const { data: existingScores } = await supabase
-      .from('scores')
-      .select('score_value')
-      .eq('test_slug', testSlug)
-      .eq(identifierField, identifierValue)
-      .order('score_value', { ascending: isLowerBetter })
-      .limit(1);
-
-    const previousBest = existingScores?.[0]?.score_value;
-    const isNewHighScore = previousBest === undefined || isScoreBetter(testSlug, scoreValue, previousBest);
+    // Determine if this is a new high score
+    // If client provides previousBest, use that (more reliable, avoids race conditions)
+    // Otherwise, we don't have enough info to determine, so default to false
+    let isNewHighScore = false;
+    if (previousBest === undefined || previousBest === null) {
+      // No previous best known - this is their first score
+      isNewHighScore = true;
+    } else {
+      // Compare with known previous best
+      isNewHighScore = isScoreBetter(testSlug, scoreValue, previousBest);
+    }
 
     const { error } = await supabase.from('scores').insert([scoreData]);
 

@@ -188,13 +188,13 @@ export async function getUserRankForTest(
     const { data: leaderboard, error: lbError } = await supabase.rpc('get_leaderboard', {
       p_test_slug: testSlug,
       p_limit: 10000, // High limit to get full leaderboard
-      p_user_id: userId,
       p_university_id: null,
     });
 
     if (lbError || !leaderboard) return null;
 
-    const userEntry = leaderboard.find((entry: { user_id: string }) => entry.user_id === userId);
+    // Find user's entry using is_you flag (set by auth.uid() in SQL function)
+    const userEntry = leaderboard.find((entry: { is_you: boolean }) => entry.is_you);
     
     return {
       rank: userEntry?.rank ?? leaderboard.length + 1,
@@ -224,15 +224,14 @@ export async function getUserHighlightsWithRanks(
       const { data: leaderboard, error } = await supabase.rpc('get_leaderboard', {
         p_test_slug: testSlug,
         p_limit: 10000,
-        p_user_id: userId,
         p_university_id: null,
       });
 
       if (error || !leaderboard || leaderboard.length === 0) continue;
 
-      // Find user in leaderboard
+      // Find user in leaderboard using is_you flag (set by auth.uid() in SQL function)
       const userEntry = leaderboard.find(
-        (entry: { user_id: string }) => entry.user_id === userId
+        (entry: { is_you: boolean }) => entry.is_you
       );
 
       if (!userEntry) continue;

@@ -34,6 +34,21 @@ export function getUserTag(userId: string): UserTagType | null {
 }
 
 /**
+ * Get tags for multiple user IDs at once (server-side only)
+ * Returns a map of userId -> tag
+ */
+export function getUserTagsForIds(userIds: string[]): Record<string, UserTagType> {
+  const result: Record<string, UserTagType> = {};
+  for (const id of userIds) {
+    const tag = USER_TAGS[id];
+    if (tag) {
+      result[id] = tag;
+    }
+  }
+  return result;
+}
+
+/**
  * Check if a user has a special tag (server-side only)
  */
 export function hasUserTag(userId: string): boolean {

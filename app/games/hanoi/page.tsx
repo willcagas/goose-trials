@@ -248,7 +248,9 @@ export default function HanoiGame() {
         try {
           // Convert milliseconds to seconds with 2 decimal places
           const scoreInSeconds = Math.round(result.scoreMs / 10) / 100;
-          const response = await submitScore(CONFIG.GAME_SLUG, scoreInSeconds);
+          // Pass previous best (converted to seconds) to avoid race conditions
+          const previousBestInSeconds = bestScore !== null ? Math.round(bestScore / 10) / 100 : null;
+          const response = await submitScore(CONFIG.GAME_SLUG, scoreInSeconds, previousBestInSeconds);
           
           if (response.success) {
             setSubmitStatus('success');

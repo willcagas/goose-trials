@@ -10,7 +10,6 @@ import Link from 'next/link';
 
 interface LeaderboardEntry {
   test_slug: string;
-  user_id: string;
   username: string | null;
   avatar_url: string | null;
   university_id: string | null;
@@ -202,8 +201,8 @@ export default function LeaderboardTestPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // NEW STATE: Track expanded rows
-  const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
+  // NEW STATE: Track expanded rows (by username instead of user_id)
+  const [expandedUsername, setExpandedUsername] = useState<string | null>(null);
   const [expandedScores, setExpandedScores] = useState<(TopScore | null)[]>([]);
   const [loadingScores, setLoadingScores] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
@@ -304,20 +303,22 @@ export default function LeaderboardTestPage() {
     }
   }, [meLoading, loadLeaderboards]);
 
-  // NEW FUNCTION: Handle row expansion
-  const handleRowClick = async (userId: string) => {
-    if (expandedUserId === userId) {
+  // NEW FUNCTION: Handle row expansion (uses username instead of user_id)
+  const handleRowClick = async (username: string | null) => {
+    if (!username) return;
+    
+    if (expandedUsername === username) {
       // Close instantly without animation
-      setExpandedUserId(null);
+      setExpandedUsername(null);
       setExpandedScores([]);
       return;
     }
 
-    setExpandedUserId(userId);
+    setExpandedUsername(username);
     setLoadingScores(true);
 
     try {
-      const response = await fetch(`/api/user-top-scores?test_slug=${testSlug}&user_id=${userId}`);
+      const response = await fetch(`/api/user-top-scores?test_slug=${testSlug}&username=${encodeURIComponent(username)}`);
       if (response.ok) {
         const { data } = await response.json();
         setExpandedScores(data || Array(5).fill(null));
@@ -546,10 +547,10 @@ export default function LeaderboardTestPage() {
                     {currentData.map((entry) => {
                       const isHighlighted = highlightUsername && entry.username?.toLowerCase() === highlightUsername.toLowerCase();
                       return (
-                      <React.Fragment key={entry.user_id}>
+                      <React.Fragment key={`${entry.rank}-${entry.username || 'anon'}`}>
                         {/* Main Row */}
                         <tr
-                          onClick={isReactionTime ? () => handleRowClick(entry.user_id) : undefined}
+                          onClick={isReactionTime ? () => handleRowClick(entry.username) : undefined}
                           className={`${
                             isHighlighted
                               ? 'bg-amber-400/20 ring-2 ring-amber-400 ring-inset font-semibold'
@@ -607,7 +608,7 @@ export default function LeaderboardTestPage() {
                               strokeWidth={2}
                               stroke="currentColor"
                               className={`w-5 h-5 mx-auto transition-transform ${
-                                expandedUserId === entry.user_id ? 'rotate-180' : ''
+                                expandedUsername === entry.username ? 'rotate-180' : ''
                               }`}
                             >
                               <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
@@ -617,7 +618,7 @@ export default function LeaderboardTestPage() {
                       </tr>
 
                       {/* Expanded Row - Top 5 Scores (only for reaction-time) */}
-                      {isReactionTime && expandedUserId === entry.user_id && (
+                      {isReactionTime && expandedUsername === entry.username && (
                         <tr className="animate-slideDown">
                           <td colSpan={(scope === 'global' || scope === 'country') ? 6 : 5} className="px-3 md:px-6 bg-gray-50 overflow-hidden">
                             <div className="py-3 md:py-4 animate-fadeIn">

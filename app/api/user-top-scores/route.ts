@@ -1,6 +1,8 @@
 /**
  * API Route: Get User's Top 5 Scores for a Test
- * GET /api/user-top-scores?test_slug=reaction-time
+ * GET /api/user-top-scores?test_slug=reaction-time&username=johndoe
+ * 
+ * Now uses username instead of user_id for privacy.
  */
 
 import { createClient } from '@/lib/supabase/server';
@@ -15,7 +17,7 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const testSlug = searchParams.get('test_slug');
-    const targetUserId = searchParams.get('user_id'); // Allow querying any user's scores
+    const targetUsername = searchParams.get('username'); // Use username instead of user_id
 
     if (!testSlug) {
       return NextResponse.json(
@@ -27,9 +29,24 @@ export async function GET(request: NextRequest) {
     // Determine which user's scores to fetch
     let queryUserId: string | null = null;
 
-    if (targetUserId) {
-      // Fetch specific user's scores (for leaderboard expansion)
-      queryUserId = targetUserId;
+    if (targetUsername) {
+      // Look up user_id from username
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('username', targetUsername)
+        .single();
+
+      if (profileError || !profile) {
+        // User not found
+        const emptyScores = Array(5).fill(null);
+        return NextResponse.json({
+          data: emptyScores,
+          average: null
+        });
+      }
+
+      queryUserId = profile.id;
     } else if (user) {
       // Fetch current user's scores (for game sidebar)
       queryUserId = user.id;
