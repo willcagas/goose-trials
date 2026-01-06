@@ -166,15 +166,14 @@ export function useAimTrainer(me?: { isLoggedIn?: boolean; userId?: string | nul
     return () => observer.disconnect();
   }, [phase]); // Re-run when phase changes so we observe the correct board
 
-  const spawnTarget = useCallback(
-    (nextHits: number) => {
-      if (!boardSize) return;
-      const base = Math.min(boardSize.width, boardSize.height);
-      const size = clamp(
-        MIN_TARGET,
-        Math.round(base * 0.16 - nextHits * 0.4),
-        MAX_TARGET
-      );
+  const spawnTarget = useCallback(() => {
+    if (!boardSize) return;
+    const base = Math.min(boardSize.width, boardSize.height);
+    const size = clamp(
+      MIN_TARGET,
+      Math.round(base * 0.16),
+      MAX_TARGET
+    );
       const padding = 12 + size / 2;
       const minX = padding;
       const maxX = boardSize.width - padding;
@@ -203,14 +202,12 @@ export function useAimTrainer(me?: { isLoggedIn?: boolean; userId?: string | nul
         size,
       };
       lastTargetRef.current = { x, y };
-      setTarget(nextTarget);
-    },
-    [boardSize]
-  );
+    setTarget(nextTarget);
+  }, [boardSize]);
 
   useEffect(() => {
     if (phase !== 'running' || target || !boardSize) return;
-    spawnTarget(hitsRef.current);
+    spawnTarget();
   }, [boardSize, phase, spawnTarget, target]);
 
   const resetRun = () => {
@@ -252,7 +249,7 @@ export function useAimTrainer(me?: { isLoggedIn?: boolean; userId?: string | nul
     if (feedbackTimeoutRef.current !== null) {
       window.clearTimeout(feedbackTimeoutRef.current);
     }
-    spawnTarget(0);
+    spawnTarget();
   };
 
   const registerMiss = () => {
@@ -285,7 +282,7 @@ export function useAimTrainer(me?: { isLoggedIn?: boolean; userId?: string | nul
       setTargetFeedback(null);
     }, 120);
     if (finishingRef.current) return;
-    spawnTarget(nextHits);
+    spawnTarget();
   };
 
   const handleBoardPointerDown = () => {
