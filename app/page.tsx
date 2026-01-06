@@ -259,8 +259,15 @@ export default function HomePage() {
       <Navbar />
       
       {/* Hero Section */}
-      <section className="relative z-10 px-6 py-12 md:py-20 bg-[#0a0a0a] text-white min-h-[85vh] md:min-h-[calc(100vh-4rem)] flex items-center justify-center">
-        <div className="max-w-4xl mx-auto w-full text-center">
+      <section className="relative z-10 px-6 py-12 md:py-20 bg-[#0a0a0a] text-white min-h-[85vh] md:min-h-[calc(100vh-4rem)] flex items-center justify-center overflow-hidden">
+        {/* Ceiling light bar effect - horizontal light source */}
+        <div className="absolute top-0 left-0 right-0 h-[600px] pointer-events-none">
+          {/* Light bar at the top */}
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-amber-400/80 to-transparent blur-sm" />
+          {/* Light cone spreading downward */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-gradient-to-b from-amber-400/25 via-amber-500/8 to-transparent blur-3xl" style={{ clipPath: 'polygon(20% 0%, 80% 0%, 100% 100%, 0% 100%)' }} />
+        </div>
+        <div className="relative max-w-4xl mx-auto w-full text-center">
           <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold mb-6 tracking-tight leading-[1.1] flex flex-col items-center">
             <span className="block text-white mb-2">Think You're Smart?</span>
             <span className="text-amber-400">Prove It.</span>

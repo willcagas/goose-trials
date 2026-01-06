@@ -9,24 +9,31 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'Goose Trials',
-  description: 'Test your cognitive abilities and compete on campus leaderboards',
+  description: "Think you're smart? Prove it.",
   icons: {
     icon: '/goosetrials-favicon.ico',
     apple: '/goosetrialspfp-removebg-preview.png',
   },
   openGraph: {
     title: 'Goose Trials',
-    description: 'Test your cognitive abilities and compete on campus leaderboards',
+    description: "Think you're smart? Prove it.",
     url: 'https://goosetrials.com',
     siteName: 'Goose Trials',
-    images: ['/og.png'],
+    images: [
+      {
+        url: '/goosetrialsog.png',
+        width: 1200,
+        height: 630,
+        alt: "Goose Trials - Think you're smart? Prove it.",
+      },
+    ],
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Goose Trials',
-    description: 'Test your cognitive abilities and compete on campus leaderboards',
-    images: ['/og.png'],
+    description: "Think you're smart? Prove it.",
+    images: ['/goosetrialsog.png'],
   },
 };
 
