@@ -182,7 +182,9 @@ export default function ChimpGamePage() {
       if (finalScore > 0) {
         setSubmitting(true);
         setIsNewHighScore(false);
-        const submitResult = await submitScore('chimp', finalScore);
+        // Pass previous best to avoid race condition with isNewHighScore
+        const previousBest = bestLevel > 0 ? bestLevel : null;
+        const submitResult = await submitScore('chimp', finalScore, previousBest);
         setSubmitting(false);
 
         if (submitResult.success) {

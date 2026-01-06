@@ -326,7 +326,9 @@ export default function PathfindingGame() {
     setSubmitting(true);
     setSubmitState('idle');
     setIsNewHighScore(false);
-    const result = await submitScore('pathfinding', score);
+    // Pass previous best to avoid race condition with isNewHighScore
+    const previousBest = bestScore > 0 ? bestScore : null;
+    const result = await submitScore('pathfinding', score, previousBest);
     setSubmitting(false);
     setSubmitState(result.success ? 'success' : 'error');
     if (result.success && result.isNewHighScore) {

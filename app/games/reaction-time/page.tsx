@@ -193,7 +193,8 @@ export default function ReactionTimeGame() {
       // Submit score to database
       setSubmitting(true);
       setIsNewHighScore(false);
-      const submitResult = await submitScore('reaction-time', reaction);
+      // Pass previous best to avoid race condition with isNewHighScore
+      const submitResult = await submitScore('reaction-time', reaction, bestTime);
       setSubmitting(false);
 
       if (submitResult.success) {
