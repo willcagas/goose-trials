@@ -7,6 +7,7 @@ import Navbar from '@/components/Navbar';
 import LoginModal from '@/components/LoginModal';
 import UserTag from '@/components/UserTag';
 import Link from 'next/link';
+import PercentileGraph from '@/components/PercentileGraph';
 
 interface LeaderboardEntry {
   test_slug: string;
@@ -202,10 +203,7 @@ export default function LeaderboardTestPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // NEW STATE: Track expanded rows
-  const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
-  const [expandedScores, setExpandedScores] = useState<(TopScore | null)[]>([]);
-  const [loadingScores, setLoadingScores] = useState(false);
+  const [expandedPercentileUserId, setExpandedPercentileUserId] = useState<string | null>(null);
   const [showLogin, setShowLogin] = useState(false);
 
   // Determine default scope (only once when me data first loads)
@@ -304,31 +302,15 @@ export default function LeaderboardTestPage() {
     }
   }, [meLoading, loadLeaderboards]);
 
-  // NEW FUNCTION: Handle row expansion
-  const handleRowClick = async (userId: string) => {
-    if (expandedUserId === userId) {
-      // Close instantly without animation
-      setExpandedUserId(null);
-      setExpandedScores([]);
-      return;
-    }
 
-    setExpandedUserId(userId);
-    setLoadingScores(true);
 
-    try {
-      const response = await fetch(`/api/user-top-scores?test_slug=${testSlug}&user_id=${userId}`);
-      if (response.ok) {
-        const { data } = await response.json();
-        setExpandedScores(data || Array(5).fill(null));
-      } else {
-        setExpandedScores(Array(5).fill(null));
-      }
-    } catch (error) {
-      console.error('Error loading top scores:', error);
-      setExpandedScores(Array(5).fill(null));
-    } finally {
-      setLoadingScores(false);
+  // Handle percentile graph expansion
+  const handlePercentileClick = (userId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (expandedPercentileUserId === userId) {
+      setExpandedPercentileUserId(null);
+    } else {
+      setExpandedPercentileUserId(userId);
     }
   };
 
@@ -535,11 +517,9 @@ export default function LeaderboardTestPage() {
                       <th className="px-3 md:px-6 py-3 md:py-4 text-right text-xs font-bold uppercase tracking-wider text-gray-700">
                         Achieved
                       </th>
-                      {isReactionTime && (
-                        <th className="px-3 md:px-6 py-3 md:py-4 text-center text-xs font-bold uppercase tracking-wider text-gray-700">
-                          Details
-                        </th>
-                      )}
+                      <th className="px-3 md:px-6 py-3 md:py-4 text-center text-xs font-bold uppercase tracking-wider text-gray-700">
+                        Stats
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
@@ -549,14 +529,16 @@ export default function LeaderboardTestPage() {
                       <React.Fragment key={entry.user_id}>
                         {/* Main Row */}
                         <tr
-                          onClick={isReactionTime ? () => handleRowClick(entry.user_id) : undefined}
+                          onClick={(e) => {
+                            handlePercentileClick(entry.user_id, e);
+                          }}
                           className={`${
                             isHighlighted
                               ? 'bg-amber-400/20 ring-2 ring-amber-400 ring-inset font-semibold'
                               : entry.is_you
                               ? 'bg-amber-400/10 font-semibold'
                               : 'hover:bg-amber-400/5'
-                          } transition-colors ${isReactionTime ? 'cursor-pointer' : ''}`}
+                          } transition-colors cursor-pointer`}
                         >
                         <td className="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-sm text-gray-900">
                           {entry.rank}
@@ -598,70 +580,51 @@ export default function LeaderboardTestPage() {
                         <td className="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-xs md:text-sm text-gray-500 text-right">
                           {formatDate(entry.achieved_at)}
                         </td>
-                        {isReactionTime && (
-                          <td className="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-center">
+                        <td className="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-center">
+                          <button
+                            onClick={(e) => {
+                              handlePercentileClick(entry.user_id, e);
+                            }}
+                            className="p-1.5 hover:bg-blue-50 rounded-lg transition-colors group"
+                            title="View stats"
+                          >
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
                               fill="none"
                               viewBox="0 0 24 24"
                               strokeWidth={2}
                               stroke="currentColor"
-                              className={`w-5 h-5 mx-auto transition-transform ${
-                                expandedUserId === entry.user_id ? 'rotate-180' : ''
+                              className={`w-5 h-5 mx-auto transition-all ${
+                                expandedPercentileUserId === entry.user_id
+                                  ? 'text-blue-500'
+                                  : 'text-gray-400 group-hover:text-blue-500'
                               }`}
                             >
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"
+                              />
                             </svg>
-                          </td>
-                        )}
+                          </button>
+                        </td>
                       </tr>
 
-                      {/* Expanded Row - Top 5 Scores (only for reaction-time) */}
-                      {isReactionTime && expandedUserId === entry.user_id && (
+                      {/* Expanded Row - Stats (Percentile Graph + Top 5 for reaction-time) */}
+                      {expandedPercentileUserId === entry.user_id && (
                         <tr className="animate-slideDown">
-                          <td colSpan={(scope === 'global' || scope === 'country') ? 6 : 5} className="px-3 md:px-6 bg-gray-50 overflow-hidden">
-                            <div className="py-3 md:py-4 animate-fadeIn">
-                              <div className="max-w-3xl">
-                                <h4 className="text-xs md:text-sm font-bold text-gray-700 mb-2 md:mb-3">
-                                  {entry.username || 'Anonymous'}'s Top 5 Best Scores
-                                </h4>
-                                {loadingScores ? (
-                                  <p className="text-xs md:text-sm text-gray-500">Loading scores...</p>
-                                ) : (
-                                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 md:gap-3">
-                                    {expandedScores.map((score, index) => (
-                                      <div
-                                        key={index}
-                                        className={`p-2 md:p-3 rounded-lg border transform transition-all duration-300 ease-out ${
-                                          score
-                                            ? 'bg-white border-gray-200'
-                                            : 'bg-gray-100 border-gray-300 border-dashed'
-                                        }`}
-                                        style={{
-                                          animationDelay: `${index * 50}ms`,
-                                          animation: 'cardSlideUp 0.3s ease-out forwards',
-                                          opacity: 0,
-                                          transform: 'translateY(10px)'
-                                        }}
-                                      >
-                                        <div className="text-xs text-gray-500 mb-1">
-                                          #{index + 1}
-                                        </div>
-                                        <div className="text-base md:text-lg font-bold text-gray-900">
-                                          {score
-                                            ? formatScore(score.score_value, testInfo?.unit || null)
-                                            : '—'}
-                                        </div>
-                                        {score && (
-                                          <div className="text-xs text-gray-400 mt-1">
-                                            {formatDate(score.created_at)}
-                                          </div>
-                                        )}
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
+                          <td colSpan={(scope === 'global' || scope === 'country') ? 6 : 5} className="px-3 md:px-6 py-4 md:py-6 overflow-hidden">
+                            <div className="animate-fadeIn space-y-6">
+
+
+                              {/* Percentile Graph */}
+                              <PercentileGraph
+                                testSlug={testSlug}
+                                userId={entry.user_id}
+                                username={entry.username}
+                                unit={testInfo?.unit || null}
+                                lowerIsBetter={testInfo?.lower_is_better || false}
+                              />
                             </div>
                           </td>
                         </tr>

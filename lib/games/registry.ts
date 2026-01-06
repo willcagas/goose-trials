@@ -19,6 +19,8 @@ export interface GameMetadata {
   description: string; // One-liner
   howToPlay: string[]; // Array of instruction steps
   scoring: string; // Scoring explanation
+  lowerIsBetter: boolean;
+  unit?: string | null; // Unit for scoring (ms, s, level, etc.)
   controls: {
     keyboard: string[]; // Array of keyboard control descriptions
     mobile: string[]; // Array of mobile control descriptions
@@ -38,6 +40,8 @@ export const GAMES_REGISTRY: Record<GameSlug, GameMetadata> = {
       'Your reaction time in milliseconds is your score'
     ],
     scoring: 'Your score is your reaction time in milliseconds. Lower is better. The best players react in under 200ms.',
+    lowerIsBetter: true,
+    unit: 'ms',
     controls: {
       keyboard: [
         'Space: Start game / Restart',
@@ -64,6 +68,8 @@ export const GAMES_REGISTRY: Record<GameSlug, GameMetadata> = {
       'One mistake ends the game'
     ],
     scoring: 'Your score is the highest number of digits you correctly recalled. Each level adds one digit.',
+    lowerIsBetter: false,
+    unit: 'digits',
     controls: {
       keyboard: [
         'Space: Start game / Restart',
@@ -93,6 +99,8 @@ export const GAMES_REGISTRY: Record<GameSlug, GameMetadata> = {
       'One mistake ends the run'
     ],
     scoring: 'Your score is the highest level you cleared. Each level adds one more number to remember.',
+    lowerIsBetter: false,
+    unit: 'level',
     controls: {
       keyboard: [
         'Space: Start game / Restart',
@@ -120,6 +128,8 @@ export const GAMES_REGISTRY: Record<GameSlug, GameMetadata> = {
       'Complete in the fewest moves possible'
     ],
     scoring: 'Your score = Time + (1200ms × extra moves). Lower is better. Optimal moves for 5 disks is 31.',
+    lowerIsBetter: true,
+    unit: 's',
     controls: {
       keyboard: [
         '1/A/8: Select rod A',
@@ -149,6 +159,8 @@ export const GAMES_REGISTRY: Record<GameSlug, GameMetadata> = {
       'The test ends when you fail to navigate the maze'
     ],
     scoring: 'Your score is the number of rounds you completed. Each round adds one square to the maze size.',
+    lowerIsBetter: false,
+    unit: 'rounds',
     controls: {
       keyboard: [
         'Space: Start game / Restart',
@@ -177,6 +189,8 @@ export const GAMES_REGISTRY: Record<GameSlug, GameMetadata> = {
       'Misses reduce your accuracy percentage'
     ],
     scoring: 'Your score is the number of targets you hit. Accuracy percentage shows hits vs misses.',
+    lowerIsBetter: false,
+    unit: 'hits',
     controls: {
       keyboard: [
         'Space: Start run / Restart',

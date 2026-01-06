@@ -71,8 +71,8 @@ export default async function PublicProfilePage({ params }: PageProps) {
     );
   }
 
-  // Fetch user highlights (best scores with ranks)
-  const highlights = await getUserHighlightsWithRanks(profile.id, 6);
+  // Fetch user highlights (best scores with ranks) - get all games
+  const highlights = await getUserHighlightsWithRanks(profile.id, 20);
 
   // Fetch university info if user has one
   let universityInfo = null;
