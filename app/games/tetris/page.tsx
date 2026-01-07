@@ -573,13 +573,21 @@ export default function TetrisGame() {
     if (!checkCollision(newPiece)) {
       updateCurrentPiece(newPiece);
 
-      // Reset lock delay when rotating on the ground
-      if (lockDelayRef.current && checkCollision(newPiece, 0, 1)) {
-        clearTimeout(lockDelayRef.current);
+      // If piece is on the ground after rotation, start/reset lock delay
+      if (checkCollision(newPiece, 0, 1)) {
+        if (lockDelayRef.current) {
+          clearTimeout(lockDelayRef.current);
+        }
         lockDelayRef.current = setTimeout(() => {
           lockPiece(currentPieceRef.current!);
           lockDelayRef.current = null;
         }, LOCK_DELAY);
+      } else {
+        // Piece is not on ground, clear any existing lock delay
+        if (lockDelayRef.current) {
+          clearTimeout(lockDelayRef.current);
+          lockDelayRef.current = null;
+        }
       }
     } else {
       // SRS wall kicks - different for I piece vs other pieces
@@ -604,13 +612,21 @@ export default function TetrisGame() {
         if (!checkCollision(newPiece)) {
           updateCurrentPiece(newPiece);
 
-          // Reset lock delay when rotating on the ground
-          if (lockDelayRef.current && checkCollision(newPiece, 0, 1)) {
-            clearTimeout(lockDelayRef.current);
+          // If piece is on the ground after rotation, start/reset lock delay
+          if (checkCollision(newPiece, 0, 1)) {
+            if (lockDelayRef.current) {
+              clearTimeout(lockDelayRef.current);
+            }
             lockDelayRef.current = setTimeout(() => {
               lockPiece(currentPieceRef.current!);
               lockDelayRef.current = null;
             }, LOCK_DELAY);
+          } else {
+            // Piece is not on ground, clear any existing lock delay
+            if (lockDelayRef.current) {
+              clearTimeout(lockDelayRef.current);
+              lockDelayRef.current = null;
+            }
           }
           return;
         }
@@ -632,13 +648,21 @@ export default function TetrisGame() {
     if (!checkCollision(newPiece)) {
       updateCurrentPiece(newPiece);
 
-      // Reset lock delay when rotating on the ground
-      if (lockDelayRef.current && checkCollision(newPiece, 0, 1)) {
-        clearTimeout(lockDelayRef.current);
+      // If piece is on the ground after rotation, start/reset lock delay
+      if (checkCollision(newPiece, 0, 1)) {
+        if (lockDelayRef.current) {
+          clearTimeout(lockDelayRef.current);
+        }
         lockDelayRef.current = setTimeout(() => {
           lockPiece(currentPieceRef.current!);
           lockDelayRef.current = null;
         }, LOCK_DELAY);
+      } else {
+        // Piece is not on ground, clear any existing lock delay
+        if (lockDelayRef.current) {
+          clearTimeout(lockDelayRef.current);
+          lockDelayRef.current = null;
+        }
       }
     } else {
       // SRS wall kicks for counter-clockwise - different for I piece vs other pieces
@@ -663,13 +687,21 @@ export default function TetrisGame() {
         if (!checkCollision(newPiece)) {
           updateCurrentPiece(newPiece);
 
-          // Reset lock delay when rotating on the ground
-          if (lockDelayRef.current && checkCollision(newPiece, 0, 1)) {
-            clearTimeout(lockDelayRef.current);
+          // If piece is on the ground after rotation, start/reset lock delay
+          if (checkCollision(newPiece, 0, 1)) {
+            if (lockDelayRef.current) {
+              clearTimeout(lockDelayRef.current);
+            }
             lockDelayRef.current = setTimeout(() => {
               lockPiece(currentPieceRef.current!);
               lockDelayRef.current = null;
             }, LOCK_DELAY);
+          } else {
+            // Piece is not on ground, clear any existing lock delay
+            if (lockDelayRef.current) {
+              clearTimeout(lockDelayRef.current);
+              lockDelayRef.current = null;
+            }
           }
           return;
         }

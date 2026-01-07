@@ -28,7 +28,6 @@ export async function GET() {
             height: '2px',
             background: 'linear-gradient(to right, transparent, rgba(251, 191, 36, 0.8), transparent)',
             filter: 'blur(2px)',
-            display: 'flex',
           }}
         />
 
@@ -41,8 +40,7 @@ export async function GET() {
             transform: 'translateX(-50%)',
             width: '100%',
             height: '100%',
-            background: 'radial-gradient(ellipse 800px 600px at center top, rgba(251, 191, 36, 0.15), transparent 60%)',
-            display: 'flex',
+            background: 'radial-gradient(ellipse at center top, rgba(251, 191, 36, 0.15), transparent 60%)',
           }}
         />
 
@@ -75,6 +73,7 @@ export async function GET() {
                 marginBottom: '16px',
                 textAlign: 'center',
                 letterSpacing: '-0.02em',
+                display: 'flex',
               }}
             >
               Think You're Smart?
@@ -86,6 +85,7 @@ export async function GET() {
                 color: '#fbbf24',
                 textAlign: 'center',
                 letterSpacing: '-0.02em',
+                display: 'flex',
               }}
             >
               Prove It.
@@ -100,6 +100,7 @@ export async function GET() {
               textAlign: 'center',
               marginBottom: '16px',
               fontWeight: '600',
+              display: 'flex',
             }}
           >
             Battle your campus. Climb the ranks.
@@ -112,6 +113,7 @@ export async function GET() {
               color: 'rgba(255, 255, 255, 0.4)',
               textAlign: 'center',
               fontWeight: '500',
+              display: 'flex',
             }}
           >
             Six quick games. One leaderboard.
@@ -132,6 +134,7 @@ export async function GET() {
               fontSize: 36,
               fontWeight: 'bold',
               color: 'white',
+              display: 'flex',
             }}
           >
             GOOSE
@@ -141,6 +144,7 @@ export async function GET() {
               fontSize: 36,
               fontWeight: 'bold',
               color: '#fbbf24',
+              display: 'flex',
             }}
           >
             TRIALS
