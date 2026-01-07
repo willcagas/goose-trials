@@ -320,26 +320,67 @@ export default function HomePage() {
               { href: "/games/chimp", tag: "VISUAL", icon: Eye, title: "Chimp Test", desc: "Master pattern recognition and working memory." },
               { href: "/games/aim-trainer", tag: "ACCURACY", icon: Target, title: "Aim Trainer", desc: "Hit targets as quick as possible to test accuracy." },
               { href: "/games/pathfinding", tag: "SPATIAL", icon: Route, title: "Pathfinding", desc: "Navigate mazes and find the shortest route." },
-              { href: "/games/tetris", tag: "SPEED", icon: Box, title: "Tetris", desc: "Clear 15 lines as fast as possible." }
-            ].map((trial, idx) => (
-              <a key={idx} href={trial.href} onClick={(e) => e.stopPropagation()} className="cursor-pointer">
-                <div className="relative overflow-hidden group p-8 rounded-3xl bg-white border-2 border-gray-200 hover:border-amber-400 active:scale-[0.98] transition-all shadow-sm hover:shadow-md h-full flex flex-col">
-                  <div className="absolute top-0 right-0 p-4">
-                    <span className="px-3 py-1 bg-amber-400/10 text-amber-500 text-[10px] font-bold uppercase rounded-full border border-amber-400/30">
-                      {trial.tag}
-                    </span>
+              { href: "/games/tetris", tag: "SPEED", icon: Box, title: "Tetris", desc: "Clear 15 lines as fast as possible.", mobileOnly: true }
+            ].map((trial, idx) => {
+              const isTetris = trial.title === "Tetris";
+              const isDisabledOnMobile = isTetris;
+
+              return (
+                <a
+                  key={idx}
+                  href={trial.href}
+                  onClick={(e) => {
+                    if (isDisabledOnMobile && window.innerWidth < 768) {
+                      e.preventDefault();
+                    } else {
+                      e.stopPropagation();
+                    }
+                  }}
+                  className={isDisabledOnMobile ? "cursor-pointer md:cursor-pointer" : "cursor-pointer"}
+                >
+                  <div className={`relative overflow-hidden group p-8 rounded-3xl border-2 transition-all shadow-sm h-full flex flex-col ${
+                    isDisabledOnMobile
+                      ? "bg-gray-100 border-gray-300 md:bg-white md:border-gray-200 md:hover:border-amber-400 md:active:scale-[0.98] md:hover:shadow-md"
+                      : "bg-white border-gray-200 hover:border-amber-400 active:scale-[0.98] hover:shadow-md"
+                  }`}>
+                    {/* Mobile Not Supported Badge - Only visible on mobile for Tetris */}
+                    {isDisabledOnMobile && (
+                      <div className="absolute top-4 left-4 md:hidden">
+                        <span className="px-3 py-1 bg-gray-300 text-gray-600 text-[10px] font-bold uppercase rounded-full border border-gray-400">
+                          Desktop Only
+                        </span>
+                      </div>
+                    )}
+
+                    <div className="absolute top-0 right-0 p-4">
+                      <span className={`px-3 py-1 text-[10px] font-bold uppercase rounded-full border ${
+                        isDisabledOnMobile
+                          ? "bg-gray-300/50 text-gray-500 border-gray-400/30 md:bg-amber-400/10 md:text-amber-500 md:border-amber-400/30"
+                          : "bg-amber-400/10 text-amber-500 border-amber-400/30"
+                      }`}>
+                        {trial.tag}
+                      </span>
+                    </div>
+                    <div className="mb-4">
+                      <trial.icon className={`w-8 h-8 ${isDisabledOnMobile ? "text-gray-400 md:text-amber-400" : "text-amber-400"}`} />
+                    </div>
+                    <h3 className={`text-2xl font-bold mb-3 uppercase pr-20 ${isDisabledOnMobile ? "text-gray-500 md:text-gray-900" : "text-gray-900"}`}>
+                      {trial.title}
+                    </h3>
+                    <p className={`text-sm leading-relaxed mb-6 flex-1 ${isDisabledOnMobile ? "text-gray-400 md:text-gray-600" : "text-gray-600"}`}>
+                      {trial.desc}
+                    </p>
+                    <div className="w-full h-1 bg-gray-200 rounded-full overflow-hidden">
+                      <div className={`h-full w-0 transition-all duration-700 ${
+                        isDisabledOnMobile
+                          ? "bg-gray-400 md:bg-amber-400 md:group-hover:w-full"
+                          : "bg-amber-400 group-hover:w-full"
+                      }`}></div>
+                    </div>
                   </div>
-                  <div className="mb-4">
-                    <trial.icon className="w-8 h-8 text-amber-400" />
-                  </div>
-                  <h3 className="text-2xl font-bold mb-3 text-gray-900 uppercase pr-20">{trial.title}</h3>
-                  <p className="text-gray-600 text-sm leading-relaxed mb-6 flex-1">{trial.desc}</p>
-                  <div className="w-full h-1 bg-gray-200 rounded-full overflow-hidden">
-                    <div className="h-full bg-amber-400 w-0 group-hover:w-full transition-all duration-700"></div>
-                  </div>
-                </div>
-              </a>
-            ))}
+                </a>
+              );
+            })}
           </div>
 
           {/* Tower of Hanoi - Centered, same width as grid items */}
