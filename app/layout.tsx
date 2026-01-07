@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     siteName: 'Goose Trials',
     images: [
       {
-        url: 'https://goosetrials.com/goosetrialsog.png',
+        url: '/api/og/home',
         width: 1200,
         height: 630,
         alt: "Goose Trials - Think you're smart? Prove it.",
@@ -33,7 +33,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Goose Trials',
     description: "Think you're smart? Prove it.",
-    images: ['https://goosetrials.com/goosetrialsog.png'],
+    images: ['/api/og/home'],
   },
 };
 

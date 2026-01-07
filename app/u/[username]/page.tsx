@@ -14,18 +14,27 @@ interface PageProps {
 // Generate dynamic metadata for SEO
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { username } = await params;
-  
+
   const profile = await getProfileByUsername(username);
-  
+
   if (!profile) {
     return {
       title: 'Profile Not Found - Goose Trials',
       description: 'This user profile does not exist.',
     };
   }
-  
+
   const displayName = profile.username || `User_${profile.id.slice(0, 8)}`;
-  
+
+  // Build OG image URL with profile data
+  const ogImageParams = new URLSearchParams({
+    username: displayName,
+    ...(profile.avatar_url && { avatar: profile.avatar_url }),
+    ...(profile.university_name && { university: profile.university_name }),
+  });
+
+  const ogImageUrl = `/api/og/profile?${ogImageParams.toString()}`;
+
   return {
     title: `${displayName} - Goose Trials`,
     description: `View ${displayName}'s best scores and compete on Goose Trials!`,
@@ -34,11 +43,20 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       description: `View ${displayName}'s best scores and compete on Goose Trials!`,
       type: 'profile',
       url: `/u/${username}`,
+      images: [
+        {
+          url: ogImageUrl,
+          width: 1200,
+          height: 630,
+          alt: `${displayName}'s profile`,
+        },
+      ],
     },
     twitter: {
-      card: 'summary',
+      card: 'summary_large_image',
       title: `${displayName} - Goose Trials`,
       description: `View ${displayName}'s best scores and compete!`,
+      images: [ogImageUrl],
     },
   };
 }
