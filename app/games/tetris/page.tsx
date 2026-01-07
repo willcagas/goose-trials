@@ -90,9 +90,9 @@ export default function TetrisGame() {
   const [colorScheme, setColorScheme] = useState<ColorScheme>(() => {
     if (typeof window !== 'undefined') {
       const saved = document.cookie.split('; ').find(row => row.startsWith('tetris_color_scheme='));
-      return (saved?.split('=')[1] as ColorScheme) || 'yellow';
+      return (saved?.split('=')[1] as ColorScheme) || 'rainbow';
     }
-    return 'yellow';
+    return 'rainbow';
   });
   const [showControls, setShowControls] = useState(false);
 
@@ -263,15 +263,36 @@ export default function TetrisGame() {
     return rotated;
   };
 
+  const rotatePieceCounterClockwiseShape = (shape: number[][]): number[][] => {
+    const rows = shape.length;
+    const cols = shape[0].length;
+    const rotated: number[][] = Array(cols).fill(null).map(() => Array(rows).fill(0));
+
+    for (let y = 0; y < rows; y++) {
+      for (let x = 0; x < cols; x++) {
+        rotated[cols - 1 - x][y] = shape[y][x];
+      }
+    }
+    return rotated;
+  };
+
   const createPiece = (type: TetrominoType, rotation: number = 0): Piece => {
+    // J piece spawns rotated 90 degrees clockwise (rotation 1)
+    // L piece spawns rotated 270 degrees (rotation 3) to mirror J
+    let initialRotation = 0;
+    if (type === 'J') initialRotation = 1;
+    if (type === 'L') initialRotation = 3;
+
+    const finalRotation = (initialRotation + rotation) % 4;
+
     let shape = TETROMINOS[type].shape;
-    for (let i = 0; i < rotation % 4; i++) {
+    for (let i = 0; i < finalRotation; i++) {
       shape = rotatePiece(shape);
     }
 
     return {
       type,
-      rotation,
+      rotation: finalRotation,
       position: { x: Math.floor(BOARD_WIDTH / 2) - Math.floor(shape[0].length / 2), y: 0 },
       shape
     };
@@ -542,8 +563,12 @@ export default function TetrisGame() {
     if (!currentPiece || internalState !== 'playing') return;
 
     const newRotation = (currentPiece.rotation + 1) % 4;
-    const newPiece = createPiece(currentPiece.type, newRotation);
-    newPiece.position = { ...currentPiece.position };
+    const newShape = rotatePiece(currentPiece.shape);
+    const newPiece: Piece = {
+      ...currentPiece,
+      rotation: newRotation,
+      shape: newShape
+    };
 
     if (!checkCollision(newPiece)) {
       updateCurrentPiece(newPiece);
@@ -557,12 +582,18 @@ export default function TetrisGame() {
         }, LOCK_DELAY);
       }
     } else {
-      const wallKicks = [
+      // SRS wall kicks - different for I piece vs other pieces
+      const isIPiece = currentPiece.type === 'I';
+      const wallKicks = isIPiece ? [
         { x: -1, y: 0 },
-        { x: 1, y: 0 },
-        { x: -2, y: 0 },
         { x: 2, y: 0 },
-        { x: 0, y: -1 }
+        { x: -1, y: -2 },
+        { x: 2, y: 1 }
+      ] : [
+        { x: -1, y: 0 },
+        { x: -1, y: -1 },
+        { x: 0, y: 2 },
+        { x: -1, y: 2 }
       ];
 
       for (const kick of wallKicks) {
@@ -591,8 +622,12 @@ export default function TetrisGame() {
     if (!currentPiece || internalState !== 'playing') return;
 
     const newRotation = (currentPiece.rotation - 1 + 4) % 4;
-    const newPiece = createPiece(currentPiece.type, newRotation);
-    newPiece.position = { ...currentPiece.position };
+    const newShape = rotatePieceCounterClockwiseShape(currentPiece.shape);
+    const newPiece: Piece = {
+      ...currentPiece,
+      rotation: newRotation,
+      shape: newShape
+    };
 
     if (!checkCollision(newPiece)) {
       updateCurrentPiece(newPiece);
@@ -606,12 +641,18 @@ export default function TetrisGame() {
         }, LOCK_DELAY);
       }
     } else {
-      const wallKicks = [
-        { x: -1, y: 0 },
+      // SRS wall kicks for counter-clockwise - different for I piece vs other pieces
+      const isIPiece = currentPiece.type === 'I';
+      const wallKicks = isIPiece ? [
         { x: 1, y: 0 },
         { x: -2, y: 0 },
-        { x: 2, y: 0 },
-        { x: 0, y: -1 }
+        { x: 1, y: 2 },
+        { x: -2, y: -1 }
+      ] : [
+        { x: 1, y: 0 },
+        { x: 1, y: -1 },
+        { x: 0, y: 2 },
+        { x: 1, y: 2 }
       ];
 
       for (const kick of wallKicks) {
@@ -767,8 +808,8 @@ export default function TetrisGame() {
           setIsFastFalling(true);
         }
       }
-      // Rotate Clockwise: Arrow Up, X
-      else if (e.key === 'ArrowUp' || e.key === 'x' || e.key === 'X') {
+      // Rotate Clockwise: Arrow Up, W, X
+      else if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W' || e.key === 'x' || e.key === 'X') {
         e.preventDefault();
         rotatePieceClockwise();
       }
@@ -915,7 +956,17 @@ export default function TetrisGame() {
       return <div className="flex items-center justify-center h-full text-gray-400 text-xs">EMPTY</div>;
     }
 
-    const shape = TETROMINOS[type].shape;
+    // Get the shape with the same initial rotation as it spawns
+    let shape = TETROMINOS[type].shape;
+    // J piece spawns rotated 90 degrees
+    if (type === 'J') {
+      shape = rotatePiece(shape);
+    }
+    // L piece spawns rotated 270 degrees (3 times)
+    if (type === 'L') {
+      shape = rotatePiece(rotatePiece(rotatePiece(shape)));
+    }
+
     const color = getPieceColor(type);
     const blockSize = size === 'large' ? 22 : size === 'medium' ? 16 : 12;
 
