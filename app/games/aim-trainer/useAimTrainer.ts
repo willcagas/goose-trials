@@ -49,6 +49,7 @@ export function useAimTrainer(me?: { isLoggedIn?: boolean; userId?: string | nul
   useEffect(() => {
     // Only show best scores for logged-in users
     if (!me?.isLoggedIn || !me?.userId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setBestScore(null);
       return;
     }
@@ -243,6 +244,7 @@ export function useAimTrainer(me?: { isLoggedIn?: boolean; userId?: string | nul
         }
       }
       existingTargetsRef.current = newTargets;
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTargets(newTargets);
     }
   }, [boardSize, phase, spawnTarget, targets]);

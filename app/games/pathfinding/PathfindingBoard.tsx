@@ -61,6 +61,7 @@ export default function PathfindingBoard({
 
   useEffect(() => {
     if (shakeTick === 0) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsShaking(false);
     const frame = window.requestAnimationFrame(() => setIsShaking(true));
     const timeout = window.setTimeout(() => setIsShaking(false), 300);

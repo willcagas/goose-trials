@@ -37,6 +37,7 @@ export default function NumberMemoryGamePage() {
   useEffect(() => {
     // Only show best scores for logged-in users
     if (!me?.isLoggedIn || !me?.userId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setBestScore(0);
       return;
     }
@@ -96,6 +97,7 @@ export default function NumberMemoryGamePage() {
   // Animate progress bar during showing phase
   useEffect(() => {
     if (phase === 'showing') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setMemorizeProgress(100);
       progressStartTimeRef.current = Date.now();
       isShowingPhaseRef.current = true;

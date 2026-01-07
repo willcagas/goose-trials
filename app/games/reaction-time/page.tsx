@@ -298,7 +298,7 @@ export default function ReactionTimeGame() {
           {internalState === 'waiting' && (
             <>
               <h2 className="text-3xl md:text-5xl font-bold mb-4">Wait for Green...</h2>
-              <p className="text-xl md:text-2xl">Don't click yet!</p>
+              <p className="text-xl md:text-2xl">Don&apos;t click yet!</p>
             </>
           )}
           {internalState === 'ready' && (

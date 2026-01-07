@@ -76,6 +76,7 @@ export default function ChimpGamePage() {
   useEffect(() => {
     // Only show best scores for logged-in users
     if (!me?.isLoggedIn || !me?.userId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setBestLevel(0);
       return;
     }

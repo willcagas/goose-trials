@@ -5,7 +5,7 @@ export interface SubmitScoreParameters
 {
     test_name: string;
     score: number;
-    additionalData?: any;
+    additionalData?: Record<string, unknown>;
 }
 
 //takes in one parameter (a SubmitScoreParameters object)

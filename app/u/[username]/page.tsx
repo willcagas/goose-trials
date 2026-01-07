@@ -30,7 +30,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const ogImageParams = new URLSearchParams({
     username: displayName,
     ...(profile.avatar_url && { avatar: profile.avatar_url }),
-    ...(profile.university_name && { university: profile.university_name }),
   });
 
   const ogImageUrl = `/api/og/profile?${ogImageParams.toString()}`;

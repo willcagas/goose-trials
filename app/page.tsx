@@ -269,7 +269,7 @@ export default function HomePage() {
         </div>
         <div className="relative max-w-4xl mx-auto w-full text-center">
           <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold mb-6 tracking-tight leading-[1.1] flex flex-col items-center">
-            <span className="block text-white mb-2">Think You're Smart?</span>
+            <span className="block text-white mb-2">Think You&apos;re Smart?</span>
             <span className="text-amber-400">Prove It.</span>
           </h1>
           <div className="flex flex-col items-center mb-10 md:mb-14 text-center">

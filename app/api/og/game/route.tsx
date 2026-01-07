@@ -154,8 +154,8 @@ export async function GET(request: NextRequest) {
         height: 630,
       }
     );
-  } catch (e: any) {
-    console.log(`Failed to generate game OG image: ${e.message}`);
+  } catch (e: unknown) {
+    console.log(`Failed to generate game OG image: ${e instanceof Error ? e.message : 'Unknown error'}`);
     return new Response(`Failed to generate image`, {
       status: 500,
     });

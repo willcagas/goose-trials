@@ -35,8 +35,10 @@ export default function UsernamePrompt() {
     
     // Show modal if logged in but no username
     if (!me.username) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setShowModal(true);
     } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setShowModal(false);
     }
   }, [me, loading, dismissed]);

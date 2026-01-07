@@ -740,7 +740,7 @@ export default function LeaderboardTestPage() {
           {!canViewCampus && me?.isLoggedIn && scope === 'campus' && (
             <div className="mt-4 px-6 py-3 bg-amber-50 rounded-lg border border-amber-200">
               <p className="text-sm text-gray-700">
-                We couldn't match your email domain to a university yet. Campus leaderboard unavailable.
+                We couldn&apos;t match your email domain to a university yet. Campus leaderboard unavailable.
               </p>
             </div>
           )}

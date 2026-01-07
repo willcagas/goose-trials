@@ -76,7 +76,7 @@ export async function GET() {
                 display: 'flex',
               }}
             >
-              Think You're Smart?
+              Think You&apos;re Smart?
             </div>
             <div
               style={{

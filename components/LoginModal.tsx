@@ -63,9 +63,10 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
       setSuccess(true);
       setEmail('');
-    } catch (err: any) {
+    } catch (err: unknown) {
       // Handle any unexpected errors
-      if (err?.message?.includes('university email') || err?.message?.includes('domain')) {
+      const errorMessage = err instanceof Error ? err.message : '';
+      if (errorMessage.includes('university email') || errorMessage.includes('domain')) {
         setError('Use a university email to sign in.');
       } else {
         setError('Failed to send magic link. Please try again.');
@@ -142,7 +143,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
               </svg>
             </div>
             <p className="text-white/80">
-              Click the link in your email and you're good to go.
+              Click the link in your email and you&apos;re good to go.
             </p>
             <p className="text-white/50 text-sm">
               Your guest scores will be transferred automatically.

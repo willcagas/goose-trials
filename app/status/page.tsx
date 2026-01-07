@@ -23,7 +23,7 @@ export default function StatusPage() {
         
         <div className="space-y-4 text-white/70 text-lg">
           <p>
-            We're currently performing some maintenance to make Goose Trials even better.
+            We&apos;re currently performing some maintenance to make Goose Trials even better.
           </p>
           <p>
             Check back shortly, or follow us for updates.

@@ -304,6 +304,7 @@ export default function PathfindingGame() {
   useEffect(() => {
     // Only show best scores for logged-in users
     if (!me?.isLoggedIn || !me?.userId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setBestScore(0);
       return;
     }
