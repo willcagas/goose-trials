@@ -506,13 +506,22 @@ export default function TetrisGame() {
 
       updateCurrentPiece(newPiece);
 
-      // Reset lock delay when moving sideways on the ground
-      if (lockDelayRef.current && checkCollision(newPiece, 0, 1)) {
-        clearTimeout(lockDelayRef.current);
+      // Check if piece is on ground after moving
+      if (checkCollision(newPiece, 0, 1)) {
+        // Piece is on ground - reset lock delay
+        if (lockDelayRef.current) {
+          clearTimeout(lockDelayRef.current);
+        }
         lockDelayRef.current = setTimeout(() => {
           lockPiece(currentPieceRef.current!);
           lockDelayRef.current = null;
         }, LOCK_DELAY);
+      } else {
+        // Piece is not on ground - clear any existing lock delay
+        if (lockDelayRef.current) {
+          clearTimeout(lockDelayRef.current);
+          lockDelayRef.current = null;
+        }
       }
     }
   }, [internalState, checkCollision, updateCurrentPiece, lockPiece]);
