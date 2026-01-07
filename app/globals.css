@@ -294,3 +294,13 @@
 .animate-bounce-once {
   animation: bounce-once 0.3s ease-out;
 }
+
+/* Tutorial instruction fade animation (opacity only, no movement) */
+@keyframes fade-pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+.animate-fade-pulse {
+  animation: fade-pulse 2s ease-in-out infinite;
+}

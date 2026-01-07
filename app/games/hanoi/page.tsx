@@ -726,10 +726,10 @@ export default function HanoiGame() {
           </div>
           {/* Tutorial hint text */}
           {isHintFrom && (
-            <span className="text-xs font-semibold text-cyan-600 animate-pulse">Move from here</span>
+            <span className="text-base sm:text-lg font-semibold text-cyan-700 animate-pulse">Move from here</span>
           )}
           {isHintTo && (
-            <span className="text-xs font-semibold text-emerald-600 animate-pulse">Move to here</span>
+            <span className="text-base sm:text-lg font-semibold text-emerald-700 animate-pulse">Move to here</span>
           )}
         </div>
         
@@ -825,12 +825,7 @@ export default function HanoiGame() {
               {formatTime(elapsedMs)}
             </div>
           )}
-          <div className={`order-3 sm:order-none ${gameMode === 'tutorial' ? 'col-span-2 sm:col-span-1' : 'col-span-2 sm:col-span-1'} rounded-full bg-[#0a0a0a]/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] border border-[#0a0a0a]/20 tabular-nums whitespace-nowrap ${
-            moves <= getOptimalMoves(diskCount) ? 'text-emerald-600' : 'text-[#0a0a0a]/70'
-          }`}>
-            {moves} / {getOptimalMoves(diskCount)} moves
-          </div>
-          <div className="order-2 sm:order-none rounded-full bg-[#0a0a0a]/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#0a0a0a] border border-[#0a0a0a]/20 tabular-nums whitespace-nowrap">
+          <div className={`order-2 sm:order-none ${gameMode === 'tutorial' ? 'sm:col-start-2 sm:col-end-3' : 'sm:col-start-3 sm:col-end-4'} rounded-full bg-[#0a0a0a]/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#0a0a0a] border border-[#0a0a0a]/20 tabular-nums whitespace-nowrap`}>
             {diskCount} disks
           </div>
         </div>
@@ -847,8 +842,8 @@ export default function HanoiGame() {
       <div className="text-center text-[#0a0a0a]/70 text-sm space-y-1">
         <p className="min-h-[2.5rem] sm:min-h-0">
           {gameMode === 'tutorial' && solution.length > 0 && currentHintIndex < solution.length ? (
-            <span className="text-cyan-600 font-semibold">
-              Hint: Move from rod {String.fromCharCode(65 + solution[currentHintIndex].from)} to rod {String.fromCharCode(65 + solution[currentHintIndex].to)}
+            <span key={currentHintIndex} className="text-2xl md:text-3xl font-bold text-cyan-600 animate-fade-pulse block">
+              Move from rod {String.fromCharCode(65 + solution[currentHintIndex].from)} to rod {String.fromCharCode(65 + solution[currentHintIndex].to)}
             </span>
           ) : selectedRod !== null ? (
             'Click a rod to move the disk there, or click again to deselect'
@@ -862,6 +857,15 @@ export default function HanoiGame() {
           <kbd className="px-1.5 py-0.5 bg-[#0a0a0a]/10 border border-[#0a0a0a]/20 rounded text-[#0a0a0a]/70 ml-1">3</kbd>
           {' '}select rods
         </p>
+      </div>
+
+      {/* Moves counter */}
+      <div className="text-center">
+        <div className={`inline-flex rounded-full bg-[#0a0a0a]/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] border border-[#0a0a0a]/20 tabular-nums whitespace-nowrap ${
+          moves <= getOptimalMoves(diskCount) ? 'text-emerald-600' : 'text-[#0a0a0a]/70'
+        }`}>
+          {moves} / {getOptimalMoves(diskCount)} moves
+        </div>
       </div>
     </div>
   );
@@ -902,10 +906,20 @@ export default function HanoiGame() {
             {/* Score Section */}
             <div className="px-6 py-8 text-center">
               <div className="mb-4">
-                <div className="text-6xl md:text-7xl font-bold mb-1 text-amber-400">
-                  {formatTime(result.scoreMs)}
-                </div>
-                <p className="text-white/50 text-sm mt-2">Practice Complete</p>
+                {result.mode === 'tutorial' ? (
+                  <>
+                    <div className="text-4xl md:text-5xl font-bold mb-1 text-amber-400">
+                      Tutorial Completed
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-6xl md:text-7xl font-bold mb-1 text-amber-400">
+                      {formatTime(result.scoreMs)}
+                    </div>
+                    <p className="text-white/50 text-sm mt-2">Practice Complete</p>
+                  </>
+                )}
               </div>
 
               {/* Stats Message */}

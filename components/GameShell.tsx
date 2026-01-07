@@ -341,7 +341,7 @@ export default function GameShell({
       {/* Footer */}
       <footer className="relative z-10 border-t border-white/10 bg-[#1a1a1a]">
         <div className={cn('mx-auto px-4 md:px-6 py-3', maxWidthClasses[headerFooterWidth])}>
-          <div className="flex items-center justify-center gap-3 sm:gap-4 text-xs md:text-sm">
+          <div className="hidden md:flex items-center justify-center gap-3 sm:gap-4 text-xs md:text-sm">
             {gameState === 'IDLE' && (
               <div className="flex items-center gap-1.5">
                 <kbd className="px-2 py-1 bg-white/10 border border-white/20 rounded text-white/90 font-mono text-xs shadow-sm">Space</kbd>
