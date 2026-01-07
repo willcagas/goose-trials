@@ -123,24 +123,17 @@ export default function TetrisGame() {
   }, []);
 
   const updateRecentPieces = useCallback(() => {
-    const now = Date.now();
     const times = piecePlacementTimesRef.current;
 
-    // Remove pieces older than 1 second
-    while (times.length > 0 && now - times[0] > 1000) {
-      times.shift();
-    }
-
-    // Calculate pieces per second with decimal accuracy
-    if (times.length === 0) {
+    // Calculate average pieces per second for entire game
+    if (times.length === 0 || !startTimeRef.current) {
       setRecentPieces(0);
-    } else if (times.length === 1) {
-      setRecentPieces(1); // Only one piece, assume 1 piece/s
     } else {
-      // Calculate actual time span and pieces per second
-      const timeSpan = (now - times[0]) / 1000; // in seconds
-      const piecesPerSecond = times.length / timeSpan;
-      setRecentPieces(piecesPerSecond);
+      // Calculate from game start to now
+      const now = Date.now();
+      const totalTimeSeconds = (now - startTimeRef.current) / 1000;
+      const averagePiecesPerSecond = times.length / totalTimeSeconds;
+      setRecentPieces(averagePiecesPerSecond);
     }
   }, []);
 
@@ -149,21 +142,11 @@ export default function TetrisGame() {
     const times = piecePlacementTimesRef.current;
     times.push(now);
 
-    // Remove pieces older than 1 second
-    while (times.length > 0 && now - times[0] > 1000) {
-      times.shift();
-    }
-
-    // Calculate pieces per second with decimal accuracy
-    if (times.length === 0) {
-      setRecentPieces(0);
-    } else if (times.length === 1) {
-      setRecentPieces(1); // Only one piece, assume 1 piece/s
-    } else {
-      // Calculate actual time span and pieces per second
-      const timeSpan = (now - times[0]) / 1000; // in seconds
-      const piecesPerSecond = times.length / timeSpan;
-      setRecentPieces(piecesPerSecond);
+    // Calculate average pieces per second for entire game
+    if (startTimeRef.current) {
+      const totalTimeSeconds = (now - startTimeRef.current) / 1000;
+      const averagePiecesPerSecond = times.length / totalTimeSeconds;
+      setRecentPieces(averagePiecesPerSecond);
     }
   }, []);
 
