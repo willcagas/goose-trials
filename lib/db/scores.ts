@@ -17,7 +17,7 @@ export interface SubmitScoreResult {
 }
 
 // Games where lower scores are better (like reaction time, hanoi)
-const LOWER_IS_BETTER_GAMES = ['reaction-time', 'hanoi'];
+const LOWER_IS_BETTER_GAMES = ['reaction-time', 'hanoi', 'tetris'];
 
 /**
  * Determine if a new score is better than the old score

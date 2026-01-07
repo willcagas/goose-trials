@@ -209,15 +209,15 @@ export const GAMES_REGISTRY: Record<GameSlug, GameMetadata> = {
   'tetris': {
     slug: 'tetris',
     title: 'Tetris',
-    description: 'Clear 30 lines as fast as possible.',
+    description: 'Clear 15 lines as fast as possible.',
     howToPlay: [
       'Tetromino pieces fall from the top of the board',
       'Use arrow keys to move and rotate pieces',
       'Complete horizontal lines to clear them',
-      'Clear 30 lines total to complete the game',
+      'Clear 15 lines total to complete the game',
       'Your time is your score - faster is better'
     ],
-    scoring: 'Your score is the time (in seconds) it took to clear 30 lines. Lower time is better.',
+    scoring: 'Your score is the time (in seconds) it took to clear 15 lines. Lower time is better.',
     lowerIsBetter: true,
     unit: 's',
     controls: {

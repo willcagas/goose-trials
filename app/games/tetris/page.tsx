@@ -5,37 +5,39 @@ import { getGameMetadata } from '@/lib/games/registry';
 import { useMe } from '@/app/providers/MeContext';
 import { createClient } from '@/lib/supabase/client';
 import { submitScore } from '@/lib/db/scores';
+import { X } from 'lucide-react';
+import ResultCard from '@/components/ResultCard';
 
-// Tetromino shapes
-const TETROMINOS = {
-  I: {
-    shape: [[1, 1, 1, 1]],
-    color: '#00f0f0',
+// Tetromino shapes with two color schemes
+const TETROMINO_COLORS = {
+  yellow: {
+    I: '#d97706', // amber-600 - darker
+    O: '#b45309', // amber-700 - darker
+    T: '#92400e', // amber-800 - darker
+    S: '#eab308', // yellow-500 - darker
+    Z: '#ca8a04', // yellow-600 - darker
+    L: '#a16207', // yellow-700 - darker
+    J: '#854d0e', // yellow-800 - darker
   },
-  O: {
-    shape: [[1, 1], [1, 1]],
-    color: '#f0f000',
-  },
-  T: {
-    shape: [[0, 1, 0], [1, 1, 1]],
-    color: '#a000f0',
-  },
-  S: {
-    shape: [[0, 1, 1], [1, 1, 0]],
-    color: '#00f000',
-  },
-  Z: {
-    shape: [[1, 1, 0], [0, 1, 1]],
-    color: '#f00000',
-  },
-  L: {
-    shape: [[1, 0], [1, 0], [1, 1]],
-    color: '#f0a000',
-  },
-  J: {
-    shape: [[0, 1], [0, 1], [1, 1]],
-    color: '#0000f0',
+  rainbow: {
+    I: '#7dd3fc', // pastel cyan (sky-300)
+    O: '#fde047', // pastel yellow (yellow-300)
+    T: '#d8b4fe', // pastel purple (purple-300)
+    S: '#86efac', // pastel green (green-300)
+    Z: '#fca5a5', // pastel red (red-300)
+    L: '#fdba74', // pastel orange (orange-300)
+    J: '#93c5fd', // pastel blue (blue-300)
   }
+};
+
+const TETROMINOS = {
+  I: { shape: [[1, 1, 1, 1]] },
+  O: { shape: [[1, 1], [1, 1]] },
+  T: { shape: [[0, 1, 0], [1, 1, 1]] },
+  S: { shape: [[0, 1, 1], [1, 1, 0]] },
+  Z: { shape: [[1, 1, 0], [0, 1, 1]] },
+  L: { shape: [[1, 0], [1, 0], [1, 1]] },
+  J: { shape: [[0, 1], [0, 1], [1, 1]] }
 };
 
 type TetrominoType = keyof typeof TETROMINOS;
@@ -50,17 +52,19 @@ interface Piece {
   rotation: number;
   position: Position;
   shape: number[][];
-  color: string;
 }
+
+type ColorScheme = 'yellow' | 'rainbow';
 
 const BOARD_WIDTH = 10;
 const BOARD_HEIGHT = 20;
 const BLOCK_SIZE = 26;
-const GOAL_LINES = 30;
+const GOAL_LINES = 15;
 const FALL_SPEED = 800;
 const FAST_FALL_SPEED = 30;
 const SIDE_SHIFT_DELAY = 120;
 const SIDE_SHIFT_INTERVAL = 35;
+const LOCK_DELAY = 500; // 500ms lock delay (standard Tetris timing)
 
 type InternalGameState = 'idle' | 'playing' | 'completed' | 'failed';
 
@@ -83,12 +87,21 @@ export default function TetrisGame() {
   const [isNewHighScore, setIsNewHighScore] = useState(false);
   const [isFastFalling, setIsFastFalling] = useState(false);
   const [recentPieces, setRecentPieces] = useState(0);
+  const [colorScheme, setColorScheme] = useState<ColorScheme>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = document.cookie.split('; ').find(row => row.startsWith('tetris_color_scheme='));
+      return (saved?.split('=')[1] as ColorScheme) || 'yellow';
+    }
+    return 'yellow';
+  });
+  const [showControls, setShowControls] = useState(false);
 
   const boardRef = useRef<(string | null)[][]>(board);
   const currentPieceRef = useRef<Piece | null>(null);
   const piecePlacementTimesRef = useRef<number[]>([]);
   const gameLoopRef = useRef<NodeJS.Timeout | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const bagRef = useRef<TetrominoType[]>([]);
   const startTimeRef = useRef<number | null>(null);
   const lockDelayRef = useRef<NodeJS.Timeout | null>(null);
   const shiftTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -112,20 +125,46 @@ export default function TetrisGame() {
   const updateRecentPieces = useCallback(() => {
     const now = Date.now();
     const times = piecePlacementTimesRef.current;
+
+    // Remove pieces older than 1 second
     while (times.length > 0 && now - times[0] > 1000) {
       times.shift();
     }
-    setRecentPieces(times.length);
+
+    // Calculate pieces per second with decimal accuracy
+    if (times.length === 0) {
+      setRecentPieces(0);
+    } else if (times.length === 1) {
+      setRecentPieces(1); // Only one piece, assume 1 piece/s
+    } else {
+      // Calculate actual time span and pieces per second
+      const timeSpan = (now - times[0]) / 1000; // in seconds
+      const piecesPerSecond = times.length / timeSpan;
+      setRecentPieces(piecesPerSecond);
+    }
   }, []);
 
   const recordPiecePlacement = useCallback(() => {
     const now = Date.now();
     const times = piecePlacementTimesRef.current;
     times.push(now);
+
+    // Remove pieces older than 1 second
     while (times.length > 0 && now - times[0] > 1000) {
       times.shift();
     }
-    setRecentPieces(times.length);
+
+    // Calculate pieces per second with decimal accuracy
+    if (times.length === 0) {
+      setRecentPieces(0);
+    } else if (times.length === 1) {
+      setRecentPieces(1); // Only one piece, assume 1 piece/s
+    } else {
+      // Calculate actual time span and pieces per second
+      const timeSpan = (now - times[0]) / 1000; // in seconds
+      const piecesPerSecond = times.length / timeSpan;
+      setRecentPieces(piecesPerSecond);
+    }
   }, []);
 
   const clearAutoShift = useCallback(() => {
@@ -192,10 +231,24 @@ export default function TetrisGame() {
     fetchBestScore();
   }, [me?.isLoggedIn, me?.userId]);
 
-  const getRandomTetromino = (): TetrominoType => {
+  // 7-bag randomization system (standard Tetris)
+  const shuffleBag = useCallback((): TetrominoType[] => {
     const types = Object.keys(TETROMINOS) as TetrominoType[];
-    return types[Math.floor(Math.random() * types.length)];
-  };
+    const bag = [...types];
+    // Fisher-Yates shuffle
+    for (let i = bag.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [bag[i], bag[j]] = [bag[j], bag[i]];
+    }
+    return bag;
+  }, []);
+
+  const getNextTetrominoFromBag = useCallback((): TetrominoType => {
+    if (bagRef.current.length === 0) {
+      bagRef.current = shuffleBag();
+    }
+    return bagRef.current.shift()!;
+  }, [shuffleBag]);
 
   const rotatePiece = (shape: number[][]): number[][] => {
     const rows = shape.length;
@@ -220,10 +273,48 @@ export default function TetrisGame() {
       type,
       rotation,
       position: { x: Math.floor(BOARD_WIDTH / 2) - Math.floor(shape[0].length / 2), y: 0 },
-      shape,
-      color: TETROMINOS[type].color
+      shape
     };
   };
+
+  const getPieceColor = (type: TetrominoType): string => {
+    return TETROMINO_COLORS[colorScheme][type];
+  };
+
+  const toggleColorScheme = () => {
+    const newScheme = colorScheme === 'yellow' ? 'rainbow' : 'yellow';
+    setColorScheme(newScheme);
+    // Save to cookie with 1 year expiry
+    const expires = new Date();
+    expires.setFullYear(expires.getFullYear() + 1);
+    document.cookie = `tetris_color_scheme=${newScheme}; expires=${expires.toUTCString()}; path=/`;
+  };
+
+  // Handle ESC key for controls modal
+  useEffect(() => {
+    if (!showControls) return;
+
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowControls(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [showControls]);
+
+  // Prevent body scroll when controls modal is open
+  useEffect(() => {
+    if (showControls) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [showControls]);
 
   const checkCollision = useCallback(
     (
@@ -258,6 +349,7 @@ export default function TetrisGame() {
     boardState: (string | null)[][] = boardRef.current
   ): (string | null)[][] => {
     const newBoard = boardState.map(row => [...row]);
+    const color = getPieceColor(piece.type);
 
     for (let y = 0; y < piece.shape.length; y++) {
       for (let x = 0; x < piece.shape[y].length; x++) {
@@ -265,13 +357,13 @@ export default function TetrisGame() {
           const boardY = piece.position.y + y;
           const boardX = piece.position.x + x;
           if (boardY >= 0 && boardY < BOARD_HEIGHT) {
-            newBoard[boardY][boardX] = piece.color;
+            newBoard[boardY][boardX] = color;
           }
         }
       }
     }
     return newBoard;
-  }, []);
+  }, [colorScheme]);
 
   const clearLines = (boardState: (string | null)[][]): { newBoard: (string | null)[][], cleared: number } => {
     let cleared = 0;
@@ -293,9 +385,9 @@ export default function TetrisGame() {
   const spawnNewPiece = useCallback(() => {
     const [nextType, ...remainingPieces] = nextPieces;
 
-    // Refill queue if needed
+    // Refill queue if needed (using 7-bag system)
     if (remainingPieces.length < 5) {
-      const newPieces = Array.from({ length: 5 }, () => getRandomTetromino());
+      const newPieces = Array.from({ length: 5 }, () => getNextTetrominoFromBag());
       setNextPieces([...remainingPieces, ...newPieces]);
     } else {
       setNextPieces(remainingPieces);
@@ -317,7 +409,7 @@ export default function TetrisGame() {
     }
 
     updateCurrentPiece(piece);
-  }, [nextPieces, linesCleared, checkCollision, updateCurrentPiece]);
+  }, [nextPieces, linesCleared, checkCollision, updateCurrentPiece, getNextTetrominoFromBag]);
 
   const lockPiece = useCallback((piece: Piece) => {
     const newBoard = mergePieceToBoard(piece);
@@ -352,15 +444,19 @@ export default function TetrisGame() {
         message: `Cleared ${GOAL_LINES} lines!`
       });
 
-      if (me?.isLoggedIn && me?.userId) {
-        setSubmitting(true);
-        submitScore('tetris', finalTime, bestScore)
-          .then(() => setSubmitting(false))
-          .catch(err => {
-            console.error('Failed to submit score:', err);
-            setSubmitting(false);
-          });
-      }
+      // Submit score for both logged-in and guest users
+      setSubmitting(true);
+      submitScore('tetris', finalTime, bestScore)
+        .then((response) => {
+          setSubmitting(false);
+          if (response.success && response.isNewHighScore) {
+            setIsNewHighScore(true);
+          }
+        })
+        .catch(err => {
+          console.error('Failed to submit score:', err);
+          setSubmitting(false);
+        });
       return;
     }
 
@@ -373,12 +469,23 @@ export default function TetrisGame() {
     if (!piece) return;
 
     if (!checkCollision(piece, 0, 1)) {
+      // Piece can still move down - clear any existing lock delay
+      if (lockDelayRef.current) {
+        clearTimeout(lockDelayRef.current);
+        lockDelayRef.current = null;
+      }
       updateCurrentPiece({
         ...piece,
         position: { ...piece.position, y: piece.position.y + 1 }
       });
     } else {
-      lockPiece(piece);
+      // Piece has hit the ground - start lock delay if not already started
+      if (!lockDelayRef.current) {
+        lockDelayRef.current = setTimeout(() => {
+          lockPiece(piece);
+          lockDelayRef.current = null;
+        }, LOCK_DELAY);
+      }
     }
   }, [internalState, checkCollision, lockPiece, updateCurrentPiece]);
 
@@ -388,12 +495,23 @@ export default function TetrisGame() {
     if (!piece) return;
 
     if (!checkCollision(piece, direction, 0)) {
-      updateCurrentPiece({
+      const newPiece = {
         ...piece,
         position: { ...piece.position, x: piece.position.x + direction }
-      });
+      };
+
+      updateCurrentPiece(newPiece);
+
+      // Reset lock delay when moving sideways on the ground
+      if (lockDelayRef.current && checkCollision(newPiece, 0, 1)) {
+        clearTimeout(lockDelayRef.current);
+        lockDelayRef.current = setTimeout(() => {
+          lockPiece(currentPieceRef.current!);
+          lockDelayRef.current = null;
+        }, LOCK_DELAY);
+      }
     }
-  }, [internalState, checkCollision, updateCurrentPiece]);
+  }, [internalState, checkCollision, updateCurrentPiece, lockPiece]);
 
   const startAutoShift = useCallback((direction: number) => {
     if (internalState !== 'playing') return;
@@ -429,6 +547,15 @@ export default function TetrisGame() {
 
     if (!checkCollision(newPiece)) {
       updateCurrentPiece(newPiece);
+
+      // Reset lock delay when rotating on the ground
+      if (lockDelayRef.current && checkCollision(newPiece, 0, 1)) {
+        clearTimeout(lockDelayRef.current);
+        lockDelayRef.current = setTimeout(() => {
+          lockPiece(currentPieceRef.current!);
+          lockDelayRef.current = null;
+        }, LOCK_DELAY);
+      }
     } else {
       const wallKicks = [
         { x: -1, y: 0 },
@@ -445,6 +572,64 @@ export default function TetrisGame() {
         };
         if (!checkCollision(newPiece)) {
           updateCurrentPiece(newPiece);
+
+          // Reset lock delay when rotating on the ground
+          if (lockDelayRef.current && checkCollision(newPiece, 0, 1)) {
+            clearTimeout(lockDelayRef.current);
+            lockDelayRef.current = setTimeout(() => {
+              lockPiece(currentPieceRef.current!);
+              lockDelayRef.current = null;
+            }, LOCK_DELAY);
+          }
+          return;
+        }
+      }
+    }
+  };
+
+  const rotatePieceCounterClockwise = () => {
+    if (!currentPiece || internalState !== 'playing') return;
+
+    const newRotation = (currentPiece.rotation - 1 + 4) % 4;
+    const newPiece = createPiece(currentPiece.type, newRotation);
+    newPiece.position = { ...currentPiece.position };
+
+    if (!checkCollision(newPiece)) {
+      updateCurrentPiece(newPiece);
+
+      // Reset lock delay when rotating on the ground
+      if (lockDelayRef.current && checkCollision(newPiece, 0, 1)) {
+        clearTimeout(lockDelayRef.current);
+        lockDelayRef.current = setTimeout(() => {
+          lockPiece(currentPieceRef.current!);
+          lockDelayRef.current = null;
+        }, LOCK_DELAY);
+      }
+    } else {
+      const wallKicks = [
+        { x: -1, y: 0 },
+        { x: 1, y: 0 },
+        { x: -2, y: 0 },
+        { x: 2, y: 0 },
+        { x: 0, y: -1 }
+      ];
+
+      for (const kick of wallKicks) {
+        newPiece.position = {
+          x: currentPiece.position.x + kick.x,
+          y: currentPiece.position.y + kick.y
+        };
+        if (!checkCollision(newPiece)) {
+          updateCurrentPiece(newPiece);
+
+          // Reset lock delay when rotating on the ground
+          if (lockDelayRef.current && checkCollision(newPiece, 0, 1)) {
+            clearTimeout(lockDelayRef.current);
+            lockDelayRef.current = setTimeout(() => {
+              lockPiece(currentPieceRef.current!);
+              lockDelayRef.current = null;
+            }, LOCK_DELAY);
+          }
           return;
         }
       }
@@ -453,6 +638,12 @@ export default function TetrisGame() {
 
   const hardDrop = useCallback(() => {
     if (!currentPiece || internalState !== 'playing') return;
+
+    // Clear any existing lock delay - hard drop is immediate
+    if (lockDelayRef.current) {
+      clearTimeout(lockDelayRef.current);
+      lockDelayRef.current = null;
+    }
 
     let dropDistance = 0;
     while (!checkCollision(currentPiece, 0, dropDistance + 1)) {
@@ -469,13 +660,14 @@ export default function TetrisGame() {
     // Use setTimeout with 0 delay to ensure state updates, then lock immediately
     setTimeout(() => {
       const finalBoard = board.map(row => [...row]);
+      const color = getPieceColor(droppedPiece.type);
       for (let y = 0; y < droppedPiece.shape.length; y++) {
         for (let x = 0; x < droppedPiece.shape[y].length; x++) {
           if (droppedPiece.shape[y][x]) {
             const boardY = droppedPiece.position.y + y;
             const boardX = droppedPiece.position.x + x;
             if (boardY >= 0 && boardY < BOARD_HEIGHT) {
-              finalBoard[boardY][boardX] = droppedPiece.color;
+              finalBoard[boardY][boardX] = color;
             }
           }
         }
@@ -511,15 +703,19 @@ export default function TetrisGame() {
           message: `Cleared ${GOAL_LINES} lines!`
         });
 
-        if (me?.isLoggedIn && me?.userId) {
-          setSubmitting(true);
-          submitScore('tetris', finalTime, bestScore)
-            .then(() => setSubmitting(false))
-            .catch(err => {
-              console.error('Failed to submit score:', err);
-              setSubmitting(false);
-            });
-        }
+        // Submit score for both logged-in and guest users
+        setSubmitting(true);
+        submitScore('tetris', finalTime, bestScore)
+          .then((response) => {
+            setSubmitting(false);
+            if (response.success && response.isNewHighScore) {
+              setIsNewHighScore(true);
+            }
+          })
+          .catch(err => {
+            console.error('Failed to submit score:', err);
+            setSubmitting(false);
+          });
         return;
       }
 
@@ -550,35 +746,51 @@ export default function TetrisGame() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (internalState !== 'playing') return;
 
-      if (e.key === 'ArrowLeft') {
+      // Move Left: Arrow Left, A
+      if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
         e.preventDefault();
         if (e.repeat) return;
         keyStateRef.current.left = true;
         startAutoShift(-1);
-      } else if (e.key === 'ArrowRight') {
+      }
+      // Move Right: Arrow Right, D
+      else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
         e.preventDefault();
         if (e.repeat) return;
         keyStateRef.current.right = true;
         startAutoShift(1);
-      } else if (e.key === 'ArrowDown') {
+      }
+      // Soft Drop: Arrow Down, S
+      else if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
         e.preventDefault();
         if (!isFastFalling) {
           setIsFastFalling(true);
         }
-      } else if (e.key === 'ArrowUp' || e.key === 'x' || e.key === 'X') {
+      }
+      // Rotate Clockwise: Arrow Up, X
+      else if (e.key === 'ArrowUp' || e.key === 'x' || e.key === 'X') {
         e.preventDefault();
         rotatePieceClockwise();
-      } else if (e.key === ' ') {
+      }
+      // Rotate Counter-Clockwise: Z, Ctrl
+      else if (e.key === 'z' || e.key === 'Z' || e.key === 'Control') {
+        e.preventDefault();
+        rotatePieceCounterClockwise();
+      }
+      // Hard Drop: Space
+      else if (e.key === ' ') {
         e.preventDefault();
         hardDrop();
-      } else if (e.key === 'c' || e.key === 'C' || e.key === 'Shift') {
+      }
+      // Hold: C, Shift
+      else if (e.key === 'c' || e.key === 'C' || e.key === 'Shift') {
         e.preventDefault();
         holdPiece();
       }
     };
 
     const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowLeft') {
+      if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
         keyStateRef.current.left = false;
         if (shiftDirectionRef.current === -1) {
           if (keyStateRef.current.right) {
@@ -587,7 +799,7 @@ export default function TetrisGame() {
             clearAutoShift();
           }
         }
-      } else if (e.key === 'ArrowRight') {
+      } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
         keyStateRef.current.right = false;
         if (shiftDirectionRef.current === 1) {
           if (keyStateRef.current.left) {
@@ -596,7 +808,7 @@ export default function TetrisGame() {
             clearAutoShift();
           }
         }
-      } else if (e.key === 'ArrowDown') {
+      } else if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
         setIsFastFalling(false);
       }
     };
@@ -615,6 +827,7 @@ export default function TetrisGame() {
     startAutoShift,
     clearAutoShift,
     rotatePieceClockwise,
+    rotatePieceCounterClockwise,
     holdPiece
   ]);
 
@@ -643,7 +856,7 @@ export default function TetrisGame() {
           setTimeElapsed((Date.now() - startTimeRef.current) / 1000);
         }
         updateRecentPieces();
-      }, 100);
+      }, 16); // ~60fps for smooth updates
     }
 
     return () => {
@@ -665,8 +878,9 @@ export default function TetrisGame() {
     setInternalState('playing');
     startTimeRef.current = Date.now();
 
-    // Initialize piece queue
-    const initialPieces = Array.from({ length: 7 }, () => getRandomTetromino());
+    // Initialize 7-bag system and piece queue
+    bagRef.current = shuffleBag();
+    const initialPieces = Array.from({ length: 7 }, () => getNextTetrominoFromBag());
     setNextPieces(initialPieces);
 
     const [firstPiece, ...rest] = initialPieces;
@@ -696,18 +910,19 @@ export default function TetrisGame() {
     if (timerRef.current) clearInterval(timerRef.current);
   };
 
-  const renderPreviewPiece = (type: TetrominoType | null, size: 'large' | 'small' = 'large') => {
+  const renderPreviewPiece = (type: TetrominoType | null, size: 'large' | 'medium' | 'small' = 'large') => {
     if (!type) {
-      return <div className="flex items-center justify-center h-20 text-gray-500 text-xs">EMPTY</div>;
+      return <div className="flex items-center justify-center h-full text-gray-400 text-xs">EMPTY</div>;
     }
 
-    const { shape, color } = TETROMINOS[type];
-    const blockSize = size === 'large' ? 14 : 10;
+    const shape = TETROMINOS[type].shape;
+    const color = getPieceColor(type);
+    const blockSize = size === 'large' ? 22 : size === 'medium' ? 16 : 12;
 
     return (
-      <div className="flex flex-col items-center justify-center gap-[1px] py-2">
+      <div className="flex flex-col items-center justify-center gap-[2px]">
         {shape.map((row, y) => (
-          <div key={y} className="flex gap-[1px]">
+          <div key={y} className="flex gap-[2px]">
             {row.map((cell, x) => (
               <div
                 key={`${y}-${x}`}
@@ -715,7 +930,8 @@ export default function TetrisGame() {
                   width: `${blockSize}px`,
                   height: `${blockSize}px`,
                   backgroundColor: cell ? color : 'transparent',
-                  border: cell ? '1px solid rgba(0,0,0,0.2)' : 'none'
+                  border: cell ? '1px solid rgba(0,0,0,0.15)' : 'none',
+                  borderRadius: '2px'
                 }}
               />
             ))}
@@ -736,42 +952,49 @@ export default function TetrisGame() {
 
     return (
       <div className="flex flex-col lg:flex-row items-start justify-center gap-4 p-4">
-        {/* Left Panel - Hold */}
-        <div className="flex flex-col gap-2 w-32">
-          <div className="text-white text-xs uppercase font-bold tracking-wider border-b-2 border-white pb-1">
-            HOLD
+        {/* Left Panel - Hold and Stats */}
+        <div className="flex flex-col justify-between w-32" style={{ height: BOARD_HEIGHT * BLOCK_SIZE }}>
+          <div className="flex flex-col gap-2">
+            <div className="text-[#0a0a0a] text-xs uppercase font-bold tracking-wider">
+              HOLD
+            </div>
+            <div className="bg-gray-800 border-2 border-gray-700 rounded-lg w-32 h-28 flex items-center justify-center shadow-sm">
+              {renderPreviewPiece(heldPiece)}
+            </div>
           </div>
-          <div className="bg-white border-4 border-black h-24 flex items-center justify-center">
-            {renderPreviewPiece(heldPiece)}
+
+          {/* Stats - bottom left aligned with playzone bottom */}
+          <div className="text-[#0a0a0a] font-bold text-right space-y-3">
+            <div className="space-y-1">
+              <div className="text-xs uppercase tracking-wider text-[#0a0a0a]/50">PIECES</div>
+              <div className="text-3xl tabular-nums font-bold">
+                {recentPieces.toFixed(2)}<span className="text-base text-[#0a0a0a]/50 ml-1">s</span>
+              </div>
+            </div>
+            <div className="space-y-1">
+              <div className="text-xs uppercase tracking-wider text-[#0a0a0a]/50">LINES</div>
+              <div className="text-3xl tabular-nums font-bold">
+                {linesCleared}<span className="text-base text-[#0a0a0a]/50 ml-1">/{GOAL_LINES}</span>
+              </div>
+            </div>
+            <div className="space-y-1">
+              <div className="text-xs uppercase tracking-wider text-[#0a0a0a]/50">TIME</div>
+              <div className="text-3xl tabular-nums font-bold">
+                {Math.floor(timeElapsed / 60)}:{String(Math.floor(timeElapsed % 60)).padStart(2, '0')}<span className="text-base text-[#0a0a0a]/50">.{String(Math.floor((timeElapsed % 1) * 100)).padStart(2, '0')}</span>
+              </div>
+            </div>
           </div>
-          <div className="text-white/60 text-[10px] text-center font-mono">C / SHIFT</div>
         </div>
 
         {/* Center - Game Board */}
         <div className="flex flex-col gap-3">
-          {/* Stats */}
-          <div className="bg-black/80 text-white px-4 py-2 rounded font-mono text-xs space-y-1">
-            <div className="flex justify-between gap-6">
-              <span className="text-gray-400">PIECES</span>
-              <span className="tabular-nums">{recentPieces}</span>
-            </div>
-            <div className="flex justify-between gap-6">
-              <span className="text-gray-400">LINES</span>
-              <span className="tabular-nums">{linesCleared}/{GOAL_LINES}</span>
-            </div>
-            <div className="flex justify-between gap-6">
-              <span className="text-gray-400">TIME</span>
-              <span className="tabular-nums">{Math.floor(timeElapsed / 60)}:{String(Math.floor(timeElapsed % 60)).padStart(2, '0')}</span>
-            </div>
-          </div>
-
           {/* Board */}
           <div
-            className="relative bg-white"
+            className="relative bg-gray-800"
             style={{
               width: BOARD_WIDTH * BLOCK_SIZE,
               height: BOARD_HEIGHT * BLOCK_SIZE,
-              outline: '4px solid #000',
+              outline: '4px solid #1f2937',
               outlineOffset: '0px'
             }}
           >
@@ -780,14 +1003,14 @@ export default function TetrisGame() {
               {Array.from({ length: BOARD_HEIGHT + 1 }).map((_, y) => (
                 <div
                   key={`h-${y}`}
-                  className="absolute left-0 right-0 border-t border-gray-300"
+                  className="absolute left-0 right-0 border-t border-gray-700"
                   style={{ top: y * BLOCK_SIZE }}
                 />
               ))}
               {Array.from({ length: BOARD_WIDTH + 1 }).map((_, x) => (
                 <div
                   key={`v-${x}`}
-                  className="absolute top-0 bottom-0 border-l border-gray-300"
+                  className="absolute top-0 bottom-0 border-l border-gray-700"
                   style={{ left: x * BLOCK_SIZE }}
                 />
               ))}
@@ -826,8 +1049,8 @@ export default function TetrisGame() {
                       top: (ghostY + y) * BLOCK_SIZE,
                       width: BLOCK_SIZE,
                       height: BLOCK_SIZE,
-                      backgroundColor: 'transparent',
-                      border: `2px dashed ${currentPiece.color}60`,
+                      backgroundColor: 'rgba(128, 128, 128, 0.3)',
+                      border: '1px solid rgba(128, 128, 128, 0.5)',
                       boxSizing: 'border-box'
                     }}
                   />
@@ -847,7 +1070,7 @@ export default function TetrisGame() {
                       top: (currentPiece.position.y + y) * BLOCK_SIZE,
                       width: BLOCK_SIZE,
                       height: BLOCK_SIZE,
-                      backgroundColor: currentPiece.color,
+                      backgroundColor: getPieceColor(currentPiece.type),
                       boxSizing: 'border-box',
                       border: '1px solid rgba(0,0,0,0.2)'
                     }}
@@ -857,24 +1080,47 @@ export default function TetrisGame() {
             )}
           </div>
 
-          {/* Controls */}
-          <div className="text-white/50 text-[10px] text-center font-mono space-y-0.5">
-            <div>← → MOVE • ↑ ROTATE • SPACE DROP</div>
-            <div>↓ FAST FALL • C/SHIFT HOLD</div>
-          </div>
         </div>
 
-        {/* Right Panel - Next */}
+        {/* Right Panel - Next and Toggle */}
         <div className="flex flex-col gap-2 w-32">
-          <div className="text-white text-xs uppercase font-bold tracking-wider border-b-2 border-white pb-1">
+          <div className="text-[#0a0a0a] text-xs uppercase font-bold tracking-wider">
             NEXT
           </div>
-          <div className="bg-white border-4 border-black flex flex-col divide-y divide-gray-300">
-            {nextPieces.slice(0, 5).map((type, index) => (
-              <div key={index} className="h-16">
-                {renderPreviewPiece(type, index === 0 ? 'large' : 'small')}
+
+          {/* Next Most Piece - Separate */}
+          {nextPieces.length > 0 && (
+            <div className="bg-gray-800 border-2 border-gray-700 rounded-lg h-24 flex items-center justify-center shadow-sm">
+              {renderPreviewPiece(nextPieces[0], 'large')}
+            </div>
+          )}
+
+          {/* Remaining Next Pieces */}
+          <div className="bg-gray-800 border-2 border-gray-700 rounded-lg flex flex-col divide-y divide-gray-700 shadow-sm overflow-hidden">
+            {nextPieces.slice(1, 5).map((type, index) => (
+              <div
+                key={index}
+                className="h-14 w-32 flex items-center justify-center"
+              >
+                {renderPreviewPiece(type, 'small')}
               </div>
             ))}
+          </div>
+
+          {/* Controls and Color Toggle - bottom right aligned with playzone bottom */}
+          <div className="mt-auto space-y-2">
+            <button
+              onClick={() => setShowControls(true)}
+              className="w-full px-3 py-2 bg-[#0a0a0a]/5 hover:bg-[#0a0a0a]/10 border border-[#0a0a0a]/20 rounded-lg text-[#0a0a0a] text-xs font-semibold transition-colors"
+            >
+              Controls
+            </button>
+            <button
+              onClick={toggleColorScheme}
+              className="w-full px-3 py-2 bg-[#0a0a0a]/5 hover:bg-[#0a0a0a]/10 border border-[#0a0a0a]/20 rounded-lg text-[#0a0a0a] text-xs font-semibold transition-colors"
+            >
+              {colorScheme === 'yellow' ? 'Colors' : 'Yellow'}
+            </button>
           </div>
         </div>
       </div>
@@ -887,19 +1133,151 @@ export default function TetrisGame() {
     return '';
   };
 
+  const renderResult = () => {
+    if (!result) return null;
+
+    return (
+      <ResultCard
+        gameMetadata={gameMetadata}
+        score={result.score}
+        scoreLabel={result.scoreLabel}
+        personalBest={result.personalBest}
+        personalBestLabel={result.personalBestLabel}
+        message={result.message}
+        isNewHighScore={isNewHighScore}
+        isSubmitting={submitting}
+        onPlayAgain={handleRestart}
+      />
+    );
+  };
+
   const gameMetadata = getGameMetadata('tetris');
 
   return (
-    <GameShell
-      gameMetadata={gameMetadata}
-      gameState={getShellState()}
-      onStart={startGame}
-      onRestart={handleRestart}
-      onQuit={handleQuit}
-      renderGame={renderGame}
-      result={result}
-      statusText={getStatusText()}
-      maxWidth="full"
-    />
+    <>
+      <GameShell
+        gameMetadata={gameMetadata}
+        gameState={getShellState()}
+        onStart={startGame}
+        onRestart={handleRestart}
+        onQuit={handleQuit}
+        renderGame={renderGame}
+        renderResult={renderResult}
+        result={result}
+        statusText={getStatusText()}
+        maxWidth="full"
+      />
+
+      {/* Controls Modal */}
+      {showControls && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowControls(false);
+            }
+          }}
+          aria-modal="true"
+          aria-labelledby="controls-modal-title"
+          role="dialog"
+        >
+          {/* Backdrop */}
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" aria-hidden="true" />
+
+          {/* Modal */}
+          <div
+            className="relative bg-[#0a0a0a] border border-white/20 rounded-2xl p-6 md:p-8 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close button */}
+            <button
+              onClick={() => setShowControls(false)}
+              className="absolute top-4 right-4 p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 focus:ring-offset-[#0a0a0a]"
+              aria-label="Close controls modal"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Header */}
+            <div className="pr-10 mb-6">
+              <h2 id="controls-modal-title" className="text-2xl md:text-3xl font-bold text-white mb-2">
+                Tetris Controls
+              </h2>
+              <p className="text-white/60 text-sm md:text-base">Keyboard controls for playing Tetris</p>
+            </div>
+
+            {/* Controls */}
+            <section>
+              <h3 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+                <span className="text-amber-400">Keyboard Controls</span>
+              </h3>
+
+              <div className="space-y-6">
+                {/* Movement */}
+                <div>
+                  <h4 className="text-sm font-medium text-white/90 mb-2 uppercase tracking-wide">
+                    Movement
+                  </h4>
+                  <ul className="space-y-1.5">
+                    <li className="flex items-start gap-2 text-white/70 text-sm">
+                      <span className="text-amber-400/60 shrink-0">•</span>
+                      <span><span className="text-white/90 font-medium">← →</span> or <span className="text-white/90 font-medium">A D</span> - Move piece left/right</span>
+                    </li>
+                    <li className="flex items-start gap-2 text-white/70 text-sm">
+                      <span className="text-amber-400/60 shrink-0">•</span>
+                      <span><span className="text-white/90 font-medium">↓</span> or <span className="text-white/90 font-medium">S</span> - Soft drop (move down faster)</span>
+                    </li>
+                    <li className="flex items-start gap-2 text-white/70 text-sm">
+                      <span className="text-amber-400/60 shrink-0">•</span>
+                      <span><span className="text-white/90 font-medium">Space</span> - Hard drop (instant drop)</span>
+                    </li>
+                  </ul>
+                </div>
+
+                {/* Rotation */}
+                <div>
+                  <h4 className="text-sm font-medium text-white/90 mb-2 uppercase tracking-wide">
+                    Rotation
+                  </h4>
+                  <ul className="space-y-1.5">
+                    <li className="flex items-start gap-2 text-white/70 text-sm">
+                      <span className="text-amber-400/60 shrink-0">•</span>
+                      <span><span className="text-white/90 font-medium">↑</span>, <span className="text-white/90 font-medium">W</span>, or <span className="text-white/90 font-medium">X</span> - Rotate clockwise</span>
+                    </li>
+                    <li className="flex items-start gap-2 text-white/70 text-sm">
+                      <span className="text-amber-400/60 shrink-0">•</span>
+                      <span><span className="text-white/90 font-medium">Ctrl</span> or <span className="text-white/90 font-medium">Z</span> - Rotate counter-clockwise</span>
+                    </li>
+                  </ul>
+                </div>
+
+                {/* Special Actions */}
+                <div>
+                  <h4 className="text-sm font-medium text-white/90 mb-2 uppercase tracking-wide">
+                    Special Actions
+                  </h4>
+                  <ul className="space-y-1.5">
+                    <li className="flex items-start gap-2 text-white/70 text-sm">
+                      <span className="text-amber-400/60 shrink-0">•</span>
+                      <span><span className="text-white/90 font-medium">C</span> or <span className="text-white/90 font-medium">Shift</span> - Hold piece (swap with held piece)</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </section>
+
+            {/* Footer */}
+            <div className="mt-6 pt-6 border-t border-white/10">
+              <button
+                onClick={() => setShowControls(false)}
+                className="w-full px-6 py-3 bg-amber-400 hover:bg-amber-300 text-black font-bold rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 focus:ring-offset-[#0a0a0a]"
+              >
+                Got it
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
