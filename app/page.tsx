@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
 import {useSession} from '@/app/providers/SessionContext';
+import {useMe} from '@/app/providers/MeContext';
 import Navbar from '@/components/Navbar';
 import {useEffect, useRef, useState} from 'react';
 import {Zap, Hash, Eye, Layers, Route, Target, Trophy, Box} from 'lucide-react';
@@ -161,6 +162,7 @@ interface LeaderboardEntry {
 
 export default function HomePage() {
   const {loading, user} = useSession();
+  const {me} = useMe();
   const [geese, setGeese] = useState<FlyingGoose[]>([]);
   const gooseIdRef = useRef(0);
   const [tests, setTests] = useState<Test[]>([]);
@@ -380,6 +382,17 @@ export default function HomePage() {
             </p>
           </div>
 
+          {/* Sign in message for non-logged in users */}
+          {!me?.isLoggedIn && (
+            <div className="max-w-4xl mx-auto mb-6">
+              <div className="px-6 py-3 bg-amber-50 rounded-lg border border-amber-400">
+                <p className="text-amber-600 text-center font-semibold">
+                  Sign in to view your rank
+                </p>
+              </div>
+            </div>
+          )}
+
           {testsLoading ? (
             <div className="text-center py-12">
               <p className="text-gray-500">Loading rankings...</p>
@@ -416,6 +429,7 @@ export default function HomePage() {
                 return sortedTests.map((test) => {
                 const leaders = leaderboards[test.slug] || [];
                 const playerCount = leaders.length;
+                const userEntry = me?.isLoggedIn ? leaders.find(entry => entry.is_you) : null;
 
                 return (
                   <Link
@@ -436,6 +450,16 @@ export default function HomePage() {
 
                         {/* Right: Stats */}
                         <div className="flex items-center gap-6 flex-shrink-0">
+                          {/* User Rank (if logged in and has played) */}
+                          {userEntry && (
+                            <div className="text-right">
+                              <div className="text-xs text-gray-500 uppercase tracking-wide">Your Rank</div>
+                              <div className="text-lg font-bold text-amber-600">
+                                #{userEntry.rank}
+                              </div>
+                            </div>
+                          )}
+
                           {/* Player Count */}
                           <div className="text-right">
                             <div className="text-xs text-gray-500 uppercase tracking-wide">Players</div>
