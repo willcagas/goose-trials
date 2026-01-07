@@ -5,13 +5,14 @@
  * Each game entry contains title, description, rules, scoring, and controls.
  */
 
-export type GameSlug = 
+export type GameSlug =
   | 'reaction-time'
   | 'number-memory'
   | 'chimp'
   | 'hanoi'
   | 'pathfinding'
-  | 'aim-trainer';
+  | 'aim-trainer'
+  | 'tetris';
 
 export interface GameMetadata {
   slug: GameSlug;
@@ -202,6 +203,37 @@ export const GAMES_REGISTRY: Record<GameSlug, GameMetadata> = {
         'Tap "Start Run" to begin',
         'Tap targets as they appear',
         'Hit as many as you can before time runs out'
+      ]
+    }
+  },
+  'tetris': {
+    slug: 'tetris',
+    title: 'Tetris',
+    description: 'Clear 15 lines as fast as possible.',
+    howToPlay: [
+      'Tetromino pieces fall from the top of the board',
+      'Use arrow keys to move and rotate pieces',
+      'Complete horizontal lines to clear them',
+      'Clear 15 lines total to complete the game',
+      'Your time is your score - faster is better'
+    ],
+    scoring: 'Your score is the time (in seconds) it took to clear 15 lines. Lower time is better.',
+    lowerIsBetter: true,
+    unit: 's',
+    controls: {
+      keyboard: [
+        'Space: Start game / Restart',
+        'Left/Right Arrow: Move piece sideways',
+        'Up Arrow: Rotate piece',
+        'Down Arrow: Soft drop (move faster)',
+        'R: Restart',
+        'Esc: Return to menu'
+      ],
+      mobile: [
+        'Tap "Start Game" to begin',
+        'Swipe left/right to move piece',
+        'Tap to rotate piece',
+        'Swipe down for soft drop'
       ]
     }
   }

@@ -3,7 +3,7 @@ import Link from 'next/link';
 import {useSession} from '@/app/providers/SessionContext';
 import Navbar from '@/components/Navbar';
 import {useEffect, useRef, useState} from 'react';
-import {Zap, Hash, Eye, Layers, Route, Target, Trophy} from 'lucide-react';
+import {Zap, Hash, Eye, Layers, Route, Target, Trophy, Box} from 'lucide-react';
 
 interface FlyingGoose {
   id: number;
@@ -318,16 +318,11 @@ export default function HomePage() {
               { href: "/games/chimp", tag: "VISUAL", icon: Eye, title: "Chimp Test", desc: "Master pattern recognition and working memory." },
               { href: "/games/aim-trainer", tag: "ACCURACY", icon: Target, title: "Aim Trainer", desc: "Hit targets as quick as possible to test accuracy." },
               { href: "/games/pathfinding", tag: "SPATIAL", icon: Route, title: "Pathfinding", desc: "Navigate mazes and find the shortest route." },
-              { href: "/games/hanoi", tag: "SPATIAL", icon: Layers, title: "Tower of Hanoi", desc: "Solve the classic puzzle with optimal moves.", badge: "CHALLENGING" }
+              { href: "/games/tetris", tag: "SPEED", icon: Box, title: "Tetris", desc: "Clear 15 lines as fast as possible." }
             ].map((trial, idx) => (
               <a key={idx} href={trial.href} onClick={(e) => e.stopPropagation()} className="cursor-pointer">
                 <div className="relative overflow-hidden group p-8 rounded-3xl bg-white border-2 border-gray-200 hover:border-amber-400 active:scale-[0.98] transition-all shadow-sm hover:shadow-md h-full flex flex-col">
-                  <div className="absolute top-0 right-0 p-4 flex flex-col items-end gap-2">
-                    {trial.badge && (
-                      <span className="px-3 py-1 bg-rose-500/10 text-rose-600 text-[10px] font-bold uppercase rounded-full border border-rose-500/30">
-                        {trial.badge}
-                      </span>
-                    )}
+                  <div className="absolute top-0 right-0 p-4">
                     <span className="px-3 py-1 bg-amber-400/10 text-amber-500 text-[10px] font-bold uppercase rounded-full border border-amber-400/30">
                       {trial.tag}
                     </span>
@@ -343,6 +338,32 @@ export default function HomePage() {
                 </div>
               </a>
             ))}
+          </div>
+
+          {/* Tower of Hanoi - Centered, same width as grid items */}
+          <div className="flex justify-center mt-6">
+            <div className="w-full md:w-1/2 lg:w-1/3">
+              <a href="/games/hanoi" onClick={(e) => e.stopPropagation()} className="cursor-pointer">
+                <div className="relative overflow-hidden group p-8 rounded-3xl bg-white border-2 border-gray-200 hover:border-amber-400 active:scale-[0.98] transition-all shadow-sm hover:shadow-md h-full flex flex-col">
+                  <div className="absolute top-0 right-0 p-4 flex flex-col items-end gap-2">
+                    <span className="px-3 py-1 bg-rose-500/10 text-rose-600 text-[10px] font-bold uppercase rounded-full border border-rose-500/30">
+                      CHALLENGING
+                    </span>
+                    <span className="px-3 py-1 bg-amber-400/10 text-amber-500 text-[10px] font-bold uppercase rounded-full border border-amber-400/30">
+                      PUZZLE
+                    </span>
+                  </div>
+                  <div className="mb-4">
+                    <Layers className="w-8 h-8 text-amber-400" />
+                  </div>
+                  <h3 className="text-2xl font-bold mb-3 text-gray-900 uppercase pr-20">Tower of Hanoi</h3>
+                  <p className="text-gray-600 text-sm leading-relaxed mb-6 flex-1">Solve the classic puzzle with optimal moves.</p>
+                  <div className="w-full h-1 bg-gray-200 rounded-full overflow-hidden">
+                    <div className="h-full bg-amber-400 w-0 group-hover:w-full transition-all duration-700"></div>
+                  </div>
+                </div>
+              </a>
+            </div>
           </div>
         </div>
       </section>
@@ -377,6 +398,7 @@ export default function HomePage() {
                   'chimp',
                   'aim-trainer',
                   'pathfinding',
+                  'tetris',
                   'hanoi'
                 ];
 
