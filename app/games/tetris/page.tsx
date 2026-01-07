@@ -58,7 +58,9 @@ const BOARD_HEIGHT = 20;
 const BLOCK_SIZE = 26;
 const GOAL_LINES = 30;
 const FALL_SPEED = 800;
-const FAST_FALL_SPEED = 50;
+const FAST_FALL_SPEED = 30;
+const SIDE_SHIFT_DELAY = 120;
+const SIDE_SHIFT_INTERVAL = 35;
 
 type InternalGameState = 'idle' | 'playing' | 'completed' | 'failed';
 
@@ -80,12 +82,63 @@ export default function TetrisGame() {
   const [submitting, setSubmitting] = useState(false);
   const [isNewHighScore, setIsNewHighScore] = useState(false);
   const [isFastFalling, setIsFastFalling] = useState(false);
-  const [piecesPlaced, setPiecesPlaced] = useState(0);
+  const [recentPieces, setRecentPieces] = useState(0);
 
+  const boardRef = useRef<(string | null)[][]>(board);
+  const currentPieceRef = useRef<Piece | null>(null);
+  const piecePlacementTimesRef = useRef<number[]>([]);
   const gameLoopRef = useRef<NodeJS.Timeout | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number | null>(null);
   const lockDelayRef = useRef<NodeJS.Timeout | null>(null);
+  const shiftTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const shiftIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const shiftDirectionRef = useRef<number | null>(null);
+  const keyStateRef = useRef({ left: false, right: false });
+
+  useEffect(() => {
+    boardRef.current = board;
+  }, [board]);
+
+  useEffect(() => {
+    currentPieceRef.current = currentPiece;
+  }, [currentPiece]);
+
+  const updateCurrentPiece = useCallback((piece: Piece | null) => {
+    currentPieceRef.current = piece;
+    setCurrentPiece(piece);
+  }, []);
+
+  const updateRecentPieces = useCallback(() => {
+    const now = Date.now();
+    const times = piecePlacementTimesRef.current;
+    while (times.length > 0 && now - times[0] > 1000) {
+      times.shift();
+    }
+    setRecentPieces(times.length);
+  }, []);
+
+  const recordPiecePlacement = useCallback(() => {
+    const now = Date.now();
+    const times = piecePlacementTimesRef.current;
+    times.push(now);
+    while (times.length > 0 && now - times[0] > 1000) {
+      times.shift();
+    }
+    setRecentPieces(times.length);
+  }, []);
+
+  const clearAutoShift = useCallback(() => {
+    if (shiftTimeoutRef.current) {
+      clearTimeout(shiftTimeoutRef.current);
+      shiftTimeoutRef.current = null;
+    }
+    if (shiftIntervalRef.current) {
+      clearInterval(shiftIntervalRef.current);
+      shiftIntervalRef.current = null;
+    }
+    shiftDirectionRef.current = null;
+  }, []);
 
   const getShellState = (): GameShellState => {
     if (internalState === 'idle') return 'IDLE';
@@ -172,28 +225,39 @@ export default function TetrisGame() {
     };
   };
 
-  const checkCollision = (piece: Piece, offsetX: number = 0, offsetY: number = 0): boolean => {
-    for (let y = 0; y < piece.shape.length; y++) {
-      for (let x = 0; x < piece.shape[y].length; x++) {
-        if (piece.shape[y][x]) {
-          const boardX = piece.position.x + x + offsetX;
-          const boardY = piece.position.y + y + offsetY;
+  const checkCollision = useCallback(
+    (
+      piece: Piece,
+      offsetX: number = 0,
+      offsetY: number = 0,
+      boardState: (string | null)[][] = boardRef.current
+    ): boolean => {
+      for (let y = 0; y < piece.shape.length; y++) {
+        for (let x = 0; x < piece.shape[y].length; x++) {
+          if (piece.shape[y][x]) {
+            const boardX = piece.position.x + x + offsetX;
+            const boardY = piece.position.y + y + offsetY;
 
-          if (boardX < 0 || boardX >= BOARD_WIDTH || boardY >= BOARD_HEIGHT) {
-            return true;
-          }
+            if (boardX < 0 || boardX >= BOARD_WIDTH || boardY >= BOARD_HEIGHT) {
+              return true;
+            }
 
-          if (boardY >= 0 && board[boardY][boardX]) {
-            return true;
+            if (boardY >= 0 && boardState[boardY][boardX]) {
+              return true;
+            }
           }
         }
       }
-    }
-    return false;
-  };
+      return false;
+    },
+    []
+  );
 
-  const mergePieceToBoard = (piece: Piece): (string | null)[][] => {
-    const newBoard = board.map(row => [...row]);
+  const mergePieceToBoard = useCallback((
+    piece: Piece,
+    boardState: (string | null)[][] = boardRef.current
+  ): (string | null)[][] => {
+    const newBoard = boardState.map(row => [...row]);
 
     for (let y = 0; y < piece.shape.length; y++) {
       for (let x = 0; x < piece.shape[y].length; x++) {
@@ -207,7 +271,7 @@ export default function TetrisGame() {
       }
     }
     return newBoard;
-  };
+  }, []);
 
   const clearLines = (boardState: (string | null)[][]): { newBoard: (string | null)[][], cleared: number } => {
     let cleared = 0;
@@ -252,19 +316,17 @@ export default function TetrisGame() {
       return;
     }
 
-    setCurrentPiece(piece);
-  }, [nextPieces, linesCleared, board]);
+    updateCurrentPiece(piece);
+  }, [nextPieces, linesCleared, checkCollision, updateCurrentPiece]);
 
-  const lockPiece = useCallback(() => {
-    if (!currentPiece) return;
-
-    const newBoard = mergePieceToBoard(currentPiece);
+  const lockPiece = useCallback((piece: Piece) => {
+    const newBoard = mergePieceToBoard(piece);
     const { newBoard: clearedBoard, cleared } = clearLines(newBoard);
 
     setBoard(clearedBoard);
     const newLinesCleared = linesCleared + cleared;
     setLinesCleared(newLinesCleared);
-    setPiecesPlaced(prev => prev + 1);
+    recordPiecePlacement();
 
     if (newLinesCleared >= GOAL_LINES) {
       const finalTime = startTimeRef.current ? (Date.now() - startTimeRef.current) / 1000 : 0;
@@ -292,7 +354,7 @@ export default function TetrisGame() {
 
       if (me?.isLoggedIn && me?.userId) {
         setSubmitting(true);
-        submitScore('tetris', finalTime, me.userId)
+        submitScore('tetris', finalTime, bestScore)
           .then(() => setSubmitting(false))
           .catch(err => {
             console.error('Failed to submit score:', err);
@@ -303,31 +365,60 @@ export default function TetrisGame() {
     }
 
     spawnNewPiece();
-  }, [currentPiece, linesCleared, spawnNewPiece, bestScore, me]);
+  }, [linesCleared, spawnNewPiece, bestScore, me, mergePieceToBoard, recordPiecePlacement]);
 
   const moveDown = useCallback(() => {
-    if (!currentPiece || internalState !== 'playing') return;
+    if (internalState !== 'playing') return;
+    const piece = currentPieceRef.current;
+    if (!piece) return;
 
-    if (!checkCollision(currentPiece, 0, 1)) {
-      setCurrentPiece({
-        ...currentPiece,
-        position: { ...currentPiece.position, y: currentPiece.position.y + 1 }
+    if (!checkCollision(piece, 0, 1)) {
+      updateCurrentPiece({
+        ...piece,
+        position: { ...piece.position, y: piece.position.y + 1 }
       });
     } else {
-      lockPiece();
+      lockPiece(piece);
     }
-  }, [currentPiece, internalState, lockPiece]);
+  }, [internalState, checkCollision, lockPiece, updateCurrentPiece]);
 
-  const moveSideways = (direction: number) => {
-    if (!currentPiece || internalState !== 'playing') return;
+  const moveSideways = useCallback((direction: number) => {
+    if (internalState !== 'playing') return;
+    const piece = currentPieceRef.current;
+    if (!piece) return;
 
-    if (!checkCollision(currentPiece, direction, 0)) {
-      setCurrentPiece({
-        ...currentPiece,
-        position: { ...currentPiece.position, x: currentPiece.position.x + direction }
+    if (!checkCollision(piece, direction, 0)) {
+      updateCurrentPiece({
+        ...piece,
+        position: { ...piece.position, x: piece.position.x + direction }
       });
     }
-  };
+  }, [internalState, checkCollision, updateCurrentPiece]);
+
+  const startAutoShift = useCallback((direction: number) => {
+    if (internalState !== 'playing') return;
+    clearAutoShift();
+    shiftDirectionRef.current = direction;
+    moveSideways(direction);
+    shiftTimeoutRef.current = setTimeout(() => {
+      shiftIntervalRef.current = setInterval(() => {
+        moveSideways(direction);
+      }, SIDE_SHIFT_INTERVAL);
+    }, SIDE_SHIFT_DELAY);
+  }, [internalState, clearAutoShift, moveSideways]);
+
+  useEffect(() => {
+    return () => {
+      clearAutoShift();
+    };
+  }, [clearAutoShift]);
+
+  useEffect(() => {
+    if (internalState !== 'playing') {
+      clearAutoShift();
+      keyStateRef.current = { left: false, right: false };
+    }
+  }, [internalState, clearAutoShift]);
 
   const rotatePieceClockwise = () => {
     if (!currentPiece || internalState !== 'playing') return;
@@ -337,7 +428,7 @@ export default function TetrisGame() {
     newPiece.position = { ...currentPiece.position };
 
     if (!checkCollision(newPiece)) {
-      setCurrentPiece(newPiece);
+      updateCurrentPiece(newPiece);
     } else {
       const wallKicks = [
         { x: -1, y: 0 },
@@ -353,7 +444,7 @@ export default function TetrisGame() {
           y: currentPiece.position.y + kick.y
         };
         if (!checkCollision(newPiece)) {
-          setCurrentPiece(newPiece);
+          updateCurrentPiece(newPiece);
           return;
         }
       }
@@ -373,7 +464,7 @@ export default function TetrisGame() {
       position: { ...currentPiece.position, y: currentPiece.position.y + dropDistance }
     };
 
-    setCurrentPiece(droppedPiece);
+    updateCurrentPiece(droppedPiece);
 
     // Use setTimeout with 0 delay to ensure state updates, then lock immediately
     setTimeout(() => {
@@ -394,7 +485,7 @@ export default function TetrisGame() {
       setBoard(clearedBoard);
       const newLinesCleared = linesCleared + cleared;
       setLinesCleared(newLinesCleared);
-      setPiecesPlaced(prev => prev + 1);
+      recordPiecePlacement();
 
       if (newLinesCleared >= GOAL_LINES) {
         const finalTime = startTimeRef.current ? (Date.now() - startTimeRef.current) / 1000 : 0;
@@ -422,7 +513,7 @@ export default function TetrisGame() {
 
         if (me?.isLoggedIn && me?.userId) {
           setSubmitting(true);
-          submitScore('tetris', finalTime, me.userId)
+          submitScore('tetris', finalTime, bestScore)
             .then(() => setSubmitting(false))
             .catch(err => {
               console.error('Failed to submit score:', err);
@@ -434,7 +525,7 @@ export default function TetrisGame() {
 
       spawnNewPiece();
     }, 0);
-  }, [currentPiece, internalState, board, linesCleared, spawnNewPiece, bestScore, me]);
+  }, [currentPiece, internalState, board, linesCleared, spawnNewPiece, bestScore, me, updateCurrentPiece, checkCollision, recordPiecePlacement]);
 
   const holdPiece = () => {
     if (!currentPiece || internalState !== 'playing' || !canHold) return;
@@ -448,7 +539,7 @@ export default function TetrisGame() {
       const piece = createPiece(heldPiece);
       if (!checkCollision(piece)) {
         setHeldPiece(currentType);
-        setCurrentPiece(piece);
+        updateCurrentPiece(piece);
       }
     }
 
@@ -461,10 +552,14 @@ export default function TetrisGame() {
 
       if (e.key === 'ArrowLeft') {
         e.preventDefault();
-        moveSideways(-1);
+        if (e.repeat) return;
+        keyStateRef.current.left = true;
+        startAutoShift(-1);
       } else if (e.key === 'ArrowRight') {
         e.preventDefault();
-        moveSideways(1);
+        if (e.repeat) return;
+        keyStateRef.current.right = true;
+        startAutoShift(1);
       } else if (e.key === 'ArrowDown') {
         e.preventDefault();
         if (!isFastFalling) {
@@ -483,7 +578,25 @@ export default function TetrisGame() {
     };
 
     const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowDown') {
+      if (e.key === 'ArrowLeft') {
+        keyStateRef.current.left = false;
+        if (shiftDirectionRef.current === -1) {
+          if (keyStateRef.current.right) {
+            startAutoShift(1);
+          } else {
+            clearAutoShift();
+          }
+        }
+      } else if (e.key === 'ArrowRight') {
+        keyStateRef.current.right = false;
+        if (shiftDirectionRef.current === 1) {
+          if (keyStateRef.current.left) {
+            startAutoShift(-1);
+          } else {
+            clearAutoShift();
+          }
+        }
+      } else if (e.key === 'ArrowDown') {
         setIsFastFalling(false);
       }
     };
@@ -495,7 +608,15 @@ export default function TetrisGame() {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [internalState, currentPiece, heldPiece, canHold, isFastFalling, hardDrop]);
+  }, [
+    internalState,
+    isFastFalling,
+    hardDrop,
+    startAutoShift,
+    clearAutoShift,
+    rotatePieceClockwise,
+    holdPiece
+  ]);
 
   useEffect(() => {
     if (internalState === 'playing') {
@@ -521,19 +642,21 @@ export default function TetrisGame() {
         if (startTimeRef.current) {
           setTimeElapsed((Date.now() - startTimeRef.current) / 1000);
         }
+        updateRecentPieces();
       }, 100);
     }
 
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [internalState]);
+  }, [internalState, updateRecentPieces]);
 
   const startGame = () => {
     setBoard(Array(BOARD_HEIGHT).fill(null).map(() => Array(BOARD_WIDTH).fill(null)));
     setLinesCleared(0);
     setTimeElapsed(0);
-    setPiecesPlaced(0);
+    setRecentPieces(0);
+    piecePlacementTimesRef.current = [];
     setFinalScore(null);
     setResult(undefined);
     setHeldPiece(null);
@@ -548,7 +671,7 @@ export default function TetrisGame() {
 
     const [firstPiece, ...rest] = initialPieces;
     setNextPieces(rest);
-    setCurrentPiece(createPiece(firstPiece));
+    updateCurrentPiece(createPiece(firstPiece));
   };
 
   const handleRestart = () => {
@@ -558,12 +681,13 @@ export default function TetrisGame() {
   const handleQuit = () => {
     setInternalState('idle');
     setBoard(Array(BOARD_HEIGHT).fill(null).map(() => Array(BOARD_WIDTH).fill(null)));
-    setCurrentPiece(null);
+    updateCurrentPiece(null);
     setHeldPiece(null);
     setNextPieces([]);
     setLinesCleared(0);
     setTimeElapsed(0);
-    setPiecesPlaced(0);
+    setRecentPieces(0);
+    piecePlacementTimesRef.current = [];
     setFinalScore(null);
     setResult(undefined);
     setIsFastFalling(false);
@@ -629,7 +753,7 @@ export default function TetrisGame() {
           <div className="bg-black/80 text-white px-4 py-2 rounded font-mono text-xs space-y-1">
             <div className="flex justify-between gap-6">
               <span className="text-gray-400">PIECES</span>
-              <span className="tabular-nums">{piecesPlaced}/{Math.ceil(GOAL_LINES / 4)}</span>
+              <span className="tabular-nums">{recentPieces}</span>
             </div>
             <div className="flex justify-between gap-6">
               <span className="text-gray-400">LINES</span>
@@ -643,10 +767,12 @@ export default function TetrisGame() {
 
           {/* Board */}
           <div
-            className="relative bg-white border-4 border-black"
+            className="relative bg-white"
             style={{
-              width: BOARD_WIDTH * BLOCK_SIZE + 2,
-              height: BOARD_HEIGHT * BLOCK_SIZE + 2,
+              width: BOARD_WIDTH * BLOCK_SIZE,
+              height: BOARD_HEIGHT * BLOCK_SIZE,
+              outline: '4px solid #000',
+              outlineOffset: '0px'
             }}
           >
             {/* Grid lines */}
@@ -675,11 +801,12 @@ export default function TetrisGame() {
                     key={`${y}-${x}`}
                     className="absolute"
                     style={{
-                      left: x * BLOCK_SIZE + 1,
-                      top: y * BLOCK_SIZE + 1,
-                      width: BLOCK_SIZE - 2,
-                      height: BLOCK_SIZE - 2,
+                      left: x * BLOCK_SIZE,
+                      top: y * BLOCK_SIZE,
+                      width: BLOCK_SIZE,
+                      height: BLOCK_SIZE,
                       backgroundColor: cell,
+                      boxSizing: 'border-box',
                       border: '1px solid rgba(0,0,0,0.2)'
                     }}
                   />
@@ -695,12 +822,13 @@ export default function TetrisGame() {
                     key={`ghost-${y}-${x}`}
                     className="absolute"
                     style={{
-                      left: (currentPiece.position.x + x) * BLOCK_SIZE + 1,
-                      top: (ghostY + y) * BLOCK_SIZE + 1,
-                      width: BLOCK_SIZE - 2,
-                      height: BLOCK_SIZE - 2,
+                      left: (currentPiece.position.x + x) * BLOCK_SIZE,
+                      top: (ghostY + y) * BLOCK_SIZE,
+                      width: BLOCK_SIZE,
+                      height: BLOCK_SIZE,
                       backgroundColor: 'transparent',
-                      border: `2px dashed ${currentPiece.color}60`
+                      border: `2px dashed ${currentPiece.color}60`,
+                      boxSizing: 'border-box'
                     }}
                   />
                 ) : null
@@ -715,11 +843,12 @@ export default function TetrisGame() {
                     key={`piece-${y}-${x}`}
                     className="absolute"
                     style={{
-                      left: (currentPiece.position.x + x) * BLOCK_SIZE + 1,
-                      top: (currentPiece.position.y + y) * BLOCK_SIZE + 1,
-                      width: BLOCK_SIZE - 2,
-                      height: BLOCK_SIZE - 2,
+                      left: (currentPiece.position.x + x) * BLOCK_SIZE,
+                      top: (currentPiece.position.y + y) * BLOCK_SIZE,
+                      width: BLOCK_SIZE,
+                      height: BLOCK_SIZE,
                       backgroundColor: currentPiece.color,
+                      boxSizing: 'border-box',
                       border: '1px solid rgba(0,0,0,0.2)'
                     }}
                   />
