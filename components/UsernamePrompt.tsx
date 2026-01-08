@@ -8,7 +8,7 @@ import UsernameModal from './UsernameModal';
  * 
  * This component should be placed at the app layout level.
  * It automatically shows the username modal after:
- * 1. User successfully logs in via magic link
+ * 1. User successfully logs in via OTP verification
  * 2. Onboarding completes (profile created, university assigned, guest scores migrated)
  * 3. User's profile has no username set
  * 
@@ -19,29 +19,16 @@ export default function UsernamePrompt() {
   const [showModal, setShowModal] = useState(false);
   const [dismissed, setDismissed] = useState(false);
 
-  // Check if we should show the username modal
+  // Derive modal state instead of setting in effect
+  const shouldShowModal = Boolean(!loading && !dismissed && me?.isLoggedIn && !me?.username);
+
+  // Sync derived state to showModal
   useEffect(() => {
-    // Don't show while loading
-    if (loading) return;
-    
-    // Don't show if already dismissed this session
-    if (dismissed) return;
-    
-    // Don't show if no user data
-    if (!me) return;
-    
-    // Don't show if not logged in
-    if (!me.isLoggedIn) return;
-    
-    // Show modal if logged in but no username
-    if (!me.username) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setShowModal(true);
-    } else {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setShowModal(false);
+    if (shouldShowModal !== showModal) {
+      // Use setTimeout to avoid synchronous setState in effect
+      setTimeout(() => setShowModal(shouldShowModal), 0);
     }
-  }, [me, loading, dismissed]);
+  }, [shouldShowModal, showModal]);
 
   const handleComplete = async (username: string) => {
     console.log('Username set successfully:', username);

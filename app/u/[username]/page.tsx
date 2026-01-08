@@ -1,5 +1,4 @@
 import { Metadata } from 'next';
-import { notFound } from 'next/navigation';
 import { getProfileByUsername } from '@/lib/db/profiles';
 import { getUserHighlightsWithRanks } from '@/lib/db/user-highlights';
 import { createClient } from '@/lib/supabase/server';

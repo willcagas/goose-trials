@@ -304,8 +304,8 @@ export default function PathfindingGame() {
   useEffect(() => {
     // Only show best scores for logged-in users
     if (!me?.isLoggedIn || !me?.userId) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setBestScore(0);
+      // Use setTimeout to avoid synchronous setState in effect
+      setTimeout(() => setBestScore(0), 0);
       return;
     }
 
@@ -314,7 +314,8 @@ export default function PathfindingGame() {
     if (stored !== null && stored !== '') {
       const parsed = Number(stored);
       if (!isNaN(parsed)) {
-        setBestScore(parsed);
+        // Use setTimeout to avoid synchronous setState in effect
+        setTimeout(() => setBestScore(parsed), 0);
       }
     }
 

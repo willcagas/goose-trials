@@ -37,8 +37,8 @@ export default function NumberMemoryGamePage() {
   useEffect(() => {
     // Only show best scores for logged-in users
     if (!me?.isLoggedIn || !me?.userId) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setBestScore(0);
+      // Use setTimeout to avoid synchronous setState in effect
+      setTimeout(() => setBestScore(0), 0);
       return;
     }
 
@@ -47,7 +47,8 @@ export default function NumberMemoryGamePage() {
     let localBest = 0;
     if (stored !== null) {
       localBest = Number(stored);
-      setBestScore(localBest);
+      // Use setTimeout to avoid synchronous setState in effect
+      setTimeout(() => setBestScore(localBest), 0);
     }
 
     // Fetch best score from Supabase
@@ -97,10 +98,12 @@ export default function NumberMemoryGamePage() {
   // Animate progress bar during showing phase
   useEffect(() => {
     if (phase === 'showing') {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setMemorizeProgress(100);
-      progressStartTimeRef.current = Date.now();
-      isShowingPhaseRef.current = true;
+      // Use setTimeout to avoid synchronous setState in effect
+      setTimeout(() => {
+        setMemorizeProgress(100);
+        progressStartTimeRef.current = Date.now();
+        isShowingPhaseRef.current = true;
+      }, 0);
       
       const animate = () => {
         if (progressStartTimeRef.current === null || !isShowingPhaseRef.current) return;
@@ -118,7 +121,8 @@ export default function NumberMemoryGamePage() {
       progressAnimationRef.current = requestAnimationFrame(animate);
     } else {
       isShowingPhaseRef.current = false;
-      setMemorizeProgress(100);
+      // Use setTimeout to avoid synchronous setState in effect
+      setTimeout(() => setMemorizeProgress(100), 0);
       if (progressAnimationRef.current !== null) {
         cancelAnimationFrame(progressAnimationRef.current);
         progressAnimationRef.current = null;

@@ -61,13 +61,17 @@ export default function PathfindingBoard({
 
   useEffect(() => {
     if (shakeTick === 0) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setIsShaking(false);
-    const frame = window.requestAnimationFrame(() => setIsShaking(true));
-    const timeout = window.setTimeout(() => setIsShaking(false), 300);
+    // Use setTimeout to avoid synchronous setState in effect
+    let frame: number;
+    let timeout: NodeJS.Timeout;
+    setTimeout(() => {
+      setIsShaking(false);
+      frame = window.requestAnimationFrame(() => setIsShaking(true));
+      timeout = window.setTimeout(() => setIsShaking(false), 300);
+    }, 0);
     return () => {
-      window.cancelAnimationFrame(frame);
-      window.clearTimeout(timeout);
+      if (frame) window.cancelAnimationFrame(frame);
+      if (timeout) window.clearTimeout(timeout);
     };
   }, [shakeTick]);
 

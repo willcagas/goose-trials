@@ -1,28 +1,82 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { extractEmailDomain } from '@/lib/auth/domain-utils';
+import { getPendingLogin, clearPendingLogin } from './LoginNotification';
 
 interface LoginModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
+type Step = 'email' | 'code';
+
+const PENDING_LOGIN_KEY = 'goose_trials_pending_login';
+
+function savePendingLogin(email: string): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(PENDING_LOGIN_KEY, JSON.stringify({
+      step: 'code' as const,
+      email,
+      timestamp: Date.now(),
+    }));
+  } catch (error) {
+    console.error('Failed to save pending login:', error);
+  }
+}
+
 export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
+  const [step, setStep] = useState<Step>('email');
   const [email, setEmail] = useState('');
+  const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Restore pending login state when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      const pending = getPendingLogin();
+      if (pending) {
+        setStep('code');
+        setEmail(pending.email);
+        setCode('');
+        setResendCooldown(0);
+      } else {
+        setStep('email');
+        setEmail('');
+        setCode('');
+      }
+    }
+  }, [isOpen]);
+
+  // Resend cooldown timer
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const timer = setTimeout(() => {
+        setResendCooldown(resendCooldown - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendCooldown]);
+
+  const handleSendCode = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
-    setSuccess(false);
 
     try {
+      // Trim email
+      const trimmedEmail = email.trim();
+      if (!trimmedEmail) {
+        setError('Please enter a valid email address.');
+        setLoading(false);
+        return;
+      }
+
       // Extract and validate domain (advisory check)
-      const domain = extractEmailDomain(email);
+      const domain = extractEmailDomain(trimmedEmail);
       if (!domain) {
         setError('Please enter a valid email address.');
         setLoading(false);
@@ -43,11 +97,11 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
         return;
       }
 
-      // Send magic link
+      // Send OTP code (not magic link)
       const { error } = await supabase.auth.signInWithOtp({
-        email: email,
+        email: trimmedEmail,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          shouldCreateUser: true,
         },
       });
 
@@ -56,31 +110,137 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
         if (error.message.includes('university email') || error.message.includes('domain')) {
           setError('Use a university email to sign in.');
         } else {
-          setError(error.message || 'Failed to send magic link. Please try again.');
+          setError(error.message || 'Failed to send verification code. Please try again.');
         }
         return;
       }
 
-      setSuccess(true);
-      setEmail('');
-    } catch (err: unknown) {
+      // Success - move to code entry step
+      setStep('code');
+      setCode('');
+      setResendCooldown(60); // 60 second cooldown
+      // Save pending login state
+      savePendingLogin(trimmedEmail);
+    } catch (err) {
       // Handle any unexpected errors
-      const errorMessage = err instanceof Error ? err.message : '';
+      const errorMessage = err instanceof Error ? err.message : String(err);
       if (errorMessage.includes('university email') || errorMessage.includes('domain')) {
         setError('Use a university email to sign in.');
       } else {
-        setError('Failed to send magic link. Please try again.');
+        setError('Failed to send verification code. Please try again.');
       }
     } finally {
       setLoading(false);
     }
   };
 
-  const handleClose = () => {
-    setEmail('');
+  const handleVerifyCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
     setError('');
-    setSuccess(false);
+
+    try {
+      // Clean code - remove any non-digits
+      const cleanCode = code.replace(/\D/g, '');
+      
+      if (cleanCode.length !== 6) {
+        setError('Please enter a valid 6-digit code.');
+        setLoading(false);
+        return;
+      }
+
+      const supabase = createClient();
+      const trimmedEmail = email.trim();
+
+      // Verify OTP code
+      const { error } = await supabase.auth.verifyOtp({
+        email: trimmedEmail,
+        token: cleanCode,
+        type: 'email',
+      });
+
+      if (error) {
+        if (error.message.includes('expired') || error.message.includes('invalid')) {
+          setError('Invalid or expired code. Please try again or request a new code.');
+        } else {
+          setError(error.message || 'Verification failed. Please try again.');
+        }
+        return;
+      }
+
+      // Success - user is now authenticated
+      // SessionContext will handle onboarding/migration via onAuthStateChange
+      // Clear pending login state
+      clearPendingLogin();
+      // Close modal and let the session state update
+      handleClose();
+    } catch {
+      setError('Verification failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendCode = async () => {
+    if (resendCooldown > 0) return;
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const trimmedEmail = email.trim();
+      const supabase = createClient();
+
+      const { error } = await supabase.auth.signInWithOtp({
+        email: trimmedEmail,
+        options: {
+          shouldCreateUser: true,
+        },
+      });
+
+      if (error) {
+        setError(error.message || 'Failed to resend code. Please try again.');
+        return;
+      }
+
+      // Reset cooldown
+      setResendCooldown(60);
+      setCode('');
+      // Update pending login timestamp
+      savePendingLogin(trimmedEmail);
+    } catch {
+      setError('Failed to resend code. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Only allow digits, max 6 characters
+    const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+    setCode(value);
+  };
+
+  const handleCodePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    setCode(pasted);
+  };
+
+  const handleClose = () => {
+    // Only clear state if user explicitly closes (not if they're just navigating away)
+    // The pending login state will persist so they can come back
+    setError('');
     onClose();
+  };
+
+  const handleBackToEmail = () => {
+    setStep('email');
+    setCode('');
+    setError('');
+    setResendCooldown(0);
+    // Clear pending login when going back to email step
+    clearPendingLogin();
   };
 
   if (!isOpen) return null;
@@ -126,40 +286,17 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
             </div>
           </div>
           <h2 className="text-white text-2xl font-bold uppercase tracking-wide">
-            {success ? 'Check Your Email' : 'Join the Trials'}
+            {step === 'code' ? 'Enter Verification Code' : 'Join the Trials'}
           </h2>
           <p className="text-white/60 mt-2">
-            {success
-              ? "We've sent you a link to sign in"
-              : 'Enter your email to receive a sign-in link'}
+            {step === 'code'
+              ? `We sent a 6-digit code to ${email}`
+              : 'Enter your email to receive a verification code'}
           </p>
         </div>
 
-        {success ? (
-          <div className="text-center space-y-4">
-            <div className="w-16 h-16 bg-[#FFD700]/20 rounded-full flex items-center justify-center mx-auto">
-              <svg className="w-8 h-8 text-[#FFD700]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
-            </div>
-            <p className="text-white/80">
-              Click the link in your email and you&apos;re good to go.
-            </p>
-            <p className="text-white/50 text-sm">
-              Your guest scores will be transferred automatically.
-            </p>
-            <button
-              onClick={() => {
-                setSuccess(false);
-                setEmail('');
-              }}
-              className="text-[#FFD700] hover:underline font-medium"
-            >
-              Use a different email
-            </button>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
+        {step === 'email' ? (
+          <form onSubmit={handleSendCode} className="space-y-4">
             <div>
               <input
                 type="email"
@@ -168,6 +305,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#FFD700] transition-colors"
                 required
+                autoFocus
               />
             </div>
 
@@ -180,12 +318,67 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
               disabled={loading}
               className="w-full px-4 py-3 bg-[#FFD700] text-gray-900 font-bold uppercase tracking-wide rounded-lg hover:bg-[#FFD700]/90 transition-colors disabled:opacity-50"
             >
-              {loading ? 'Sending...' : 'Send Sign-In Link'}
+              {loading ? 'Sending...' : 'Send Code'}
             </button>
 
             <p className="text-white/40 text-xs text-center">
               Use your university email to appear on campus leaderboards
             </p>
+          </form>
+        ) : (
+          <form onSubmit={handleVerifyCode} className="space-y-4">
+            <div>
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                placeholder="000000"
+                value={code}
+                onChange={handleCodeChange}
+                onPaste={handleCodePaste}
+                className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-[#FFD700] transition-colors text-center text-2xl tracking-widest font-mono"
+                required
+                maxLength={6}
+                autoFocus
+              />
+            </div>
+
+            {error && (
+              <p className="text-red-400 text-sm">{error}</p>
+            )}
+
+            <div className="space-y-2">
+              <button
+                type="submit"
+                disabled={loading || code.length !== 6}
+                className="w-full px-4 py-3 bg-[#FFD700] text-gray-900 font-bold uppercase tracking-wide rounded-lg hover:bg-[#FFD700]/90 transition-colors disabled:opacity-50"
+              >
+                {loading ? 'Verifying...' : 'Verify'}
+              </button>
+
+              <div className="flex items-center justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleResendCode}
+                  disabled={resendCooldown > 0 || loading}
+                  className="text-[#FFD700] hover:underline font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : 'Resend code'}
+                </button>
+              </div>
+            </div>
+
+            <p className="text-white/50 text-sm text-center">
+              Some university inboxes take 1–3 minutes; check spam/junk. You can keep playing while you wait.
+            </p>
+
+            <button
+              type="button"
+              onClick={handleBackToEmail}
+              className="text-white/60 hover:text-white text-sm font-medium"
+            >
+              ← Use a different email
+            </button>
           </form>
         )}
       </div>

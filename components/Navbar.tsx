@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSession } from '@/app/providers/SessionContext';
 import LoginModal from '@/components/LoginModal';
+import LoginNotification from '@/components/LoginNotification';
 
 export default function Navbar() {
   const [showLogin, setShowLogin] = useState(false);
@@ -155,6 +156,7 @@ export default function Navbar() {
       <div className="h-16 md:h-20" />
 
       <LoginModal isOpen={showLogin} onClose={() => setShowLogin(false)} />
+      <LoginNotification onOpenModal={() => setShowLogin(true)} />
     </>
   );
 }

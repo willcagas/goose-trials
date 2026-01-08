@@ -19,7 +19,7 @@ export default function PathfindingMazeGrid({
   phase,
   mazeSize,
   maze,
-  showMaze,
+  showMaze: _showMaze, // eslint-disable-line @typescript-eslint/no-unused-vars
   showPath,
   pathSet,
   lastPosition,

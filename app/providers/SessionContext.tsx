@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
 import { completeOnboarding } from '@/lib/guest/onboarding';
+import { clearPendingLogin } from '@/components/LoginNotification';
 import posthog from 'posthog-js';
 
 interface SessionContextType {
@@ -23,7 +24,8 @@ function isOnboardingCompletedOrInProgress(userId: string | null): boolean {
   return value === 'true' || value === 'pending';
 }
 
-// Helper to mark onboarding as in progress
+// Helper to mark onboarding as in progress (kept for potential future use)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function markOnboardingInProgress(userId: string): void {
   if (typeof window === 'undefined') return;
   const key = `onboarded:${userId}`;
@@ -147,7 +149,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
                 // Don't trigger onboarding here - let onAuthStateChange handle it
                 // This prevents duplicate calls when both checkSession and onAuthStateChange fire
-            } catch (error) {
+            } catch {
                 setUser(null);
                 currentUserIdRef.current = null;
             }
@@ -176,6 +178,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
             // Trigger onboarding on sign in or initial session (when user is already logged in on page load)
             if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && result?.id) {
+                // Clear any pending login state
+                clearPendingLogin();
+                
                 // Identify user in PostHog for analytics
                 posthog.identify(result.id, {
                     email: result.email,
@@ -184,7 +189,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
                 // Track login event (only for actual sign-ins, not page reloads)
                 if (event === 'SIGNED_IN') {
                     posthog.capture('user_signed_in', {
-                        method: 'magic_link',
+                        method: 'otp',
                     });
                 }
                 

@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { submitScore } from '@/lib/db/scores';
-import Link from 'next/link';
 import { useMe } from '@/app/providers/MeContext';
 import { createClient } from '@/lib/supabase/client';
 import GameShell, { GameShellState, GameResult } from '@/components/GameShell';

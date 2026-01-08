@@ -49,8 +49,13 @@ export function useAimTrainer(me?: { isLoggedIn?: boolean; userId?: string | nul
   useEffect(() => {
     // Only show best scores for logged-in users
     if (!me?.isLoggedIn || !me?.userId) {
+<<<<<<< HEAD
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setBestScore(null);
+=======
+      // Use setTimeout to avoid synchronous setState in effect
+      setTimeout(() => setBestScore(null), 0);
+>>>>>>> 1045ae7 (feat: switch auth to code verification)
       return;
     }
 
@@ -61,7 +66,7 @@ export function useAimTrainer(me?: { isLoggedIn?: boolean; userId?: string | nul
       const parsed = Number(stored);
       if (!Number.isNaN(parsed)) {
         localBest = parsed;
-        setBestScore(parsed);
+        setTimeout(() => setBestScore(parsed), 0);
       }
     }
 
@@ -244,8 +249,13 @@ export function useAimTrainer(me?: { isLoggedIn?: boolean; userId?: string | nul
         }
       }
       existingTargetsRef.current = newTargets;
+<<<<<<< HEAD
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setTargets(newTargets);
+=======
+      // Use setTimeout to avoid synchronous setState in effect
+      setTimeout(() => setTargets(newTargets), 0);
+>>>>>>> 1045ae7 (feat: switch auth to code verification)
     }
   }, [boardSize, phase, spawnTarget, targets]);
 

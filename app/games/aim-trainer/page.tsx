@@ -28,8 +28,6 @@ export default function AimTrainerGame() {
         submitting,
         submitState,
         isNewHighScore,
-        canStart,
-        phaseLabel,
         boardRef,
         handleBoardPointerDown,
         handleHit,

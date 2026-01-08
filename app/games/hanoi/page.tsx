@@ -134,7 +134,6 @@ export default function HanoiGame() {
   // Score submission state (ranked mode only)
   const [submitting, setSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
-  const [submitError, setSubmitError] = useState<string | null>(null);
   const [scoreTimestamp, setScoreTimestamp] = useState<Date | undefined>(undefined);
   const [isNewHighScore, setIsNewHighScore] = useState(false);
   
@@ -233,7 +232,6 @@ export default function HanoiGame() {
     // Reset submission state
     setSubmitting(false);
     setSubmitStatus('idle');
-    setSubmitError(null);
   }, [initializeGame]);
 
   // End the game - uses refs to avoid stale closures in timeout
@@ -292,7 +290,6 @@ export default function HanoiGame() {
       const doSubmit = async () => {
         setSubmitting(true);
         setSubmitStatus('idle');
-        setSubmitError(null);
         setIsNewHighScore(false);
         
         try {
@@ -309,11 +306,9 @@ export default function HanoiGame() {
             }
           } else {
             setSubmitStatus('error');
-            setSubmitError(response.error || 'Failed to submit score');
           }
-        } catch (err) {
+        } catch {
           setSubmitStatus('error');
-          setSubmitError(err instanceof Error ? err.message : 'Failed to submit score');
         } finally {
           setSubmitting(false);
         }

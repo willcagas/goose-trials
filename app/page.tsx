@@ -224,7 +224,7 @@ export default function HomePage() {
     fetchTestsAndLeaders();
   }, [user]);
 
-  const handleClick = (e: React.MouseEvent) => {
+  const handleClick = () => {
     const side = Math.floor(Math.random() * 4);
     let startX, startY, angle;
     const speed = 8 + Math.random() * 7;

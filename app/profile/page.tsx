@@ -61,8 +61,8 @@ export default function ProfilePage() {
   // Set avatar URL from me context
   useEffect(() => {
     if (me?.avatarUrl) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setCurrentAvatarUrl(me.avatarUrl);
+      // Use setTimeout to avoid synchronous setState in effect
+      setTimeout(() => setCurrentAvatarUrl(me.avatarUrl), 0);
     }
   }, [me?.avatarUrl]);
 

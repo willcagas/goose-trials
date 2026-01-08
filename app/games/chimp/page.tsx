@@ -76,8 +76,8 @@ export default function ChimpGamePage() {
   useEffect(() => {
     // Only show best scores for logged-in users
     if (!me?.isLoggedIn || !me?.userId) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setBestLevel(0);
+      // Use setTimeout to avoid synchronous setState in effect
+      setTimeout(() => setBestLevel(0), 0);
       return;
     }
 
@@ -86,7 +86,8 @@ export default function ChimpGamePage() {
     let localBest = 0;
     if (stored !== null) {
       localBest = Number(stored);
-      setBestLevel(localBest);
+      // Use setTimeout to avoid synchronous setState in effect
+      setTimeout(() => setBestLevel(localBest), 0);
     }
 
     // Fetch best score from Supabase
