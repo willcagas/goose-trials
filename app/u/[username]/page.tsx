@@ -31,7 +31,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     ...(profile.avatar_url && { avatar: profile.avatar_url }),
   });
 
-  const ogImageUrl = `/api/og/profile?${ogImageParams.toString()}`;
+  const ogImageUrl = `https://goosetrials.com/api/og/profile?${ogImageParams.toString()}`;
 
   return {
     title: `${displayName} - Goose Trials`,
@@ -40,7 +40,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       title: `${displayName} - Goose Trials`,
       description: `View ${displayName}'s best scores and compete on Goose Trials!`,
       type: 'profile',
-      url: `/u/${username}`,
+      url: `https://goosetrials.com/u/${username}`,
       images: [
         {
           url: ogImageUrl,

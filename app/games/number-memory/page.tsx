@@ -98,12 +98,11 @@ export default function NumberMemoryGamePage() {
   // Animate progress bar during showing phase
   useEffect(() => {
     if (phase === 'showing') {
-      // Use setTimeout to avoid synchronous setState in effect
-      setTimeout(() => {
-        setMemorizeProgress(100);
-        progressStartTimeRef.current = Date.now();
-        isShowingPhaseRef.current = true;
-      }, 0);
+      // Initialize state and refs - this is fine to do synchronously for initialization
+      setMemorizeProgress(100);
+      const startTime = Date.now();
+      progressStartTimeRef.current = startTime;
+      isShowingPhaseRef.current = true;
       
       const animate = () => {
         if (progressStartTimeRef.current === null || !isShowingPhaseRef.current) return;
@@ -118,11 +117,13 @@ export default function NumberMemoryGamePage() {
         }
       };
       
-      progressAnimationRef.current = requestAnimationFrame(animate);
+      // Start animation on next frame to ensure state update is processed
+      progressAnimationRef.current = requestAnimationFrame(() => {
+        requestAnimationFrame(animate);
+      });
     } else {
       isShowingPhaseRef.current = false;
-      // Use setTimeout to avoid synchronous setState in effect
-      setTimeout(() => setMemorizeProgress(100), 0);
+      setMemorizeProgress(100);
       if (progressAnimationRef.current !== null) {
         cancelAnimationFrame(progressAnimationRef.current);
         progressAnimationRef.current = null;
