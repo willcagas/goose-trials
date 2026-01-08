@@ -11,7 +11,10 @@ export const metadata: Metadata = {
   title: 'Goose Trials',
   description: "Think you're smart? Prove it.",
   icons: {
-    icon: '/goosetrials-favicon.ico',
+    icon: [
+      { url: '/favicon.ico' },
+      { url: '/goosetrials-favicon.ico' }
+    ],
     apple: '/goosetrialspfp-removebg-preview.png',
   },
   openGraph: {
