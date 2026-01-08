@@ -3,7 +3,8 @@ import Link from 'next/link';
 import {useSession} from '@/app/providers/SessionContext';
 import {useMe} from '@/app/providers/MeContext';
 import Navbar from '@/components/Navbar';
-import {useEffect, useRef, useState} from 'react';
+import LoginModal from '@/components/LoginModal';
+import {useEffect, useRef, useState, useCallback} from 'react';
 import {Zap, Hash, Eye, Layers, Route, Target, Trophy, Box} from 'lucide-react';
 
 interface FlyingGoose {
@@ -168,7 +169,9 @@ export default function HomePage() {
   const [tests, setTests] = useState<Test[]>([]);
   const [testsLoading, setTestsLoading] = useState(true);
   const [leaderboards, setLeaderboards] = useState<Record<string, LeaderboardEntry[]>>({});
+  const [showLogin, setShowLogin] = useState(false);
 
+  // Animation loop for geese movement
   useEffect(() => {
     const interval = setInterval(() => {
       setGeese(prevGeese => {
@@ -184,6 +187,37 @@ export default function HomePage() {
     }, 16);
     return () => clearInterval(interval);
   }, []);
+
+  // Function to create a new goose
+  const createGoose = useCallback(() => {
+    const side = Math.floor(Math.random() * 4);
+    let startX, startY, angle;
+    const speed = 8 + Math.random() * 7;
+    switch(side) {
+      case 0: startX = Math.random() * window.innerWidth; startY = -200; angle = Math.PI / 2 + (Math.random() - 0.5) * Math.PI / 2; break;
+      case 1: startX = window.innerWidth + 200; startY = Math.random() * window.innerHeight; angle = Math.PI + (Math.random() - 0.5) * Math.PI / 2; break;
+      case 2: startX = Math.random() * window.innerWidth; startY = window.innerHeight + 200; angle = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI / 2; break;
+      default: startX = -200; startY = Math.random() * window.innerHeight; angle = (Math.random() - 0.5) * Math.PI / 2; break;
+    }
+    const newGoose: FlyingGoose = { 
+      id: gooseIdRef.current++, 
+      x: startX, 
+      y: startY, 
+      angle: angle, 
+      velocityX: Math.cos(angle) * speed, 
+      velocityY: Math.sin(angle) * speed 
+    };
+    setGeese(prev => [...prev, newGoose]);
+  }, []);
+
+  // Auto-spawn geese every 30 seconds (only on main page)
+  useEffect(() => {
+    const autoSpawnInterval = setInterval(() => {
+      createGoose();
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(autoSpawnInterval);
+  }, [createGoose]);
 
   // Fetch tests and top 3 leaders for each test
   useEffect(() => {
@@ -225,17 +259,7 @@ export default function HomePage() {
   }, [user]);
 
   const handleClick = () => {
-    const side = Math.floor(Math.random() * 4);
-    let startX, startY, angle;
-    const speed = 8 + Math.random() * 7;
-    switch(side) {
-      case 0: startX = Math.random() * window.innerWidth; startY = -200; angle = Math.PI / 2 + (Math.random() - 0.5) * Math.PI / 2; break;
-      case 1: startX = window.innerWidth + 200; startY = Math.random() * window.innerHeight; angle = Math.PI + (Math.random() - 0.5) * Math.PI / 2; break;
-      case 2: startX = Math.random() * window.innerWidth; startY = window.innerHeight + 200; angle = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI / 2; break;
-      default: startX = -200; startY = Math.random() * window.innerHeight; angle = (Math.random() - 0.5) * Math.PI / 2; break;
-    }
-    const newGoose: FlyingGoose = { id: gooseIdRef.current++, x: startX, y: startY, angle: angle, velocityX: Math.cos(angle) * speed, velocityY: Math.sin(angle) * speed };
-    setGeese(prev => [...prev, newGoose]);
+    createGoose();
   };
 
   if (loading) return <div className="flex items-center justify-center min-h-screen bg-gray-50 text-gray-900">Loading...</div>;
@@ -426,11 +450,22 @@ export default function HomePage() {
           {/* Sign in message for non-logged in users */}
           {!me?.isLoggedIn && (
             <div className="max-w-4xl mx-auto mb-6">
-              <div className="px-6 py-3 bg-amber-50 rounded-lg border border-amber-400">
-                <p className="text-amber-600 text-center font-semibold">
-                  Sign in to view your rank
-                </p>
-              </div>
+              <button
+                onClick={(e) => { e.stopPropagation(); setShowLogin(true); }}
+                className="w-full px-6 py-3 bg-amber-400 hover:bg-amber-300 text-gray-900 font-bold text-sm uppercase tracking-widest rounded-lg shadow-lg hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2 group"
+              >
+                <span>Sign in with your university email to view your rank</span>
+                <svg 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  fill="none" 
+                  viewBox="0 0 24 24" 
+                  strokeWidth={2.5} 
+                  stroke="currentColor" 
+                  className="w-4 h-4 transform group-hover:translate-x-1 transition-transform"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                </svg>
+              </button>
             </div>
           )}
 
@@ -530,6 +565,8 @@ export default function HomePage() {
           Questions? Contact <a href="mailto:goosetrials@gmail.com" className="text-amber-400 hover:text-amber-300 underline">goosetrials@gmail.com</a>
         </p>
       </footer>
+
+      <LoginModal isOpen={showLogin} onClose={() => setShowLogin(false)} />
     </div>
   );
 }
