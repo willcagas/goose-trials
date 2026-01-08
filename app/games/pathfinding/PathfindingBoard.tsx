@@ -63,7 +63,7 @@ export default function PathfindingBoard({
     if (shakeTick === 0) return;
     // Use setTimeout to avoid synchronous setState in effect
     let frame: number;
-    let timeout: NodeJS.Timeout;
+    let timeout: number;
     setTimeout(() => {
       setIsShaking(false);
       frame = window.requestAnimationFrame(() => setIsShaking(true));
