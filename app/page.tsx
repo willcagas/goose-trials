@@ -111,7 +111,7 @@ function ProtocolSection() {
     {
       number: "02",
       title: "Run the Trials",
-      desc: "Six fast challenges designed to test focus, speed, and execution.",
+      desc: "Seven fast challenges designed to test focus, speed, and execution.",
     },    
     {
       number: "03",
@@ -276,10 +276,10 @@ export default function HomePage() {
           </h1>
           <div className="flex flex-col items-center mb-10 md:mb-14 text-center">
             <h2 className="text-lg sm:text-xl md:text-2xl text-white/90 font-semibold mb-3 max-w-2xl">
-              Battle other students. Climb the ranks.
+              Battle against other students. Climb the ranks.
             </h2>
             <p className="text-sm sm:text-base md:text-lg text-white/60 font-medium">
-              Six quick games. One leaderboard. See where you rank.
+              Seven quick games. One leaderboard. See where you rank.
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center w-full max-w-xs sm:max-w-none mx-auto">
@@ -309,7 +309,7 @@ export default function HomePage() {
               The <span className="text-amber-400">Trials</span>
             </h2>
             <p className="text-gray-600 text-lg">
-              Test your skills with six quick games, each with a unique challenge.
+              Test your skills with seven quick games, each with a unique challenge.
             </p>
           </div>
 

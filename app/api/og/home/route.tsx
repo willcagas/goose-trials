@@ -116,7 +116,7 @@ export async function GET() {
               display: 'flex',
             }}
           >
-            Six quick games. One leaderboard.
+            Seven quick games. One leaderboard.
           </div>
         </div>
 
