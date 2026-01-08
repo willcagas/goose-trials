@@ -33,9 +33,9 @@ const TETROMINO_COLORS = {
 const TETROMINOS = {
   I: { shape: [[1, 1, 1, 1]] },
   O: { shape: [[1, 1], [1, 1]] },
-  T: { shape: [[0, 1, 0], [1, 1, 1]] },
-  S: { shape: [[0, 1, 1], [1, 1, 0]] },
-  Z: { shape: [[1, 1, 0], [0, 1, 1]] },
+  T: { shape: [[0, 1, 0], [1, 1, 1], [0, 0, 0]] }, // 3x3 with fixed pivot at center
+  S: { shape: [[0, 1, 1], [1, 1, 0], [0, 0, 0]] }, // 3x3 with pivot at (1,1)
+  Z: { shape: [[1, 1, 0], [0, 1, 1], [0, 0, 0]] }, // 3x3 with pivot at (1,1)
   L: { shape: [[1, 0], [1, 0], [1, 1]] },
   J: { shape: [[0, 1], [0, 1], [1, 1]] }
 };
@@ -67,7 +67,7 @@ const SIDE_SHIFT_DELAY = 120;
 const SIDE_SHIFT_INTERVAL = 35;
 const LOCK_DELAY = 500; // 500ms lock delay (standard Tetris timing)
 
-type InternalGameState = 'idle' | 'playing' | 'completed' | 'failed';
+type InternalGameState = 'idle' | 'ready' | 'playing' | 'completed' | 'failed';
 
 export default function TetrisGame() {
   const { me } = useMe();
@@ -165,7 +165,7 @@ export default function TetrisGame() {
 
   const getShellState = (): GameShellState => {
     if (internalState === 'idle') return 'IDLE';
-    if (internalState === 'playing') return 'PLAYING';
+    if (internalState === 'ready' || internalState === 'playing') return 'PLAYING';
     if (internalState === 'completed' || internalState === 'failed') return 'FINISHED';
     return 'IDLE';
   };
@@ -425,11 +425,9 @@ export default function TetrisGame() {
 
     const {x, y} = piece.position;
 
-    // Check the 4 corners around the T-piece center
-    // The center of T is at different positions based on rotation
-    // For standard T shape [[0,1,0],[1,1,1]], center is at (1, 0) in local coords
-
-    // Get the corners relative to the piece position
+    // Check the 4 corners of the T-piece's 3x3 bounding box
+    // T shape is [[0,1,0],[1,1,1],[0,0,0]] with center pivot at (1,1)
+    // Corners are at the 4 corners of this 3x3 grid
     const corners = [
       {dx: 0, dy: 0},     // top-left
       {dx: 2, dy: 0},     // top-right
@@ -861,50 +859,144 @@ export default function TetrisGame() {
     setCanHold(false);
   };
 
+  const startGame = useCallback(() => {
+    setBoard(Array(BOARD_HEIGHT).fill(null).map(() => Array(BOARD_WIDTH).fill(null)));
+    setLinesCleared(0);
+    setTimeElapsed(0);
+    setRecentPieces(0);
+    piecePlacementTimesRef.current = [];
+    setFinalScore(null);
+    setResult(undefined);
+    setHeldPiece(null);
+    setCanHold(true);
+    setIsFastFalling(false);
+
+    // Enter ready state - show "Press any key to start" overlay
+    setInternalState('ready');
+    startTimeRef.current = null;
+
+    // Initialize 7-bag system and piece queue
+    bagRef.current = shuffleBag();
+    const initialPieces = Array.from({ length: 7 }, () => getNextTetrominoFromBag());
+    setNextPieces(initialPieces);
+
+    const [firstPiece, ...rest] = initialPieces;
+    setNextPieces(rest);
+    updateCurrentPiece(createPiece(firstPiece));
+  }, [getNextTetrominoFromBag, updateCurrentPiece]);
+
+  const beginPlaying = useCallback(() => {
+    // Start the timer and gravity
+    setInternalState('playing');
+    startTimeRef.current = Date.now();
+  }, []);
+
+  const handleQuit = useCallback(() => {
+    setInternalState('idle');
+    setBoard(Array(BOARD_HEIGHT).fill(null).map(() => Array(BOARD_WIDTH).fill(null)));
+    updateCurrentPiece(null);
+    setHeldPiece(null);
+    setNextPieces([]);
+    setLinesCleared(0);
+    setTimeElapsed(0);
+    setRecentPieces(0);
+    piecePlacementTimesRef.current = [];
+    setFinalScore(null);
+    setResult(undefined);
+    setIsFastFalling(false);
+    startTimeRef.current = null;
+    if (gameLoopRef.current) clearInterval(gameLoopRef.current);
+    if (timerRef.current) clearInterval(timerRef.current);
+  }, [updateCurrentPiece]);
+
+  const handleRestart = useCallback(() => {
+    // Clear any existing timers/intervals before restarting
+    if (gameLoopRef.current) clearInterval(gameLoopRef.current);
+    if (timerRef.current) clearInterval(timerRef.current);
+    if (lockDelayRef.current) clearTimeout(lockDelayRef.current);
+    clearAutoShift();
+
+    // Immediately start a fresh game (don't return to idle)
+    startGame();
+  }, [clearAutoShift, startGame]);
+
+  // Global keyboard handler for restart
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      // Restart with R key (works during playing or completed/failed, returns to idle)
+      if ((e.key === 'r' || e.key === 'R') && (internalState === 'playing' || internalState === 'completed' || internalState === 'failed')) {
+        e.preventDefault();
+        handleRestart();
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [internalState, handleRestart]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (internalState !== 'playing') return;
+      // Start the game from ready state and process the key that started it
+      if (internalState === 'ready') {
+        e.preventDefault();
+        beginPlaying();
+        // Don't return - let the key be processed below
+      }
+
+      if (internalState !== 'playing' && internalState !== 'ready') return;
 
       // Move Left: Arrow Left, A
       if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
         e.preventDefault();
         if (e.repeat) return;
         keyStateRef.current.left = true;
-        startAutoShift(-1);
+        if (internalState === 'playing') {
+          startAutoShift(-1);
+        }
       }
       // Move Right: Arrow Right, D
       else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
         e.preventDefault();
         if (e.repeat) return;
         keyStateRef.current.right = true;
-        startAutoShift(1);
+        if (internalState === 'playing') {
+          startAutoShift(1);
+        }
       }
       // Soft Drop: Arrow Down, S
       else if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
         e.preventDefault();
-        if (!isFastFalling) {
+        if (internalState === 'playing' && !isFastFalling) {
           setIsFastFalling(true);
         }
       }
       // Rotate Clockwise: Arrow Up, W, X
       else if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W' || e.key === 'x' || e.key === 'X') {
         e.preventDefault();
-        rotatePieceClockwise();
+        if (internalState === 'playing') {
+          rotatePieceClockwise();
+        }
       }
       // Rotate Counter-Clockwise: Z, Ctrl
       else if (e.key === 'z' || e.key === 'Z' || e.key === 'Control') {
         e.preventDefault();
-        rotatePieceCounterClockwise();
+        if (internalState === 'playing') {
+          rotatePieceCounterClockwise();
+        }
       }
       // Hard Drop: Space
       else if (e.key === ' ') {
         e.preventDefault();
-        hardDrop();
+        if (internalState === 'playing') {
+          hardDrop();
+        }
       }
       // Hold: C, Shift
       else if (e.key === 'c' || e.key === 'C' || e.key === 'Shift') {
         e.preventDefault();
-        holdPiece();
+        if (internalState === 'playing') {
+          holdPiece();
+        }
       }
     };
 
@@ -947,7 +1039,8 @@ export default function TetrisGame() {
     clearAutoShift,
     rotatePieceClockwise,
     rotatePieceCounterClockwise,
-    holdPiece
+    holdPiece,
+    beginPlaying
   ]);
 
   useEffect(() => {
@@ -982,52 +1075,6 @@ export default function TetrisGame() {
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [internalState, updateRecentPieces]);
-
-  const startGame = () => {
-    setBoard(Array(BOARD_HEIGHT).fill(null).map(() => Array(BOARD_WIDTH).fill(null)));
-    setLinesCleared(0);
-    setTimeElapsed(0);
-    setRecentPieces(0);
-    piecePlacementTimesRef.current = [];
-    setFinalScore(null);
-    setResult(undefined);
-    setHeldPiece(null);
-    setCanHold(true);
-    setIsFastFalling(false);
-    setInternalState('playing');
-    startTimeRef.current = Date.now();
-
-    // Initialize 7-bag system and piece queue
-    bagRef.current = shuffleBag();
-    const initialPieces = Array.from({ length: 7 }, () => getNextTetrominoFromBag());
-    setNextPieces(initialPieces);
-
-    const [firstPiece, ...rest] = initialPieces;
-    setNextPieces(rest);
-    updateCurrentPiece(createPiece(firstPiece));
-  };
-
-  const handleRestart = () => {
-    startGame();
-  };
-
-  const handleQuit = () => {
-    setInternalState('idle');
-    setBoard(Array(BOARD_HEIGHT).fill(null).map(() => Array(BOARD_WIDTH).fill(null)));
-    updateCurrentPiece(null);
-    setHeldPiece(null);
-    setNextPieces([]);
-    setLinesCleared(0);
-    setTimeElapsed(0);
-    setRecentPieces(0);
-    piecePlacementTimesRef.current = [];
-    setFinalScore(null);
-    setResult(undefined);
-    setIsFastFalling(false);
-    startTimeRef.current = null;
-    if (gameLoopRef.current) clearInterval(gameLoopRef.current);
-    if (timerRef.current) clearInterval(timerRef.current);
-  };
 
   const renderPreviewPiece = (type: TetrominoType | null, size: 'large' | 'medium' | 'small' = 'large') => {
     if (!type) {
@@ -1207,6 +1254,16 @@ export default function TetrisGame() {
                 ) : null
               )
             )}
+
+            {/* Ready State Overlay */}
+            {internalState === 'ready' && (
+              <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-50">
+                <div className="text-amber-400 text-4xl font-bold text-center px-4">
+                  Press any key to start
+                </div>
+              </div>
+            )}
+
           </div>
 
         </div>
@@ -1258,6 +1315,7 @@ export default function TetrisGame() {
 
   const getStatusText = () => {
     if (internalState === 'idle') return 'Press Start to begin';
+    if (internalState === 'ready') return 'Press any key to start';
     if (internalState === 'playing') return `Lines: ${linesCleared}/${GOAL_LINES} · Time: ${Math.floor(timeElapsed)}s`;
     return '';
   };
