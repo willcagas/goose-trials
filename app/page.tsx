@@ -276,7 +276,7 @@ export default function HomePage() {
           </h1>
           <div className="flex flex-col items-center mb-10 md:mb-14 text-center">
             <h2 className="text-lg sm:text-xl md:text-2xl text-white/90 font-semibold mb-3 max-w-2xl">
-              Battle your campus. Climb the ranks.
+              Battle other students. Climb the ranks.
             </h2>
             <p className="text-sm sm:text-base md:text-lg text-white/60 font-medium">
               Six quick games. One leaderboard. See where you rank.
