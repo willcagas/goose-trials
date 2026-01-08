@@ -52,6 +52,7 @@ interface Piece {
   rotation: number;
   position: Position;
   shape: number[][];
+  justRotated?: boolean; // Track if piece just rotated for T-spin detection
 }
 
 type ColorScheme = 'yellow' | 'rainbow';
@@ -415,14 +416,63 @@ export default function TetrisGame() {
     updateCurrentPiece(piece);
   }, [nextPieces, linesCleared, checkCollision, updateCurrentPiece, getNextTetrominoFromBag]);
 
+  // Check if a T-piece is in a T-spin position
+  const checkTSpin = useCallback((piece: Piece, board: (string | null)[][]): boolean => {
+    // Only T pieces can T-spin
+    if (piece.type !== 'T') return false;
+    // Must have just rotated
+    if (!piece.justRotated) return false;
+
+    const {x, y} = piece.position;
+
+    // Check the 4 corners around the T-piece center
+    // The center of T is at different positions based on rotation
+    // For standard T shape [[0,1,0],[1,1,1]], center is at (1, 0) in local coords
+
+    // Get the corners relative to the piece position
+    const corners = [
+      {dx: 0, dy: 0},     // top-left
+      {dx: 2, dy: 0},     // top-right
+      {dx: 0, dy: 2},     // bottom-left
+      {dx: 2, dy: 2}      // bottom-right
+    ];
+
+    let filledCorners = 0;
+
+    for (const corner of corners) {
+      const checkX = x + corner.dx;
+      const checkY = y + corner.dy;
+
+      // Corner is "filled" if out of bounds or has a block
+      if (checkX < 0 || checkX >= BOARD_WIDTH ||
+          checkY < 0 || checkY >= BOARD_HEIGHT ||
+          board[checkY]?.[checkX]) {
+        filledCorners++;
+      }
+    }
+
+    // T-spin requires at least 3 of 4 corners to be filled
+    return filledCorners >= 3;
+  }, []);
+
   const lockPiece = useCallback((piece: Piece) => {
     const newBoard = mergePieceToBoard(piece);
+
+    // Check for T-spin before clearing lines
+    const isTSpin = checkTSpin(piece, boardRef.current);
+
     const { newBoard: clearedBoard, cleared } = clearLines(newBoard);
 
     setBoard(clearedBoard);
     const newLinesCleared = linesCleared + cleared;
     setLinesCleared(newLinesCleared);
     recordPiecePlacement();
+
+    // Show T-spin notification if it occurred
+    if (isTSpin && cleared > 0) {
+      // You can add visual feedback here later if desired
+      console.log(`T-SPIN ${cleared === 1 ? 'Single' : cleared === 2 ? 'Double' : 'Triple'}!`);
+    }
 
     if (newLinesCleared >= GOAL_LINES) {
       const finalTime = startTimeRef.current ? (Date.now() - startTimeRef.current) / 1000 : 0;
@@ -465,7 +515,7 @@ export default function TetrisGame() {
     }
 
     spawnNewPiece();
-  }, [linesCleared, spawnNewPiece, bestScore, me, mergePieceToBoard, recordPiecePlacement]);
+  }, [linesCleared, spawnNewPiece, bestScore, me, mergePieceToBoard, recordPiecePlacement, checkTSpin]);
 
   const moveDown = useCallback(() => {
     if (internalState !== 'playing') return;
@@ -480,7 +530,8 @@ export default function TetrisGame() {
       }
       updateCurrentPiece({
         ...piece,
-        position: { ...piece.position, y: piece.position.y + 1 }
+        position: { ...piece.position, y: piece.position.y + 1 },
+        justRotated: false // Clear rotation flag on movement
       });
     } else {
       // Piece has hit the ground - start lock delay if not already started
@@ -501,7 +552,8 @@ export default function TetrisGame() {
     if (!checkCollision(piece, direction, 0)) {
       const newPiece = {
         ...piece,
-        position: { ...piece.position, x: piece.position.x + direction }
+        position: { ...piece.position, x: piece.position.x + direction },
+        justRotated: false // Clear rotation flag on sideways movement
       };
 
       updateCurrentPiece(newPiece);
@@ -559,7 +611,8 @@ export default function TetrisGame() {
     const newPiece: Piece = {
       ...currentPiece,
       rotation: newRotation,
-      shape: newShape
+      shape: newShape,
+      justRotated: true // Mark that piece just rotated for T-spin detection
     };
 
     if (!checkCollision(newPiece)) {
@@ -634,7 +687,8 @@ export default function TetrisGame() {
     const newPiece: Piece = {
       ...currentPiece,
       rotation: newRotation,
-      shape: newShape
+      shape: newShape,
+      justRotated: true // Mark that piece just rotated for T-spin detection
     };
 
     if (!checkCollision(newPiece)) {
