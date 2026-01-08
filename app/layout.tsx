@@ -9,7 +9,7 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'Goose Trials',
-  description: "Think you're smart? Prove it.",
+  description: "Think You're Smart? Prove It. Battle against other students. Climb the ranks. Seven quick games. One leaderboard. See where you rank",
   icons: {
     icon: [
       { url: '/favicon.ico' },
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: 'Goose Trials',
-    description: "Think you're smart? Prove it.",
+    description: "Think You're Smart? Prove It. Battle against other students. Climb the ranks. Seven quick games. One leaderboard. See where you rank",
     url: 'https://goosetrials.com',
     siteName: 'Goose Trials',
     images: [
