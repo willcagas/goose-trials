@@ -368,9 +368,12 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
               </div>
             </div>
 
-            <p className="text-white/50 text-sm text-center">
-              Some university inboxes take 1–3 minutes; check spam/junk. You can keep playing while you wait.
-            </p>
+            <div className="bg-amber-400/10 border border-amber-400/30 rounded-lg p-3 mt-2">
+              <p className="text-amber-300 text-sm text-center font-medium">
+                ⚠️ Codes may take <strong>2–3 minutes</strong>. Check <strong>spam/junk</strong>. You can keep playing while you wait.
+              </p>
+            </div>
+
 
             <button
               type="button"

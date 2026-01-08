@@ -249,11 +249,15 @@ export default function LeaderboardTestPage() {
   // Determine default scope (only once when me data first loads)
   useEffect(() => {
     if (!meLoading && !scopeInitialized) {
-      // Default to universities tab, which is always available
-      setScope('universities');
+      // Default to campus if user has a university, otherwise universities
+      if (me?.universityId) {
+        setScope('campus');
+      } else {
+        setScope('universities');
+      }
       setScopeInitialized(true);
     }
-  }, [meLoading, scopeInitialized]);
+  }, [meLoading, scopeInitialized, me?.universityId]);
 
   // Fetch test info
   useEffect(() => {
