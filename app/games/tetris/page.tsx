@@ -31,13 +31,13 @@ const TETROMINO_COLORS = {
 };
 
 const TETROMINOS = {
-  I: { shape: [[1, 1, 1, 1]] },
+  I: { shape: [[0, 0, 0, 0], [1, 1, 1, 1], [0, 0, 0, 0], [0, 0, 0, 0]] }, // 4x4 for proper SRS rotation
   O: { shape: [[1, 1], [1, 1]] },
   T: { shape: [[0, 1, 0], [1, 1, 1], [0, 0, 0]] }, // 3x3 with fixed pivot at center
   S: { shape: [[0, 1, 1], [1, 1, 0], [0, 0, 0]] }, // 3x3 with pivot at (1,1)
   Z: { shape: [[1, 1, 0], [0, 1, 1], [0, 0, 0]] }, // 3x3 with pivot at (1,1)
-  L: { shape: [[1, 0], [1, 0], [1, 1]] },
-  J: { shape: [[0, 1], [0, 1], [1, 1]] }
+  L: { shape: [[0, 0, 0], [1, 1, 1], [0, 0, 1]] }, // 3x3 for proper SRS rotation
+  J: { shape: [[0, 0, 0], [1, 1, 1], [1, 0, 0]] }  // 3x3 for proper SRS rotation
 };
 
 type TetrominoType = keyof typeof TETROMINOS;
@@ -66,6 +66,44 @@ const FAST_FALL_SPEED = 30;
 const SIDE_SHIFT_DELAY = 120;
 const SIDE_SHIFT_INTERVAL = 35;
 const LOCK_DELAY = 500; // 500ms lock delay (standard Tetris timing)
+
+// SRS Wall Kick Data - Official Super Rotation System
+// Format: [rotation_from][rotation_to] = array of kick offsets to test
+// Offsets are in (x, y) where positive x is right, positive y is DOWN (in screen coordinates)
+// NOTE: Official SRS uses positive y = UP, so we invert y values for screen coordinates
+type WallKickOffset = { x: number; y: number };
+
+// Wall kicks for J, L, S, T, Z pieces
+// Verified against Tetris Guideline SRS specification
+// Screen coordinates: +X = right, +Y = down
+const SRS_WALL_KICKS: Record<string, WallKickOffset[]> = {
+  // Clockwise rotations
+  '0->1': [{ x: 0, y: 0 }, { x: -1, y: 0 }, { x: -1, y: 1 }, { x: 0, y: -2 }, { x: -1, y: -2 }],
+  '1->2': [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: -1 }, { x: 0, y: 2 }, { x: 1, y: 2 }],
+  '2->3': [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: 1 }, { x: 0, y: -2 }, { x: 1, y: -2 }],
+  '3->0': [{ x: 0, y: 0 }, { x: -1, y: 0 }, { x: -1, y: -1 }, { x: 0, y: 2 }, { x: -1, y: 2 }],
+  // Counter-clockwise rotations
+  '1->0': [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: 1 }, { x: 0, y: -2 }, { x: 1, y: -2 }],
+  '2->1': [{ x: 0, y: 0 }, { x: -1, y: 0 }, { x: -1, y: -1 }, { x: 0, y: 2 }, { x: -1, y: 2 }],
+  '3->2': [{ x: 0, y: 0 }, { x: -1, y: 0 }, { x: -1, y: 1 }, { x: 0, y: -2 }, { x: -1, y: -2 }],
+  '0->3': [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: -1 }, { x: 0, y: 2 }, { x: 1, y: 2 }],
+};
+
+// Wall kicks for I piece (different from other pieces)
+// Verified against Tetris Guideline SRS specification
+// Screen coordinates: +X = right, +Y = down
+const SRS_I_WALL_KICKS: Record<string, WallKickOffset[]> = {
+  // Clockwise rotations
+  '0->1': [{ x: 0, y: 0 }, { x: -2, y: 0 }, { x: 1, y: 0 }, { x: -2, y: -1 }, { x: 1, y: 2 }],
+  '1->2': [{ x: 0, y: 0 }, { x: -1, y: 0 }, { x: 2, y: 0 }, { x: -1, y: 2 }, { x: 2, y: -1 }],
+  '2->3': [{ x: 0, y: 0 }, { x: 2, y: 0 }, { x: -1, y: 0 }, { x: 2, y: 1 }, { x: -1, y: -2 }],
+  '3->0': [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: -2, y: 0 }, { x: 1, y: -2 }, { x: -2, y: 1 }],
+  // Counter-clockwise rotations
+  '1->0': [{ x: 0, y: 0 }, { x: 2, y: 0 }, { x: -1, y: 0 }, { x: 2, y: 1 }, { x: -1, y: -2 }],
+  '2->1': [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: -2, y: 0 }, { x: 1, y: -2 }, { x: -2, y: 1 }],
+  '3->2': [{ x: 0, y: 0 }, { x: -2, y: 0 }, { x: 1, y: 0 }, { x: -2, y: -1 }, { x: 1, y: 2 }],
+  '0->3': [{ x: 0, y: 0 }, { x: -1, y: 0 }, { x: 2, y: 0 }, { x: -1, y: 2 }, { x: 2, y: -1 }],
+};
 
 type InternalGameState = 'idle' | 'ready' | 'playing' | 'completed' | 'failed';
 
@@ -109,6 +147,7 @@ export default function TetrisGame() {
   const shiftIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const shiftDirectionRef = useRef<number | null>(null);
   const keyStateRef = useRef({ left: false, right: false });
+  const suppressSidewaysRef = useRef(false); // One-frame movement immunity after rotation
 
   useEffect(() => {
     boardRef.current = board;
@@ -261,23 +300,20 @@ export default function TetrisGame() {
   };
 
   const createPiece = (type: TetrominoType, rotation: number = 0): Piece => {
-    // J piece spawns rotated 90 degrees clockwise (rotation 1)
-    // L piece spawns rotated 270 degrees (rotation 3) to mirror J
-    let initialRotation = 0;
-    if (type === 'J') initialRotation = 1;
-    if (type === 'L') initialRotation = 3;
-
-    const finalRotation = (initialRotation + rotation) % 4;
-
     let shape = TETROMINOS[type].shape;
-    for (let i = 0; i < finalRotation; i++) {
+
+    // Apply any initial rotations
+    for (let i = 0; i < rotation; i++) {
       shape = rotatePiece(shape);
     }
 
+    // Calculate spawn position - center horizontally at top of board
+    const spawnX = Math.floor(BOARD_WIDTH / 2) - Math.floor(shape[0].length / 2);
+
     return {
       type,
-      rotation: finalRotation,
-      position: { x: Math.floor(BOARD_WIDTH / 2) - Math.floor(shape[0].length / 2), y: 0 },
+      rotation,
+      position: { x: spawnX, y: 0 },
       shape
     };
   };
@@ -328,6 +364,8 @@ export default function TetrisGame() {
       offsetY: number = 0,
       boardState: (string | null)[][] = boardRef.current
     ): boolean => {
+      const debugThis = (piece.type === 'L' || piece.type === 'J') && (piece.position.x <= 1 || piece.position.x >= 7) && piece.justRotated;
+
       for (let y = 0; y < piece.shape.length; y++) {
         for (let x = 0; x < piece.shape[y].length; x++) {
           if (piece.shape[y][x]) {
@@ -335,14 +373,23 @@ export default function TetrisGame() {
             const boardY = piece.position.y + y + offsetY;
 
             if (boardX < 0 || boardX >= BOARD_WIDTH || boardY >= BOARD_HEIGHT) {
+              if (debugThis) {
+                console.log(`  Collision: block at shape(${x},${y}) -> board(${boardX},${boardY}) OUT OF BOUNDS`);
+              }
               return true;
             }
 
             if (boardY >= 0 && boardState[boardY][boardX]) {
+              if (debugThis) {
+                console.log(`  Collision: block at shape(${x},${y}) -> board(${boardX},${boardY}) OCCUPIED`);
+              }
               return true;
             }
           }
         }
+      }
+      if (debugThis) {
+        console.log(`  No collision detected`);
       }
       return false;
     },
@@ -543,6 +590,7 @@ export default function TetrisGame() {
   }, [internalState, checkCollision, lockPiece, updateCurrentPiece]);
 
   const moveSideways = useCallback((direction: number) => {
+    if (suppressSidewaysRef.current) return;
     if (internalState !== 'playing') return;
     const piece = currentPieceRef.current;
     if (!piece) return;
@@ -576,11 +624,16 @@ export default function TetrisGame() {
     }
   }, [internalState, checkCollision, updateCurrentPiece, lockPiece]);
 
-  const startAutoShift = useCallback((direction: number) => {
+  const startAutoShift = useCallback((direction: number, immediate: boolean = true) => {
     if (internalState !== 'playing') return;
     clearAutoShift();
     shiftDirectionRef.current = direction;
-    moveSideways(direction);
+
+    // Only apply immediate movement if requested (not after rotation)
+    if (immediate) {
+      moveSideways(direction);
+    }
+
     shiftTimeoutRef.current = setTimeout(() => {
       shiftIntervalRef.current = setInterval(() => {
         moveSideways(direction);
@@ -601,157 +654,211 @@ export default function TetrisGame() {
     }
   }, [internalState, clearAutoShift]);
 
-  const rotatePieceClockwise = () => {
-    if (!currentPiece || internalState !== 'playing') return;
+  const rotatePieceClockwise = useCallback(() => {
+    if (internalState !== 'playing') return;
 
-    const newRotation = (currentPiece.rotation + 1) % 4;
-    const newShape = rotatePiece(currentPiece.shape);
-    const newPiece: Piece = {
-      ...currentPiece,
-      rotation: newRotation,
-      shape: newShape,
-      justRotated: true // Mark that piece just rotated for T-spin detection
-    };
+    // CRITICAL: Clear auto-shift BEFORE reading piece position
+    // This prevents auto-shift from moving the piece to the wall
+    // just before rotation is tested (which breaks L/J specifically)
+    const wasAutoShifting = shiftDirectionRef.current !== null;
+    const savedDirection = shiftDirectionRef.current;
+    if (wasAutoShifting) {
+      clearAutoShift();
+    }
 
-    if (!checkCollision(newPiece)) {
-      updateCurrentPiece(newPiece);
+    // Use ref to get the most current piece state, avoiding race conditions with setState
+    const piece = currentPieceRef.current;
+    if (!piece) return;
 
-      // If piece is on the ground after rotation, start/reset lock delay
-      if (checkCollision(newPiece, 0, 1)) {
-        if (lockDelayRef.current) {
-          clearTimeout(lockDelayRef.current);
-        }
-        lockDelayRef.current = setTimeout(() => {
-          lockPiece(currentPieceRef.current!);
-          lockDelayRef.current = null;
-        }, LOCK_DELAY);
-      } else {
-        // Piece is not on ground, clear any existing lock delay
-        if (lockDelayRef.current) {
-          clearTimeout(lockDelayRef.current);
-          lockDelayRef.current = null;
-        }
+    // O piece doesn't rotate
+    if (piece.type === 'O') {
+      // Restore auto-shift for O piece since it doesn't rotate
+      if (wasAutoShifting &&
+          ((savedDirection === -1 && keyStateRef.current.left) ||
+           (savedDirection === 1 && keyStateRef.current.right))) {
+        startAutoShift(savedDirection);
       }
-    } else {
-      // SRS wall kicks - different for I piece vs other pieces
-      const isIPiece = currentPiece.type === 'I';
-      const wallKicks = isIPiece ? [
-        { x: -1, y: 0 },
-        { x: 2, y: 0 },
-        { x: -1, y: -2 },
-        { x: 2, y: 1 }
-      ] : [
-        { x: -1, y: 0 },
-        { x: -1, y: -1 },
-        { x: 0, y: 2 },
-        { x: -1, y: 2 }
-      ];
+      return;
+    }
 
-      for (const kick of wallKicks) {
-        newPiece.position = {
-          x: currentPiece.position.x + kick.x,
-          y: currentPiece.position.y + kick.y
-        };
-        if (!checkCollision(newPiece)) {
-          updateCurrentPiece(newPiece);
+    const oldRotation = piece.rotation;
+    const newRotation = (oldRotation + 1) % 4;
+    const newShape = rotatePiece(piece.shape);
 
-          // If piece is on the ground after rotation, start/reset lock delay
-          if (checkCollision(newPiece, 0, 1)) {
-            if (lockDelayRef.current) {
-              clearTimeout(lockDelayRef.current);
-            }
-            lockDelayRef.current = setTimeout(() => {
-              lockPiece(currentPieceRef.current!);
-              lockDelayRef.current = null;
-            }, LOCK_DELAY);
-          } else {
-            // Piece is not on ground, clear any existing lock delay
-            if (lockDelayRef.current) {
-              clearTimeout(lockDelayRef.current);
-              lockDelayRef.current = null;
-            }
-          }
-          return;
+    // Get the appropriate wall kick table
+    const kickTable = piece.type === 'I' ? SRS_I_WALL_KICKS : SRS_WALL_KICKS;
+    const kickKey = `${oldRotation}->${newRotation}`;
+    const kicks = kickTable[kickKey] || [{ x: 0, y: 0 }];
+
+    // Try each kick offset in order
+    for (const kick of kicks) {
+      const testPiece: Piece = {
+        ...piece,
+        rotation: newRotation,
+        shape: newShape,
+        position: {
+          x: piece.position.x + kick.x,
+          y: piece.position.y + kick.y
+        },
+        justRotated: true // Mark for T-spin detection
+      };
+
+      // DEBUG: Log rotation attempts for L/J pieces near walls
+      if ((piece.type === 'L' || piece.type === 'J') && (piece.position.x <= 1 || piece.position.x >= 7)) {
+        console.log(`[${piece.type}] Rotation ${piece.rotation}->${newRotation}, pos:(${piece.position.x},${piece.position.y}), kick:(${kick.x},${kick.y}), testPos:(${testPiece.position.x},${testPiece.position.y})`);
+        console.log('Shape:', newShape);
+      }
+
+      if (!checkCollision(testPiece)) {
+        // Rotation successful with this kick
+        updateCurrentPiece(testPiece);
+
+        // Block sideways movement for one frame to prevent undoing wall kicks
+        suppressSidewaysRef.current = true;
+        queueMicrotask(() => {
+          suppressSidewaysRef.current = false;
+        });
+
+        // Restart auto-shift if key is still held, but WITHOUT immediate movement
+        // This prevents the piece from being pushed back into the wall after a valid kick
+        if (wasAutoShifting &&
+            ((savedDirection === -1 && keyStateRef.current.left) ||
+             (savedDirection === 1 && keyStateRef.current.right))) {
+          startAutoShift(savedDirection, false);  // false = no immediate movement
         }
+
+        // Handle lock delay
+        if (checkCollision(testPiece, 0, 1)) {
+          // Piece is on the ground - reset lock delay
+          if (lockDelayRef.current) {
+            clearTimeout(lockDelayRef.current);
+          }
+          lockDelayRef.current = setTimeout(() => {
+            lockPiece(currentPieceRef.current!);
+            lockDelayRef.current = null;
+          }, LOCK_DELAY);
+        } else {
+          // Piece is not on ground - clear lock delay
+          if (lockDelayRef.current) {
+            clearTimeout(lockDelayRef.current);
+            lockDelayRef.current = null;
+          }
+        }
+        return;
       }
     }
-  };
 
-  const rotatePieceCounterClockwise = () => {
-    if (!currentPiece || internalState !== 'playing') return;
+    // All kicks failed - rotation not possible
+    // Restore auto-shift since rotation failed, with immediate movement
+    if (wasAutoShifting &&
+        ((savedDirection === -1 && keyStateRef.current.left) ||
+         (savedDirection === 1 && keyStateRef.current.right))) {
+      startAutoShift(savedDirection, true);  // true = immediate movement (default)
+    }
+  }, [internalState, checkCollision, updateCurrentPiece, lockPiece, clearAutoShift, startAutoShift]);
 
-    const newRotation = (currentPiece.rotation - 1 + 4) % 4;
-    const newShape = rotatePieceCounterClockwiseShape(currentPiece.shape);
-    const newPiece: Piece = {
-      ...currentPiece,
-      rotation: newRotation,
-      shape: newShape,
-      justRotated: true // Mark that piece just rotated for T-spin detection
-    };
+  const rotatePieceCounterClockwise = useCallback(() => {
+    if (internalState !== 'playing') return;
 
-    if (!checkCollision(newPiece)) {
-      updateCurrentPiece(newPiece);
+    // CRITICAL: Clear auto-shift BEFORE reading piece position
+    // This prevents auto-shift from moving the piece to the wall
+    // just before rotation is tested (which breaks L/J specifically)
+    const wasAutoShifting = shiftDirectionRef.current !== null;
+    const savedDirection = shiftDirectionRef.current;
+    if (wasAutoShifting) {
+      clearAutoShift();
+    }
 
-      // If piece is on the ground after rotation, start/reset lock delay
-      if (checkCollision(newPiece, 0, 1)) {
-        if (lockDelayRef.current) {
-          clearTimeout(lockDelayRef.current);
-        }
-        lockDelayRef.current = setTimeout(() => {
-          lockPiece(currentPieceRef.current!);
-          lockDelayRef.current = null;
-        }, LOCK_DELAY);
-      } else {
-        // Piece is not on ground, clear any existing lock delay
-        if (lockDelayRef.current) {
-          clearTimeout(lockDelayRef.current);
-          lockDelayRef.current = null;
-        }
+    // Use ref to get the most current piece state, avoiding race conditions with setState
+    const piece = currentPieceRef.current;
+    if (!piece) return;
+
+    // O piece doesn't rotate
+    if (piece.type === 'O') {
+      // Restore auto-shift for O piece since it doesn't rotate
+      if (wasAutoShifting &&
+          ((savedDirection === -1 && keyStateRef.current.left) ||
+           (savedDirection === 1 && keyStateRef.current.right))) {
+        startAutoShift(savedDirection, true);  // true = default immediate movement
       }
-    } else {
-      // SRS wall kicks for counter-clockwise - different for I piece vs other pieces
-      const isIPiece = currentPiece.type === 'I';
-      const wallKicks = isIPiece ? [
-        { x: 1, y: 0 },
-        { x: -2, y: 0 },
-        { x: 1, y: 2 },
-        { x: -2, y: -1 }
-      ] : [
-        { x: 1, y: 0 },
-        { x: 1, y: -1 },
-        { x: 0, y: 2 },
-        { x: 1, y: 2 }
-      ];
+      return;
+    }
 
-      for (const kick of wallKicks) {
-        newPiece.position = {
-          x: currentPiece.position.x + kick.x,
-          y: currentPiece.position.y + kick.y
-        };
-        if (!checkCollision(newPiece)) {
-          updateCurrentPiece(newPiece);
+    const oldRotation = piece.rotation;
+    const newRotation = (oldRotation - 1 + 4) % 4;
+    const newShape = rotatePieceCounterClockwiseShape(piece.shape);
 
-          // If piece is on the ground after rotation, start/reset lock delay
-          if (checkCollision(newPiece, 0, 1)) {
-            if (lockDelayRef.current) {
-              clearTimeout(lockDelayRef.current);
-            }
-            lockDelayRef.current = setTimeout(() => {
-              lockPiece(currentPieceRef.current!);
-              lockDelayRef.current = null;
-            }, LOCK_DELAY);
-          } else {
-            // Piece is not on ground, clear any existing lock delay
-            if (lockDelayRef.current) {
-              clearTimeout(lockDelayRef.current);
-              lockDelayRef.current = null;
-            }
-          }
-          return;
+    // Get the appropriate wall kick table
+    const kickTable = piece.type === 'I' ? SRS_I_WALL_KICKS : SRS_WALL_KICKS;
+    const kickKey = `${oldRotation}->${newRotation}`;
+    const kicks = kickTable[kickKey] || [{ x: 0, y: 0 }];
+
+    // Try each kick offset in order
+    for (const kick of kicks) {
+      const testPiece: Piece = {
+        ...piece,
+        rotation: newRotation,
+        shape: newShape,
+        position: {
+          x: piece.position.x + kick.x,
+          y: piece.position.y + kick.y
+        },
+        justRotated: true // Mark for T-spin detection
+      };
+
+      // DEBUG: Log rotation attempts for L/J pieces near walls
+      if ((piece.type === 'L' || piece.type === 'J') && (piece.position.x <= 1 || piece.position.x >= 7)) {
+        console.log(`[${piece.type}] Rotation ${piece.rotation}->${newRotation}, pos:(${piece.position.x},${piece.position.y}), kick:(${kick.x},${kick.y}), testPos:(${testPiece.position.x},${testPiece.position.y})`);
+        console.log('Shape:', newShape);
+      }
+
+      if (!checkCollision(testPiece)) {
+        // Rotation successful with this kick
+        updateCurrentPiece(testPiece);
+
+        // Block sideways movement for one frame to prevent undoing wall kicks
+        suppressSidewaysRef.current = true;
+        queueMicrotask(() => {
+          suppressSidewaysRef.current = false;
+        });
+
+        // Restart auto-shift if key is still held, but WITHOUT immediate movement
+        // This prevents the piece from being pushed back into the wall after a valid kick
+        if (wasAutoShifting &&
+            ((savedDirection === -1 && keyStateRef.current.left) ||
+             (savedDirection === 1 && keyStateRef.current.right))) {
+          startAutoShift(savedDirection, false);  // false = no immediate movement
         }
+
+        // Handle lock delay
+        if (checkCollision(testPiece, 0, 1)) {
+          // Piece is on the ground - reset lock delay
+          if (lockDelayRef.current) {
+            clearTimeout(lockDelayRef.current);
+          }
+          lockDelayRef.current = setTimeout(() => {
+            lockPiece(currentPieceRef.current!);
+            lockDelayRef.current = null;
+          }, LOCK_DELAY);
+        } else {
+          // Piece is not on ground - clear lock delay
+          if (lockDelayRef.current) {
+            clearTimeout(lockDelayRef.current);
+            lockDelayRef.current = null;
+          }
+        }
+        return;
       }
     }
-  };
+
+    // All kicks failed - rotation not possible
+    // Restore auto-shift since rotation failed, with immediate movement
+    if (wasAutoShifting &&
+        ((savedDirection === -1 && keyStateRef.current.left) ||
+         (savedDirection === 1 && keyStateRef.current.right))) {
+      startAutoShift(savedDirection, true);  // true = immediate movement (default)
+    }
+  }, [internalState, checkCollision, updateCurrentPiece, lockPiece, clearAutoShift, startAutoShift]);
 
   const hardDrop = useCallback(() => {
     if (!currentPiece || internalState !== 'playing') return;
@@ -1081,17 +1188,7 @@ export default function TetrisGame() {
       return <div className="flex items-center justify-center h-full text-gray-400 text-xs">EMPTY</div>;
     }
 
-    // Get the shape with the same initial rotation as it spawns
-    let shape = TETROMINOS[type].shape;
-    // J piece spawns rotated 90 degrees
-    if (type === 'J') {
-      shape = rotatePiece(shape);
-    }
-    // L piece spawns rotated 270 degrees (3 times)
-    if (type === 'L') {
-      shape = rotatePiece(rotatePiece(rotatePiece(shape)));
-    }
-
+    const shape = TETROMINOS[type].shape;
     const color = getPieceColor(type);
     const blockSize = size === 'large' ? 22 : size === 'medium' ? 16 : 12;
 
