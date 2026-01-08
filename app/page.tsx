@@ -1,11 +1,11 @@
 'use client';
 import Link from 'next/link';
-import {useSession} from '@/app/providers/SessionContext';
-import {useMe} from '@/app/providers/MeContext';
+import { useSession } from '@/app/providers/SessionContext';
+import { useMe } from '@/app/providers/MeContext';
 import Navbar from '@/components/Navbar';
 import LoginModal from '@/components/LoginModal';
-import {useEffect, useRef, useState, useCallback} from 'react';
-import {Zap, Hash, Eye, Layers, Route, Target, Trophy, Box} from 'lucide-react';
+import { useEffect, useRef, useState, useCallback } from 'react';
+import { Zap, Hash, Eye, Layers, Route, Target, Trophy, Box } from 'lucide-react';
 
 interface FlyingGoose {
   id: number;
@@ -24,9 +24,9 @@ interface ProtocolCardProps {
   isVisible: boolean;
 }
 
-function ProtocolCard({number, title, desc, delay, isVisible}: ProtocolCardProps) {
+function ProtocolCard({ number, title, desc, delay, isVisible }: ProtocolCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
-  const [rotate, setRotate] = useState({x: 0, y: 0});
+  const [rotate, setRotate] = useState({ x: 0, y: 0 });
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!cardRef.current) return;
@@ -36,20 +36,20 @@ function ProtocolCard({number, title, desc, delay, isVisible}: ProtocolCardProps
     const y = e.clientY - rect.top;
     const centerX = rect.width / 2;
     const centerY = rect.height / 2;
-    
+
     const rotateX = ((y - centerY) / centerY) * -15;
     const rotateY = ((x - centerX) / centerX) * 15;
-    
-    setRotate({x: rotateX, y: rotateY});
+
+    setRotate({ x: rotateX, y: rotateY });
   };
 
   const handleMouseLeave = () => {
-    setRotate({x: 0, y: 0});
+    setRotate({ x: 0, y: 0 });
   };
 
   return (
     <div className={`h-full ${isVisible ? `opacity-100 translate-y-0 ${delay || ''}` : 'opacity-0 translate-y-10'} transition-all duration-700`}>
-      <div 
+      <div
         ref={cardRef}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
@@ -66,11 +66,11 @@ function ProtocolCard({number, title, desc, delay, isVisible}: ProtocolCardProps
             </div>
             <div className="w-8 h-8 border-t-2 border-r-2 border-gray-200 group-hover:border-amber-400/50 transition-colors duration-300" />
           </div>
-          
+
           <h3 className="text-2xl font-bold mb-3 text-gray-900 group-hover:translate-x-2 transition-transform duration-300 relative z-10">
             {title}
           </h3>
-          
+
           <p className="text-gray-500 text-sm leading-relaxed group-hover:text-gray-600 transition-colors duration-300 relative z-10 flex-1">
             {desc}
           </p>
@@ -92,7 +92,7 @@ function ProtocolSection() {
           setIsVisible(true);
         }
       },
-      {threshold: 0.1}
+      { threshold: 0.1 }
     );
 
     if (sectionRef.current) {
@@ -113,7 +113,7 @@ function ProtocolSection() {
       number: "02",
       title: "Run the Trials",
       desc: "Seven fast challenges designed to test focus, speed, and execution.",
-    },    
+    },
     {
       number: "03",
       title: "Own Your Rank",
@@ -121,7 +121,7 @@ function ProtocolSection() {
       delay: "delay-450",
     }
   ];
-  
+
 
   return (
     <section ref={sectionRef} className="relative z-10 px-4 py-16 md:py-20 bg-gray-50">
@@ -162,8 +162,8 @@ interface LeaderboardEntry {
 }
 
 export default function HomePage() {
-  const {loading, user} = useSession();
-  const {me} = useMe();
+  const { loading, user } = useSession();
+  const { me } = useMe();
   const [geese, setGeese] = useState<FlyingGoose[]>([]);
   const gooseIdRef = useRef(0);
   const [tests, setTests] = useState<Test[]>([]);
@@ -181,7 +181,7 @@ export default function HomePage() {
           y: goose.y + goose.velocityY
         })).filter(goose => {
           return goose.x > -200 && goose.x < window.innerWidth + 200 &&
-                 goose.y > -200 && goose.y < window.innerHeight + 200;
+            goose.y > -200 && goose.y < window.innerHeight + 200;
         });
       });
     }, 16);
@@ -193,19 +193,19 @@ export default function HomePage() {
     const side = Math.floor(Math.random() * 4);
     let startX, startY, angle;
     const speed = 8 + Math.random() * 7;
-    switch(side) {
+    switch (side) {
       case 0: startX = Math.random() * window.innerWidth; startY = -200; angle = Math.PI / 2 + (Math.random() - 0.5) * Math.PI / 2; break;
       case 1: startX = window.innerWidth + 200; startY = Math.random() * window.innerHeight; angle = Math.PI + (Math.random() - 0.5) * Math.PI / 2; break;
       case 2: startX = Math.random() * window.innerWidth; startY = window.innerHeight + 200; angle = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI / 2; break;
       default: startX = -200; startY = Math.random() * window.innerHeight; angle = (Math.random() - 0.5) * Math.PI / 2; break;
     }
-    const newGoose: FlyingGoose = { 
-      id: gooseIdRef.current++, 
-      x: startX, 
-      y: startY, 
-      angle: angle, 
-      velocityX: Math.cos(angle) * speed, 
-      velocityY: Math.sin(angle) * speed 
+    const newGoose: FlyingGoose = {
+      id: gooseIdRef.current++,
+      x: startX,
+      y: startY,
+      angle: angle,
+      velocityX: Math.cos(angle) * speed,
+      velocityY: Math.sin(angle) * speed
     };
     setGeese(prev => [...prev, newGoose]);
   }, []);
@@ -227,7 +227,7 @@ export default function HomePage() {
         if (response.ok) {
           const { data } = await response.json();
           setTests(data || []);
-          
+
           // Fetch full leaderboard for each test (to get player count and user rank)
           const leaderboardPromises = (data || []).map(async (test: Test) => {
             try {
@@ -241,7 +241,7 @@ export default function HomePage() {
             }
             return { slug: test.slug, leaders: [] };
           });
-          
+
           const leaderboardResults = await Promise.all(leaderboardPromises);
           const leaderboardMap: Record<string, LeaderboardEntry[]> = {};
           leaderboardResults.forEach(({ slug, leaders }) => {
@@ -266,7 +266,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-gray-60 text-gray-900 relative overflow-hidden" onClick={handleClick}>
-      
+
       {/* SPRITESHEET GEESE LAYER */}
       {geese.map(goose => (
         <div
@@ -283,7 +283,7 @@ export default function HomePage() {
       ))}
 
       <Navbar />
-      
+
       {/* Hero Section */}
       <section className="relative z-10 px-6 py-12 md:py-20 bg-[#0a0a0a] text-white min-h-[85vh] md:min-h-[calc(100vh-4rem)] flex items-center justify-center overflow-hidden">
         {/* Ceiling light bar effect - horizontal light source */}
@@ -342,7 +342,7 @@ export default function HomePage() {
               { href: "/games/reaction-time", tag: "REACTION", icon: Zap, title: "Reaction Time", desc: "Test your reflexes with split-second timing challenges." },
               { href: "/games/number-memory", tag: "MEMORY", icon: Hash, title: "Number Memory", desc: "Remember and recall increasingly long number sequences." },
               { href: "/games/chimp", tag: "VISUAL", icon: Eye, title: "Chimp Test", desc: "Master pattern recognition and working memory." },
-              { href: "/games/aim-trainer", tag: "ACCURACY", icon: Target, title: "Aim Trainer", desc: "Hit targets as quick as possible to test accuracy." },
+              { href: "/games/aim-trainer", tag: "ACCURACY", icon: Target, title: "Aim Trainer", desc: "Hit targets as quickly as possible to test accuracy." },
               { href: "/games/pathfinding", tag: "SPATIAL", icon: Route, title: "Pathfinding", desc: "Navigate mazes and find the shortest route." },
               { href: "/games/tetris", tag: "SPEED", icon: Box, title: "Tetris", desc: "Clear 15 lines as fast as possible.", mobileOnly: true }
             ].map((trial, idx) => {
@@ -362,11 +362,10 @@ export default function HomePage() {
                   }}
                   className={isDisabledOnMobile ? "cursor-pointer md:cursor-pointer" : "cursor-pointer"}
                 >
-                  <div className={`relative overflow-hidden group p-8 rounded-3xl border-2 transition-all shadow-sm h-full flex flex-col ${
-                    isDisabledOnMobile
+                  <div className={`relative overflow-hidden group p-8 rounded-3xl border-2 transition-all shadow-sm h-full flex flex-col ${isDisabledOnMobile
                       ? "bg-gray-100 border-gray-300 md:bg-white md:border-gray-200 md:hover:border-amber-400 md:active:scale-[0.98] md:hover:shadow-md"
                       : "bg-white border-gray-200 hover:border-amber-400 active:scale-[0.98] hover:shadow-md"
-                  }`}>
+                    }`}>
                     {/* Mobile Not Supported Badge - Only visible on mobile for Tetris */}
                     {isDisabledOnMobile && (
                       <div className="absolute top-4 left-4 md:hidden">
@@ -377,11 +376,10 @@ export default function HomePage() {
                     )}
 
                     <div className="absolute top-0 right-0 p-4">
-                      <span className={`px-3 py-1 text-[10px] font-bold uppercase rounded-full border ${
-                        isDisabledOnMobile
+                      <span className={`px-3 py-1 text-[10px] font-bold uppercase rounded-full border ${isDisabledOnMobile
                           ? "bg-gray-300/50 text-gray-500 border-gray-400/30 md:bg-amber-400/10 md:text-amber-500 md:border-amber-400/30"
                           : "bg-amber-400/10 text-amber-500 border-amber-400/30"
-                      }`}>
+                        }`}>
                         {trial.tag}
                       </span>
                     </div>
@@ -395,11 +393,10 @@ export default function HomePage() {
                       {trial.desc}
                     </p>
                     <div className="w-full h-1 bg-gray-200 rounded-full overflow-hidden">
-                      <div className={`h-full w-0 transition-all duration-700 ${
-                        isDisabledOnMobile
+                      <div className={`h-full w-0 transition-all duration-700 ${isDisabledOnMobile
                           ? "bg-gray-400 md:bg-amber-400 md:group-hover:w-full"
                           : "bg-amber-400 group-hover:w-full"
-                      }`}></div>
+                        }`}></div>
                     </div>
                   </div>
                 </a>
@@ -455,12 +452,12 @@ export default function HomePage() {
                 className="w-full px-6 py-3 bg-amber-400 hover:bg-amber-300 text-gray-900 font-bold text-sm uppercase tracking-widest rounded-lg shadow-lg hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2 group"
               >
                 <span>Sign in with your university email to view your rank</span>
-                <svg 
-                  xmlns="http://www.w3.org/2000/svg" 
-                  fill="none" 
-                  viewBox="0 0 24 24" 
-                  strokeWidth={2.5} 
-                  stroke="currentColor" 
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={2.5}
+                  stroke="currentColor"
                   className="w-4 h-4 transform group-hover:translate-x-1 transition-transform"
                 >
                   <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
@@ -503,57 +500,58 @@ export default function HomePage() {
                 });
 
                 return sortedTests.map((test) => {
-                const leaders = leaderboards[test.slug] || [];
-                const playerCount = leaders.length;
-                const userEntry = me?.isLoggedIn ? leaders.find(entry => entry.is_you) : null;
+                  const leaders = leaderboards[test.slug] || [];
+                  const playerCount = leaders.length;
+                  const userEntry = me?.isLoggedIn ? leaders.find(entry => entry.is_you) : null;
 
-                return (
-                  <Link
-                    key={test.slug}
-                    href={`/leaderboard/${test.slug}`}
-                    onClick={(e) => e.stopPropagation()}
-                    className="group block cursor-pointer"
-                  >
-                    <div className="relative overflow-hidden px-6 py-4 rounded-xl bg-white border border-gray-200 hover:border-amber-400 hover:shadow-md active:scale-[0.99] transition-all cursor-pointer">
-                      <div className="flex items-center justify-between gap-4">
-                        {/* Left: Trophy Icon & Title */}
-                        <div className="flex items-center gap-4 flex-1 min-w-0">
-                          <Trophy className="w-6 h-6 text-amber-400 flex-shrink-0 group-hover:scale-110 transition-transform" />
-                          <h3 className="text-lg font-bold text-gray-900 uppercase group-hover:text-amber-600 transition-colors truncate">
-                            {test.name}
-                          </h3>
-                        </div>
-
-                        {/* Right: Stats */}
-                        <div className="flex items-center gap-6 flex-shrink-0">
-                          {/* User Rank (if logged in and has played) */}
-                          {userEntry && (
-                            <div className="text-right">
-                              <div className="text-xs text-gray-500 uppercase tracking-wide">Your Rank</div>
-                              <div className="text-lg font-bold text-amber-600">
-                                #{userEntry.rank}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Player Count */}
-                          <div className="text-right">
-                            <div className="text-xs text-gray-500 uppercase tracking-wide">Players</div>
-                            <div className="text-lg font-bold text-gray-900">
-                              {playerCount > 0 ? playerCount : '—'}
-                            </div>
+                  return (
+                    <Link
+                      key={test.slug}
+                      href={`/leaderboard/${test.slug}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="group block cursor-pointer"
+                    >
+                      <div className="relative overflow-hidden px-6 py-4 rounded-xl bg-white border border-gray-200 hover:border-amber-400 hover:shadow-md active:scale-[0.99] transition-all cursor-pointer">
+                        <div className="flex items-center justify-between gap-4">
+                          {/* Left: Trophy Icon & Title */}
+                          <div className="flex items-center gap-4 flex-1 min-w-0">
+                            <Trophy className="w-6 h-6 text-amber-400 flex-shrink-0 group-hover:scale-110 transition-transform" />
+                            <h3 className="text-lg font-bold text-gray-900 uppercase group-hover:text-amber-600 transition-colors truncate">
+                              {test.name}
+                            </h3>
                           </div>
 
-                          {/* Arrow */}
-                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 text-amber-400 group-hover:translate-x-1 transition-transform">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-                          </svg>
+                          {/* Right: Stats */}
+                          <div className="flex items-center gap-6 flex-shrink-0">
+                            {/* User Rank (if logged in and has played) */}
+                            {userEntry && (
+                              <div className="text-right">
+                                <div className="text-xs text-gray-500 uppercase tracking-wide">Your Rank</div>
+                                <div className="text-lg font-bold text-amber-600">
+                                  #{userEntry.rank}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Player Count */}
+                            <div className="text-right">
+                              <div className="text-xs text-gray-500 uppercase tracking-wide">Players</div>
+                              <div className="text-lg font-bold text-gray-900">
+                                {playerCount > 0 ? playerCount : '—'}
+                              </div>
+                            </div>
+
+                            {/* Arrow */}
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 text-amber-400 group-hover:translate-x-1 transition-transform">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                            </svg>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </Link>
-                );
-              })})()}
+                    </Link>
+                  );
+                })
+              })()}
             </div>
           )}
         </div>
