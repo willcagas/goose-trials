@@ -39,6 +39,12 @@ export interface GetTopUniversitiesParams {
   countryCode?: string | null;
 }
 
+export interface GetPlayerCountParams {
+  testSlug: string;
+  universityId?: string | null;
+  countryCode?: string | null;
+}
+
 /**
  * Get leaderboard data for a specific test (individual players)
  * 
@@ -109,6 +115,41 @@ export async function getLeaderboard(
     console.error('Unexpected error in getLeaderboard:', error);
     return {
       data: [],
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+/**
+ * Get total count of authenticated players for a specific test
+ * 
+ * @param params - Player count query parameters
+ * @returns Total player count or 0 on error
+ */
+export async function getPlayerCount(
+  params: GetPlayerCountParams
+): Promise<{ count: number; error?: string }> {
+  try {
+    const supabase = await createClient();
+    
+    const { testSlug, universityId = null, countryCode = null } = params;
+
+    const { data, error } = await supabase.rpc('get_player_count', {
+      p_test_slug: testSlug,
+      p_university_id: universityId,
+      p_country_code: countryCode,
+    });
+
+    if (error) {
+      console.error('Error calling get_player_count RPC:', error);
+      return { count: 0, error: error.message };
+    }
+
+    return { count: data ?? 0 };
+  } catch (error) {
+    console.error('Unexpected error in getPlayerCount:', error);
+    return {
+      count: 0,
       error: error instanceof Error ? error.message : 'Unknown error',
     };
   }

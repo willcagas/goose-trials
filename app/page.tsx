@@ -169,6 +169,7 @@ export default function HomePage() {
   const [tests, setTests] = useState<Test[]>([]);
   const [testsLoading, setTestsLoading] = useState(true);
   const [leaderboards, setLeaderboards] = useState<Record<string, LeaderboardEntry[]>>({});
+  const [playerCounts, setPlayerCounts] = useState<Record<string, number>>({});
   const [showLogin, setShowLogin] = useState(false);
 
   // Animation loop for geese movement
@@ -233,21 +234,30 @@ export default function HomePage() {
             try {
               const leaderResponse = await fetch(`/api/leaderboard?test_slug=${test.slug}&limit=50`);
               if (leaderResponse.ok) {
-                const { data: leaderData } = await leaderResponse.json();
-                return { slug: test.slug, leaders: leaderData || [] };
+                const { data: leaderData, totalCount } = await leaderResponse.json();
+                return { 
+                  slug: test.slug, 
+                  leaders: leaderData || [],
+                  totalCount: totalCount ?? null
+                };
               }
             } catch (error) {
               console.error(`Error fetching leaders for ${test.slug}:`, error);
             }
-            return { slug: test.slug, leaders: [] };
+            return { slug: test.slug, leaders: [], totalCount: null };
           });
 
           const leaderboardResults = await Promise.all(leaderboardPromises);
           const leaderboardMap: Record<string, LeaderboardEntry[]> = {};
-          leaderboardResults.forEach(({ slug, leaders }) => {
+          const playerCountMap: Record<string, number> = {};
+          leaderboardResults.forEach(({ slug, leaders, totalCount }) => {
             leaderboardMap[slug] = leaders;
+            if (totalCount !== null) {
+              playerCountMap[slug] = totalCount;
+            }
           });
           setLeaderboards(leaderboardMap);
+          setPlayerCounts(playerCountMap);
         }
       } catch (error) {
         console.error('Error fetching tests:', error);
@@ -501,7 +511,7 @@ export default function HomePage() {
 
                 return sortedTests.map((test) => {
                   const leaders = leaderboards[test.slug] || [];
-                  const playerCount = leaders.length;
+                  const playerCount = playerCounts[test.slug] ?? null;
                   const userEntry = me?.isLoggedIn ? leaders.find(entry => entry.is_you) : null;
 
                   return (
@@ -537,7 +547,7 @@ export default function HomePage() {
                             <div className="text-right">
                               <div className="text-xs text-gray-500 uppercase tracking-wide">Players</div>
                               <div className="text-lg font-bold text-gray-900">
-                                {playerCount > 0 ? playerCount : '—'}
+                                {playerCount !== null && playerCount > 0 ? playerCount : '—'}
                               </div>
                             </div>
 

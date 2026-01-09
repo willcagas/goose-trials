@@ -7,7 +7,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getLeaderboard } from '@/lib/db/leaderboard';
+import { getLeaderboard, getPlayerCount } from '@/lib/db/leaderboard';
 
 export async function GET(request: NextRequest) {
   try {
@@ -40,7 +40,20 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ data });
+    // Get total player count (for global leaderboard only, not filtered by university/country)
+    let totalCount = null;
+    if (!universityId && !countryCode) {
+      const { count, error: countError } = await getPlayerCount({
+        testSlug,
+        universityId: null,
+        countryCode: null,
+      });
+      if (!countError) {
+        totalCount = count;
+      }
+    }
+
+    return NextResponse.json({ data, totalCount });
   } catch (error) {
     console.error('Unexpected error in /api/leaderboard:', error);
     return NextResponse.json(
