@@ -1,3 +1,13 @@
+-- Migration: Fix top universities player count
+-- This fixes a bug where players_considered showed only the top N players (default 5)
+-- instead of the total number of players from each university
+-- 
+-- Problem: The players_considered field was counting only the top N players used
+-- for median calculation, not all players from that university
+-- 
+-- Solution: Count all distinct players per university separately and join with
+-- the aggregated top N data to show the actual total player count
+
 -- Drop and recreate with proper permissions
 DROP FUNCTION IF EXISTS get_top_universities(text, int, int, int, text);
 
@@ -112,3 +122,4 @@ $$;
 -- Grant execute permissions to both anon and authenticated users
 GRANT EXECUTE ON FUNCTION get_top_universities(text, int, int, int, text) TO anon;
 GRANT EXECUTE ON FUNCTION get_top_universities(text, int, int, int, text) TO authenticated;
+

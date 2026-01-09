@@ -730,7 +730,7 @@ export default function LeaderboardTestPage() {
             >
               <span className="hidden sm:inline">{me?.isLoggedIn && universityInfo?.name
                 ? universityInfo.name
-                : 'My University'}</span>
+                : 'Your University'}</span>
               <span className="sm:hidden">My Campus</span>
             </button>
           </div>
@@ -790,7 +790,20 @@ export default function LeaderboardTestPage() {
           <>
             {scope === 'universities' && renderUniversitiesTable()}
             {scope === 'country' && renderIndividualsTable(countryData, true)}
-            {scope === 'campus' && renderIndividualsTable(campusData, false)}
+            {scope === 'campus' && (
+              <>
+                {campusData.length > 0 && campusData.length < 5 && (
+                  <div className="mb-6 px-4 md:px-6 py-4 bg-amber-50 rounded-lg border border-amber-200">
+                    <p className="text-sm md:text-base text-gray-700 text-center">
+                      <span className="font-semibold">It&apos;s quite in here...</span>
+                      <br className="hidden sm:inline" />
+                      <span className="sm:ml-1">Recruit a few friends so your uni shows up!</span>
+                    </p>
+                  </div>
+                )}
+                {renderIndividualsTable(campusData, false)}
+              </>
+            )}
           </>
         )}
       </div>
