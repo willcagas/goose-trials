@@ -1,5 +1,6 @@
 -- Function to get total count of authenticated players for a test
--- This matches the logic in get_leaderboard but only returns the count
+-- This matches the logic in get_leaderboard to ensure consistency across all leaderboard types
+-- For reaction-time, requires 5+ scores (same as get_leaderboard)
 
 DROP FUNCTION IF EXISTS get_player_count(TEXT, UUID, TEXT);
 
@@ -16,7 +17,7 @@ DECLARE
   v_count INT;
 BEGIN
   IF p_test_slug = 'reaction-time' THEN
-    -- For reaction-time, count users with at least 5 scores
+    -- For reaction-time, count users with at least 5 scores (matching get_leaderboard logic)
     WITH user_top5_scores AS (
       SELECT
         s.user_id,

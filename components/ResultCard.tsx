@@ -524,44 +524,54 @@ export default function ResultCard({
                     Sign in to see your top five scores.
                   </div>
                 ) : (
-                  <div className="space-y-1.5">
-                    {loadingScores ? (
-                      <div className="flex items-center justify-center py-4">
-                        <svg className="w-5 h-5 animate-spin text-amber-400" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                      </div>
-                    ) : (
-                      topScores.map((scoreItem, index) => (
-                        <div 
-                          key={index}
-                          className={`flex items-center justify-between px-3 py-2 rounded-lg ${
-                            index === 0 ? 'bg-amber-400/10 border border-amber-400/30' : 'bg-white/5'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2">
-                            <span className={`text-xs font-bold ${index === 0 ? 'text-amber-400' : 'text-white/40'}`}>
-                              #{index + 1}
-                            </span>
-                            {scoreItem ? (
-                              <span className={`font-medium ${index === 0 ? 'text-amber-400' : 'text-white/80'}`}>
-                                {scoreItem.score_value}
-                                {scoreLabel && <span className="text-white/50 ml-1">{scoreLabel}</span>}
+                  <>
+                    <div className="space-y-1.5">
+                      {loadingScores ? (
+                        <div className="flex items-center justify-center py-4">
+                          <svg className="w-5 h-5 animate-spin text-amber-400" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                        </div>
+                      ) : (
+                        topScores.map((scoreItem, index) => (
+                          <div 
+                            key={index}
+                            className={`flex items-center justify-between px-3 py-2 rounded-lg ${
+                              index === 0 ? 'bg-amber-400/10 border border-amber-400/30' : 'bg-white/5'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className={`text-xs font-bold ${index === 0 ? 'text-amber-400' : 'text-white/40'}`}>
+                                #{index + 1}
                               </span>
-                            ) : (
-                              <span className="text-white/30">--</span>
+                              {scoreItem ? (
+                                <span className={`font-medium ${index === 0 ? 'text-amber-400' : 'text-white/80'}`}>
+                                  {scoreItem.score_value}
+                                  {scoreLabel && <span className="text-white/50 ml-1">{scoreLabel}</span>}
+                                </span>
+                              ) : (
+                                <span className="text-white/30">--</span>
+                              )}
+                            </div>
+                            {scoreItem && (
+                              <span className="text-white/30 text-xs">
+                                {formatShortDate(scoreItem.created_at)}
+                              </span>
                             )}
                           </div>
-                          {scoreItem && (
-                            <span className="text-white/30 text-xs">
-                              {formatShortDate(scoreItem.created_at)}
-                            </span>
-                          )}
+                        ))
+                      )}
+                    </div>
+                    {gameMetadata.slug === 'reaction-time' && isLoggedIn && !loadingScores && topScores.filter(s => s !== null).length < 5 && (
+                      <div className="mt-3 px-3 py-2 rounded-lg bg-blue-500/10 border border-blue-400/20">
+                        <div className="text-blue-300 text-xs font-semibold mb-1">Leaderboard Requirement</div>
+                        <div className="text-blue-200/80 text-xs">
+                          You need {5 - topScores.filter(s => s !== null).length} more score{5 - topScores.filter(s => s !== null).length !== 1 ? 's' : ''} to appear on the leaderboard (5 total required)
                         </div>
-                      ))
+                      </div>
                     )}
-                  </div>
+                  </>
                 )}
               </div>
             )}
