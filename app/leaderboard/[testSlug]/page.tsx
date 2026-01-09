@@ -795,7 +795,7 @@ export default function LeaderboardTestPage() {
                 {campusData.length > 0 && campusData.length < 5 && (
                   <div className="mb-6 px-4 md:px-6 py-4 bg-amber-50 rounded-lg border border-amber-200">
                     <p className="text-sm md:text-base text-gray-700 text-center">
-                      <span className="font-semibold">It&apos;s quite in here...</span>
+                      <span className="font-semibold">It&apos;s quiet in here...</span>
                       <br className="hidden sm:inline" />
                       <span className="sm:ml-1">Recruit a few friends so your uni shows up!</span>
                     </p>
