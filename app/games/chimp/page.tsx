@@ -7,6 +7,7 @@ import { getGameMetadata } from '@/lib/games/registry';
 import { useMe } from '@/app/providers/MeContext';
 import { createClient } from '@/lib/supabase/client';
 import ResultCard from '@/components/ResultCard';
+import { validateStoredScore, validateScore } from '@/lib/scoring/validate';
 
 type Phase = 'idle' | 'showing' | 'hidden' | 'failed';
 
@@ -82,11 +83,12 @@ export default function ChimpGamePage() {
       return;
     }
 
-    // Load from localStorage as initial value
+    // Load from localStorage as initial value (with validation)
     const stored = localStorage.getItem('chimp_best_level');
     let localBest = 0;
-    if (stored !== null) {
-      localBest = Number(stored);
+    const validatedBest = validateStoredScore('chimp', stored);
+    if (validatedBest !== null) {
+      localBest = validatedBest;
       // Use setTimeout to avoid synchronous setState in effect
       setTimeout(() => setBestLevel(localBest), 0);
     }
@@ -105,8 +107,18 @@ export default function ChimpGamePage() {
 
         if (!error && data && data.length > 0) {
           const dbBest = data[0].score_value;
-          // Use the higher of localStorage and database
-          setBestLevel(Math.max(localBest, dbBest));
+          // Validate database score before using it
+          const validation = validateScore('chimp', dbBest);
+          if (validation.valid) {
+            // Use the higher of localStorage and database
+            setBestLevel(Math.max(localBest, dbBest));
+          } else if (localBest > 0) {
+            // If DB score is invalid but local is valid, use local
+            setBestLevel(localBest);
+          }
+        } else if (localBest > 0) {
+          // No DB score, use local if valid
+          setBestLevel(localBest);
         }
       } catch (error) {
         console.error('Error fetching best score from Supabase:', error);
@@ -117,7 +129,14 @@ export default function ChimpGamePage() {
   }, [me?.isLoggedIn, me?.userId]);
 
   useEffect(() => {
-    localStorage.setItem('chimp_best_level', String(bestLevel));
+    // Only save valid scores to localStorage
+    const validation = validateScore('chimp', bestLevel);
+    if (validation.valid) {
+      localStorage.setItem('chimp_best_level', String(bestLevel));
+    } else {
+      // Invalid score - remove from localStorage
+      localStorage.removeItem('chimp_best_level');
+    }
   }, [bestLevel]);
 
   useEffect(() => {
@@ -150,7 +169,9 @@ export default function ChimpGamePage() {
 
   async function advanceToNextLevel() {
     const clearedLevel = level;
-    if (clearedLevel > bestLevel) {
+    // Only update best level if valid
+    const validation = validateScore('chimp', clearedLevel);
+    if (validation.valid && clearedLevel > bestLevel) {
       setBestLevel(clearedLevel);
     }
     const nextLevel = clearedLevel + 1;

@@ -7,6 +7,7 @@ import { getGameMetadata } from '@/lib/games/registry';
 import { useMe } from '@/app/providers/MeContext';
 import { createClient } from '@/lib/supabase/client';
 import ResultCard from '@/components/ResultCard';
+import { validateScore } from '@/lib/scoring/validate';
 
 // ============================================================================
 // CONFIGURATION - All tunables in one place
@@ -332,13 +333,19 @@ export default function HanoiGame() {
       return;
     }
 
-    // Load from localStorage as initial value
+    // Load from localStorage as initial value (with validation)
+    // Note: localStorage stores milliseconds, but validation is in seconds
     const stored = localStorage.getItem('hanoi_best_score');
     let localBest: number | null = null;
     if (stored) {
       const parsed = parseFloat(stored);
       if (!isNaN(parsed)) {
-        localBest = parsed;
+        // Convert milliseconds to seconds for validation
+        const seconds = parsed / 1000;
+        const validation = validateScore('hanoi', seconds);
+        if (validation.valid) {
+          localBest = parsed; // Keep in milliseconds for localStorage
+        }
       }
     }
 
@@ -357,12 +364,20 @@ export default function HanoiGame() {
         if (error) throw error;
 
         if (data && data.length > 0) {
-          // Convert seconds to milliseconds
-          const supabaseBest = data[0].score_value * 1000;
-          // Use the better (lower) score
-          if (localBest === null || supabaseBest < localBest) {
-            setBestScore(supabaseBest);
-          } else {
+          // Validate database score (stored in seconds)
+          const dbScoreSeconds = data[0].score_value;
+          const validation = validateScore('hanoi', dbScoreSeconds);
+          if (validation.valid) {
+            // Convert seconds to milliseconds
+            const supabaseBest = dbScoreSeconds * 1000;
+            // Use the better (lower) score
+            if (localBest === null || supabaseBest < localBest) {
+              setBestScore(supabaseBest);
+            } else {
+              setBestScore(localBest);
+            }
+          } else if (localBest !== null) {
+            // If DB score is invalid but local is valid, use local
             setBestScore(localBest);
           }
         } else if (localBest !== null) {
@@ -379,10 +394,19 @@ export default function HanoiGame() {
     fetchBestScore();
   }, [me?.isLoggedIn, me?.userId]);
 
-  // Save best score to localStorage
+  // Save best score to localStorage (with validation)
+  // Note: localStorage stores milliseconds, but validation is in seconds
   useEffect(() => {
     if (bestScore !== null) {
-      localStorage.setItem('hanoi_best_score', bestScore.toString());
+      // Convert milliseconds to seconds for validation
+      const seconds = bestScore / 1000;
+      const validation = validateScore('hanoi', seconds);
+      if (validation.valid) {
+        localStorage.setItem('hanoi_best_score', bestScore.toString());
+      } else {
+        // Invalid score - remove from localStorage
+        localStorage.removeItem('hanoi_best_score');
+      }
     }
   }, [bestScore]);
 
@@ -390,7 +414,11 @@ export default function HanoiGame() {
   useEffect(() => {
     if (result && result.mode === 'ranked' && result.completed) {
       const currentScore = result.scoreMs;
-      if (bestScore === null || currentScore < bestScore) {
+      // Convert milliseconds to seconds for validation
+      const seconds = currentScore / 1000;
+      const validation = validateScore('hanoi', seconds);
+      // Only update if valid and better
+      if (validation.valid && (bestScore === null || currentScore < bestScore)) {
         setBestScore(currentScore);
       }
     }

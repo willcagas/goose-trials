@@ -18,6 +18,7 @@ import { getGameMetadata } from '@/lib/games/registry';
 import { useMe } from '@/app/providers/MeContext';
 import { createClient } from '@/lib/supabase/client';
 import ResultCard from '@/components/ResultCard';
+import { validateStoredScore, validateScore } from '@/lib/scoring/validate';
 import type {
   Cell,
   Direction,
@@ -310,14 +311,12 @@ export default function PathfindingGame() {
       return;
     }
 
-    // Load from localStorage as initial value
+    // Load from localStorage as initial value (with validation)
     const stored = localStorage.getItem('pathfinding_best_score');
-    if (stored !== null && stored !== '') {
-      const parsed = Number(stored);
-      if (!isNaN(parsed)) {
-        // Use setTimeout to avoid synchronous setState in effect
-        setTimeout(() => setBestScore(parsed), 0);
-      }
+    const validatedBest = validateStoredScore('pathfinding', stored);
+    if (validatedBest !== null) {
+      // Use setTimeout to avoid synchronous setState in effect
+      setTimeout(() => setBestScore(validatedBest), 0);
     }
 
     // Fetch best score from Supabase
@@ -334,8 +333,12 @@ export default function PathfindingGame() {
 
         if (!error && data && data.length > 0) {
           const dbBest = data[0].score_value;
-          // Use the higher of localStorage and database
-          setBestScore((prev) => Math.max(prev, dbBest));
+          // Validate database score before using it
+          const validation = validateScore('pathfinding', dbBest);
+          if (validation.valid) {
+            // Use the higher of localStorage and database
+            setBestScore((prev) => Math.max(prev, dbBest));
+          }
         }
       } catch (error) {
         console.error('Error fetching best score from Supabase:', error);
@@ -345,10 +348,16 @@ export default function PathfindingGame() {
     fetchBestScore();
   }, [me?.isLoggedIn, me?.userId]);
 
-  // Save best score to localStorage when it changes
+  // Save best score to localStorage when it changes (with validation)
   useEffect(() => {
     if (bestScore > 0) {
-      localStorage.setItem('pathfinding_best_score', String(bestScore));
+      const validation = validateScore('pathfinding', bestScore);
+      if (validation.valid) {
+        localStorage.setItem('pathfinding_best_score', String(bestScore));
+      } else {
+        // Invalid score - remove from localStorage
+        localStorage.removeItem('pathfinding_best_score');
+      }
     }
   }, [bestScore]);
 
@@ -449,8 +458,9 @@ export default function PathfindingGame() {
     setIsDrawing(false);
     const newScore = score + 1;
     setScore(newScore);
-    // Update best score if needed
-    if (newScore > bestScore) {
+    // Update best score if needed (only if valid)
+    const validation = validateScore('pathfinding', newScore);
+    if (validation.valid && newScore > bestScore) {
       setBestScore(newScore);
     }
     setRound(nextRound);
@@ -464,8 +474,9 @@ export default function PathfindingGame() {
     setShowMaze(true);
     setPhase('failed');
     setScoreTimestamp(new Date());
-    // Update best score if needed
-    if (score > bestScore) {
+    // Update best score if needed (only if valid)
+    const validation = validateScore('pathfinding', score);
+    if (validation.valid && score > bestScore) {
       setBestScore(score);
     }
     setSubmitting(true);

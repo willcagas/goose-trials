@@ -5,6 +5,7 @@ import { MAX_TARGET, MIN_TARGET, ROUND_DURATION_MS } from './constants';
 import type { Phase, Target } from './types';
 import { MAX_SIMULTANEOUS_TARGETS } from './types';
 import { createClient } from '@/lib/supabase/client';
+import { validateStoredScore, validateScore } from '@/lib/scoring/validate';
 
 const clamp = (min: number, value: number, max: number) =>
   Math.min(Math.max(value, min), max);
@@ -55,15 +56,11 @@ export function useAimTrainer(me?: { isLoggedIn?: boolean; userId?: string | nul
       return;
     }
 
-    // Load from localStorage as initial value
+    // Load from localStorage as initial value (with validation)
     const stored = localStorage.getItem('aim_trainer_best_score');
-    let localBest: number | null = null;
-    if (stored) {
-      const parsed = Number(stored);
-      if (!Number.isNaN(parsed)) {
-        localBest = parsed;
-        setTimeout(() => setBestScore(parsed), 0);
-      }
+    let localBest: number | null = validateStoredScore('aim-trainer', stored);
+    if (localBest !== null) {
+      setTimeout(() => setBestScore(localBest), 0);
     }
 
     // Fetch best score from Supabase
@@ -80,10 +77,20 @@ export function useAimTrainer(me?: { isLoggedIn?: boolean; userId?: string | nul
 
         if (!error && data && data.length > 0) {
           const dbBest = data[0].score_value;
-          // Use the higher of localStorage and database
-          if (localBest === null || dbBest > localBest) {
-            setBestScore(dbBest);
+          // Validate database score before using it
+          const validation = validateScore('aim-trainer', dbBest);
+          if (validation.valid) {
+            // Use the higher of localStorage and database
+            if (localBest === null || dbBest > localBest) {
+              setBestScore(dbBest);
+            }
+          } else if (localBest !== null) {
+            // If DB score is invalid but local is valid, use local
+            setBestScore(localBest);
           }
+        } else if (localBest !== null) {
+          // No DB score, use local if valid
+          setBestScore(localBest);
         }
       } catch (error) {
         console.error('Error fetching best score from Supabase:', error);
@@ -95,7 +102,14 @@ export function useAimTrainer(me?: { isLoggedIn?: boolean; userId?: string | nul
 
   useEffect(() => {
     if (bestScore !== null) {
-      localStorage.setItem('aim_trainer_best_score', String(bestScore));
+      // Only save valid scores to localStorage
+      const validation = validateScore('aim-trainer', bestScore);
+      if (validation.valid) {
+        localStorage.setItem('aim_trainer_best_score', String(bestScore));
+      } else {
+        // Invalid score - remove from localStorage
+        localStorage.removeItem('aim_trainer_best_score');
+      }
     }
   }, [bestScore]);
 
@@ -120,9 +134,13 @@ export function useAimTrainer(me?: { isLoggedIn?: boolean; userId?: string | nul
     setTargets([]);
     setTargetFeedback(new Map());
     setTimeLeftMs(0);
-    setBestScore((prev) =>
-      prev === null || finalScore > prev ? finalScore : prev
-    );
+    // Only update best score if valid
+    const validation = validateScore('aim-trainer', finalScore);
+    if (validation.valid) {
+      setBestScore((prev) =>
+        prev === null || finalScore > prev ? finalScore : prev
+      );
+    }
     feedbackTimeoutsRef.current.forEach((timeout) => {
       window.clearTimeout(timeout);
     });

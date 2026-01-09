@@ -7,6 +7,7 @@ import { getGameMetadata } from '@/lib/games/registry';
 import { useMe } from '@/app/providers/MeContext';
 import { createClient } from '@/lib/supabase/client';
 import ResultCard from '@/components/ResultCard';
+import { validateStoredScore, validateScore } from '@/lib/scoring/validate';
 
 type Phase = 'idle' | 'showing' | 'input' | 'failed';
 
@@ -43,11 +44,12 @@ export default function NumberMemoryGamePage() {
       return;
     }
 
-    // Load from localStorage as initial value
+    // Load from localStorage as initial value (with validation)
     const stored = localStorage.getItem('number_memory_best');
     let localBest = 0;
-    if (stored !== null) {
-      localBest = Number(stored);
+    const validatedBest = validateStoredScore('number-memory', stored);
+    if (validatedBest !== null) {
+      localBest = validatedBest;
       // Use setTimeout to avoid synchronous setState in effect
       setTimeout(() => setBestScore(localBest), 0);
     }
@@ -66,8 +68,18 @@ export default function NumberMemoryGamePage() {
 
         if (!error && data && data.length > 0) {
           const dbBest = data[0].score_value;
-          // Use the higher of localStorage and database
-          setBestScore(Math.max(localBest, dbBest));
+          // Validate database score before using it
+          const validation = validateScore('number-memory', dbBest);
+          if (validation.valid) {
+            // Use the higher of localStorage and database
+            setBestScore(Math.max(localBest, dbBest));
+          } else if (localBest > 0) {
+            // If DB score is invalid but local is valid, use local
+            setBestScore(localBest);
+          }
+        } else if (localBest > 0) {
+          // No DB score, use local if valid
+          setBestScore(localBest);
         }
       } catch (error) {
         console.error('Error fetching best score from Supabase:', error);
@@ -77,10 +89,16 @@ export default function NumberMemoryGamePage() {
     fetchBestScore();
   }, [me?.isLoggedIn, me?.userId]);
 
-  // Save best score to localStorage when it changes
+  // Save best score to localStorage when it changes (with validation)
   useEffect(() => {
     if (bestScore > 0) {
-      localStorage.setItem('number_memory_best', String(bestScore));
+      const validation = validateScore('number-memory', bestScore);
+      if (validation.valid) {
+        localStorage.setItem('number_memory_best', String(bestScore));
+      } else {
+        // Invalid score - remove from localStorage
+        localStorage.removeItem('number_memory_best');
+      }
     }
   }, [bestScore]);
 
@@ -225,8 +243,9 @@ export default function NumberMemoryGamePage() {
       const recalledDigits = currentDigits;
       setHighestRecalled(recalledDigits);
       
-      // Update best score if needed
-      if (recalledDigits > bestScore) {
+      // Update best score if needed (only if valid)
+      const validation = validateScore('number-memory', recalledDigits);
+      if (validation.valid && recalledDigits > bestScore) {
         setBestScore(recalledDigits);
       }
 

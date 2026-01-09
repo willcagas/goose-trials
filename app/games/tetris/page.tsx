@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { submitScore } from '@/lib/db/scores';
 import { X } from 'lucide-react';
 import ResultCard from '@/components/ResultCard';
+import { validateStoredScore, validateScore } from '@/lib/scoring/validate';
 
 // Tetromino shapes with two color schemes
 const TETROMINO_COLORS = {
@@ -217,13 +218,9 @@ export default function TetrisGame() {
     }
 
     const stored = localStorage.getItem('tetris_best_score');
-    let localBest: number | null = null;
-    if (stored) {
-      const parsed = Number(stored);
-      if (!Number.isNaN(parsed)) {
-        localBest = parsed;
-        setBestScore(parsed);
-      }
+    let localBest: number | null = validateStoredScore('tetris', stored);
+    if (localBest !== null) {
+      setBestScore(localBest);
     }
 
     const fetchBestScore = async () => {
@@ -239,8 +236,15 @@ export default function TetrisGame() {
 
         if (!error && data && data.length > 0) {
           const dbBest = data[0].score_value;
-          setBestScore(dbBest);
-          localStorage.setItem('tetris_best_score', dbBest.toString());
+          // Validate database score before using it
+          const validation = validateScore('tetris', dbBest);
+          if (validation.valid) {
+            setBestScore(dbBest);
+            localStorage.setItem('tetris_best_score', dbBest.toString());
+          } else if (localBest !== null) {
+            // If DB score is invalid but local is valid, use local
+            setBestScore(localBest);
+          }
         } else if (localBest !== null) {
           setBestScore(localBest);
         }
@@ -524,7 +528,9 @@ export default function TetrisGame() {
       const finalTime = startTimeRef.current ? (Date.now() - startTimeRef.current) / 1000 : 0;
       setFinalScore(finalTime);
 
-      const isNewBest = bestScore === null || finalTime < bestScore;
+      // Only update best score if valid
+      const validation = validateScore('tetris', finalTime);
+      const isNewBest = validation.valid && (bestScore === null || finalTime < bestScore);
       setIsNewHighScore(isNewBest);
 
       if (isNewBest) {

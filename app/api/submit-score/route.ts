@@ -2,55 +2,13 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { GAMES_REGISTRY, type GameSlug } from '@/lib/games/registry';
-
-// Score validation ranges per game (realistic human bounds)
-const SCORE_RANGES: Record<string, { min: number; max: number }> = {
-  'reaction-time': { min: 50, max: 5000 },      // 50ms - 5000ms (humans: 100-1000ms typical)
-  'chimp': { min: 0, max: 50 },                 // 0-50 levels
-  'number-memory': { min: 0, max: 50 },         // 0-40 digits (20 is world record territory)
-  'aim-trainer': { min: 0, max: 200 },         // 0-200 hits (generous upper bound)
-  'pathfinding': { min: 0, max: 100 },          // 0-100 rounds
-  'hanoi': { min: 3, max: 60 },            // 3 - 60 seconds
-  'tetris': { min: 3, max: 2000 },           // 3 - 2000 seconds
-};
+import { validateScore } from '@/lib/scoring/validate';
 
 interface SubmitScoreRequest {
   testSlug: string;
   scoreValue: number;
   previousBest?: number | null;
   guestId?: string;
-}
-
-/**
- * Validate score is within acceptable bounds for the game
- */
-function validateScore(testSlug: string, scoreValue: number): { valid: boolean; error?: string } {
-  // Check if test slug is valid
-  if (!(testSlug in GAMES_REGISTRY)) {
-    return { valid: false, error: `Invalid test_slug: ${testSlug}` };
-  }
-
-  // Basic sanity checks
-  if (!Number.isFinite(scoreValue)) {
-    return { valid: false, error: 'Score must be a finite number' };
-  }
-
-  if (scoreValue < 0) {
-    return { valid: false, error: 'Score cannot be negative' };
-  }
-
-  // Game-specific range validation
-  const range = SCORE_RANGES[testSlug];
-  if (range) {
-    if (scoreValue < range.min || scoreValue > range.max) {
-      return {
-        valid: false,
-        error: `Score ${scoreValue} is outside acceptable range [${range.min}, ${range.max}] for ${testSlug}`,
-      };
-    }
-  }
-
-  return { valid: true };
 }
 
 /**
@@ -91,6 +49,14 @@ export async function POST(request: NextRequest) {
     if (scoreValue === undefined || scoreValue === null || typeof scoreValue !== 'number') {
       return NextResponse.json(
         { success: false, error: 'scoreValue is required and must be a number' },
+        { status: 400 }
+      );
+    }
+
+    // Check if test slug is valid
+    if (!(testSlug in GAMES_REGISTRY)) {
+      return NextResponse.json(
+        { success: false, error: `Invalid test_slug: ${testSlug}` },
         { status: 400 }
       );
     }

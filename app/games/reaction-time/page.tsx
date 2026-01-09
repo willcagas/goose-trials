@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import GameShell, { GameShellState, GameResult } from '@/components/GameShell';
 import { getGameMetadata } from '@/lib/games/registry';
 import ResultCard from '@/components/ResultCard';
+import { validateStoredScore, validateScore } from '@/lib/scoring/validate';
 
 interface TopScore {
   score_value: number;
@@ -53,11 +54,10 @@ export default function ReactionTimeGame() {
       return;
     }
 
-    // Load from localStorage as initial value
+    // Load from localStorage as initial value (with validation)
     const storedBestTime = localStorage.getItem('reaction_best_time');
-    let localBest: number | null = null;
-    if (storedBestTime) {
-      localBest = Number(storedBestTime);
+    let localBest: number | null = validateStoredScore('reaction-time', storedBestTime);
+    if (localBest !== null) {
       setBestTime(localBest);
     }
 
@@ -75,10 +75,20 @@ export default function ReactionTimeGame() {
 
         if (!error && data && data.length > 0) {
           const dbBest = data[0].score_value;
-          // Use the lower of localStorage and database (lower is better for reaction time)
-          if (localBest === null || dbBest < localBest) {
-            setBestTime(dbBest);
+          // Validate database score before using it
+          const validation = validateScore('reaction-time', dbBest);
+          if (validation.valid) {
+            // Use the lower of localStorage and database (lower is better for reaction time)
+            if (localBest === null || dbBest < localBest) {
+              setBestTime(dbBest);
+            }
+          } else if (localBest !== null) {
+            // If DB score is invalid but local is valid, use local
+            setBestTime(localBest);
           }
+        } else if (localBest !== null) {
+          // No DB score, use local if valid
+          setBestTime(localBest);
         }
       } catch (error) {
         console.error('Error fetching best score from Supabase:', error);
@@ -110,10 +120,16 @@ export default function ReactionTimeGame() {
     fetchTopScores();
   }, [me?.userId]);
 
-  // Save best time to localStorage whenever it changes
+  // Save best time to localStorage whenever it changes (with validation)
   useEffect(() => {
     if (bestTime !== null) {
-      localStorage.setItem('reaction_best_time', bestTime.toString());
+      const validation = validateScore('reaction-time', bestTime);
+      if (validation.valid) {
+        localStorage.setItem('reaction_best_time', bestTime.toString());
+      } else {
+        // Invalid score - remove from localStorage
+        localStorage.removeItem('reaction_best_time');
+      }
     }
   }, [bestTime]);
 
@@ -174,10 +190,14 @@ export default function ReactionTimeGame() {
       setReactionTime(reaction);
       setAttempts(prev => prev + 1);
 
-      // Update best time
-      const newBest = bestTime === null || reaction < bestTime ? reaction : bestTime;
-      if (reaction < (bestTime ?? Infinity)) {
-        setBestTime(reaction);
+      // Update best time (only if valid and better)
+      const validation = validateScore('reaction-time', reaction);
+      let newBest: number | undefined = bestTime ?? undefined;
+      if (validation.valid) {
+        if (reaction < (bestTime ?? Infinity)) {
+          setBestTime(reaction);
+          newBest = reaction;
+        }
       }
 
       setInternalState('clicked');
@@ -220,9 +240,13 @@ export default function ReactionTimeGame() {
 
             if (!error && data && data.length > 0) {
               const dbBest = data[0].score_value;
-              // Update best time if database has a better score
-              if (bestTime === null || dbBest < bestTime) {
-                setBestTime(dbBest);
+              // Validate database score before using it
+              const validation = validateScore('reaction-time', dbBest);
+              if (validation.valid) {
+                // Update best time if database has a better score
+                if (bestTime === null || dbBest < bestTime) {
+                  setBestTime(dbBest);
+                }
               }
             }
           } catch (error) {
