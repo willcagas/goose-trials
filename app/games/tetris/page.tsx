@@ -1041,6 +1041,16 @@ export default function TetrisGame() {
       const isTargetInModal = target?.closest('[data-auth-modal="true"]') !== null || 
                               target?.closest('.fixed.inset-0.z-50') !== null;
       
+      // Don't interfere if user is typing in an input/textarea/contentEditable
+      // This check should happen FIRST, regardless of modal state, to allow normal typing
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement ||
+        (e.target instanceof HTMLElement && e.target.isContentEditable)
+      ) {
+        return;
+      }
+      
       if (isModalOpen || isTargetInModal) {
         // Prevent default and stop propagation for game keys to ensure they don't trigger game actions
         if (e.key === 'r' || e.key === 'R') {
@@ -1073,6 +1083,16 @@ export default function TetrisGame() {
       const target = e.target as HTMLElement;
       const isTargetInModal = target?.closest('[data-auth-modal="true"]') !== null || 
                               target?.closest('.fixed.inset-0.z-50') !== null;
+      
+      // Don't interfere if user is typing in an input/textarea/contentEditable
+      // This check should happen FIRST, regardless of modal state, to allow normal typing
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement ||
+        (e.target instanceof HTMLElement && e.target.isContentEditable)
+      ) {
+        return;
+      }
       
       if (isModalOpen || isTargetInModal) {
         // Prevent default and stop propagation for all game-related keys
@@ -1161,6 +1181,16 @@ export default function TetrisGame() {
       const target = e.target as HTMLElement;
       const isTargetInModal = target?.closest('[data-auth-modal="true"]') !== null || 
                               target?.closest('.fixed.inset-0.z-50') !== null;
+      
+      // Don't interfere if user is typing in an input/textarea/contentEditable
+      // This check should happen FIRST, regardless of modal state, to allow normal typing
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement ||
+        (e.target instanceof HTMLElement && e.target.isContentEditable)
+      ) {
+        return;
+      }
       
       if (isModalOpen || isTargetInModal) {
         e.stopPropagation();

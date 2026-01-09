@@ -123,12 +123,12 @@ export default function GameShell({
       const isTargetInModal = target?.closest('[data-auth-modal="true"]') !== null || 
                               target?.closest('.fixed.inset-0.z-50') !== null;
       
-      // Don't trigger if user is typing in an input (unless it's not in a modal)
+      // Don't trigger if user is typing in an input/textarea/contentEditable
+      // This check should happen FIRST, regardless of modal state, to allow normal typing
       if (
-        !isTargetInModal &&
-        (e.target instanceof HTMLInputElement ||
-         e.target instanceof HTMLTextAreaElement ||
-         (e.target instanceof HTMLElement && e.target.isContentEditable))
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement ||
+        (e.target instanceof HTMLElement && e.target.isContentEditable)
       ) {
         return;
       }

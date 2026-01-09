@@ -544,6 +544,16 @@ export default function HanoiGame() {
       const isTargetInModal = target?.closest('[data-auth-modal="true"]') !== null || 
                               target?.closest('.fixed.inset-0.z-50') !== null;
       
+      // Don't interfere if user is typing in an input/textarea/contentEditable
+      // This check should happen FIRST, regardless of modal state, to allow normal typing
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement ||
+        (e.target instanceof HTMLElement && e.target.isContentEditable)
+      ) {
+        return;
+      }
+      
       if (isModalOpen || isTargetInModal) {
         // Stop propagation for game keys to ensure they don't trigger game actions
         if (e.key === '1' || e.key === '2' || e.key === '3' || 
