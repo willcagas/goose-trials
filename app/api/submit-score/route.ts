@@ -135,10 +135,12 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Basic validation of guest ID format (should be UUID-like)
-      if (!/^[a-f0-9-]{36}$/i.test(guestId)) {
+      // Basic validation of guest ID format (should be UUID v4 format)
+      // UUID format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx (8-4-4-4-12 hex digits)
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(guestId)) {
         return NextResponse.json(
-          { success: false, error: 'Invalid guest_id format' },
+          { success: false, error: 'Invalid guest_id format. Must be a valid UUID.' },
           { status: 400 }
         );
       }
