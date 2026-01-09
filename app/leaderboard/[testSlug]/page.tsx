@@ -61,7 +61,7 @@ async function fetchLeaderboard(
 ): Promise<LeaderboardEntry[]> {
   const params = new URLSearchParams({
     test_slug: testSlug,
-    limit: '50',
+    limit: '200',
   });
   
   if (universityId) {
