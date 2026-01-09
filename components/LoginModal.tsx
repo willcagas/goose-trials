@@ -356,6 +356,34 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
               <p className="text-red-400 text-sm">{error}</p>
             )}
 
+            {/* Prominent spam email warning - moved up and made more visible */}
+            <div className="bg-amber-400/20 border-2 border-amber-400/50 rounded-lg p-4 -mt-2 mb-2">
+              <div className="flex items-start gap-3">
+                <svg 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  fill="none" 
+                  viewBox="0 0 24 24" 
+                  strokeWidth={2} 
+                  stroke="currentColor" 
+                  className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5"
+                >
+                  <path 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" 
+                  />
+                </svg>
+                <div>
+                  <p className="text-amber-200 text-base font-semibold mb-1">
+                    📧 Check Your Spam/Junk Folder!
+                  </p>
+                  <p className="text-amber-300/90 text-sm leading-relaxed">
+                    Verification codes may take <strong>1–2 minutes</strong> to arrive and often end up in <strong className="underline">spam or junk folders</strong>. Keep this tab open and check your email spam folder!
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <div className="space-y-2">
               <button
                 type="submit"
@@ -375,12 +403,6 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                   {resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : 'Resend code'}
                 </button>
               </div>
-            </div>
-
-            <div className="bg-amber-400/10 border border-amber-400/30 rounded-lg p-3 mt-2">
-              <p className="text-amber-300 text-sm text-center font-medium">
-                ⚠️ Codes may take <strong>2–3 minutes</strong>. Check <strong>spam/junk</strong>. You can keep playing while you wait.
-              </p>
             </div>
 
 
