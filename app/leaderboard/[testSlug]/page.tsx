@@ -193,16 +193,27 @@ export default function LeaderboardTestPage() {
   const handleBackClick = (e: React.MouseEvent) => {
     e.preventDefault();
     
-    // Check if we came from a game page
+    // First, check for returnTo query parameter (most reliable)
+    const returnTo = searchParams.get('returnTo');
+    if (returnTo) {
+      router.push(returnTo);
+      return;
+    }
+    
+    // Fallback: Check if we came from a game page via referrer
     if (typeof window !== 'undefined') {
       const referrer = document.referrer;
       // Check if referrer is a game page
       if (referrer && referrer.includes('/games/')) {
         // Extract the game path from referrer
-        const url = new URL(referrer);
-        const gamePath = url.pathname;
-        router.push(gamePath);
-        return;
+        try {
+          const url = new URL(referrer);
+          const gamePath = url.pathname;
+          router.push(gamePath);
+          return;
+        } catch {
+          // Invalid URL, continue to default behavior
+        }
       }
     }
     

@@ -119,7 +119,7 @@ function ShareContent() {
           {/* Secondary actions */}
           <div className="flex gap-3">
             <Link
-              href={`/leaderboard/${game}`}
+              href={`/leaderboard/${game}?returnTo=${encodeURIComponent(`/games/${game}`)}`}
               className="flex-1 px-4 py-3 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-xl transition-colors border border-white/20 text-center"
             >
               View Leaderboard

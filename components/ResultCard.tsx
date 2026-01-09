@@ -663,7 +663,7 @@ export default function ResultCard({
           {/* Leaderboard / Sign In CTA */}
           {isLoggedIn ? (
             <Link
-              href={`/leaderboard/${gameMetadata.slug}`}
+              href={`/leaderboard/${gameMetadata.slug}?returnTo=${encodeURIComponent(`/games/${gameMetadata.slug}`)}`}
               className="block w-full px-5 py-3.5 bg-[#2a2a2a] hover:bg-[#363636] active:bg-[#2a2a2a] text-white font-medium rounded-xl transition-all text-center group hover:scale-[1.02] active:scale-[0.98]"
             >
               <span className="inline-flex items-center gap-2">

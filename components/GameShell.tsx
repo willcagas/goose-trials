@@ -237,7 +237,7 @@ export default function GameShell({
           Play Again
         </button>
         <Link
-          href={`/leaderboard/${gameMetadata.slug}`}
+          href={`/leaderboard/${gameMetadata.slug}?returnTo=${encodeURIComponent(`/games/${gameMetadata.slug}`)}`}
           className="px-6 py-3 bg-[#0a0a0a]/10 hover:bg-[#0a0a0a]/20 text-[#0a0a0a] font-semibold rounded-xl transition-colors border border-[#0a0a0a]/20 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 focus:ring-offset-white"
         >
           View Leaderboard
