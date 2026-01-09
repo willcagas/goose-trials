@@ -320,7 +320,7 @@ export default function ReactionTimeGame() {
 
     return (
       <div
-        className={`h-[calc(100vh-8rem)] w-full ${bgColor} transition-colors duration-300 flex items-center justify-center text-white cursor-pointer select-none`}
+        className={`h-[calc(100vh-8rem)] w-full ${bgColor} flex items-center justify-center text-white cursor-pointer select-none`}
         onClick={handleClick}
       >
         <div className="text-center px-4">
