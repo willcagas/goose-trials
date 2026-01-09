@@ -27,6 +27,7 @@ export default function AimTrainerGame() {
         accuracy,
         submitting,
         submitState,
+        submissionError,
         isNewHighScore,
         boardRef,
         handleBoardPointerDown,
@@ -227,6 +228,7 @@ export default function AimTrainerGame() {
             scoreLabel="score"
             personalBest={bestScore ?? undefined}
             personalBestLabel="score"
+            submissionError={submissionError}
             message={`Hits: ${hits} · Accuracy: ${accuracy}% · Misses: ${misses}`}
             isNewHighScore={isNewHighScore}
             timestamp={new Date()}

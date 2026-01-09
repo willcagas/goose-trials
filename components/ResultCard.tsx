@@ -46,6 +46,9 @@ export interface ResultCardProps {
   
   // Optional: show submitting state
   isSubmitting?: boolean;
+  
+  // Optional: error message if submission failed
+  submissionError?: string | null;
 }
 
 // Country code to flag emoji
@@ -78,6 +81,91 @@ function canShareFiles(): boolean {
   }
 }
 
+// Convert technical error messages to user-friendly ones
+function formatSubmissionError(error: string | null, gameSlug?: string): string | null {
+  if (!error) return null;
+  
+  // Handle range validation errors
+  if (error.includes('outside acceptable range')) {
+    // Extract score value from error message
+    const scoreMatch = error.match(/Score ([\d.]+)/);
+    const score = scoreMatch ? parseFloat(scoreMatch[1]) : null;
+    
+    if (!gameSlug) {
+      return 'Your score is outside the valid range. Please try again.';
+    }
+    
+    // Game-specific error messages
+    switch (gameSlug) {
+      case 'reaction-time':
+        if (score !== null && score < 50) {
+          return 'Your reaction time seems too fast to be valid. Please try again.';
+        }
+        if (score !== null && score > 5000) {
+          return 'Your reaction time seems too slow. Please try again.';
+        }
+        return 'Your reaction time is outside the valid range. Please try again.';
+        
+      case 'chimp':
+        if (score !== null && score > 50) {
+          return 'Your score seems too high to be valid. Please try again.';
+        }
+        return 'Your score is outside the valid range. Please try again.';
+        
+      case 'number-memory':
+        if (score !== null && score > 50) {
+          return 'Your score seems too high to be valid. Please try again.';
+        }
+        return 'Your score is outside the valid range. Please try again.';
+        
+      case 'aim-trainer':
+        if (score !== null && score > 200) {
+          return 'Your score seems too high to be valid. Please try again.';
+        }
+        return 'Your score is outside the valid range. Please try again.';
+        
+      case 'pathfinding':
+        if (score !== null && score > 100) {
+          return 'Your score seems too high to be valid. Please try again.';
+        }
+        return 'Your score is outside the valid range. Please try again.';
+        
+      case 'hanoi':
+        if (score !== null && score < 3) {
+          return 'Your completion time seems too fast to be valid. Please try again.';
+        }
+        if (score !== null && score > 60) {
+          return 'Your completion time seems too slow. Please try again.';
+        }
+        return 'Your completion time is outside the valid range. Please try again.';
+        
+      case 'tetris':
+        if (score !== null && score < 3) {
+          return 'Your completion time seems too fast to be valid. Please try again.';
+        }
+        if (score !== null && score > 2000) {
+          return 'Your completion time seems too slow. Please try again.';
+        }
+        return 'Your completion time is outside the valid range. Please try again.';
+        
+      default:
+        return 'Your score is outside the valid range. Please try again.';
+    }
+  }
+  
+  // Handle other validation errors
+  if (error.includes('must be a finite number') || error.includes('cannot be negative')) {
+    return 'Invalid score. Please try again.';
+  }
+  
+  if (error.includes('Invalid test_slug')) {
+    return 'There was an error saving your score. Please try again.';
+  }
+  
+  // Generic fallback for unknown errors
+  return 'Unable to save your score. Please try again.';
+}
+
 export default function ResultCard({
   gameMetadata,
   score,
@@ -96,6 +184,7 @@ export default function ResultCard({
   timestamp,
   onPlayAgain,
   isSubmitting = false,
+  submissionError = null,
 }: ResultCardProps) {
   const { me } = useMe();
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -354,6 +443,23 @@ export default function ResultCard({
               {/* Submission status */}
               {isSubmitting ? (
                 <p className="text-white/50 text-sm mt-2">Saving score...</p>
+              ) : submissionError ? (
+                <div className="mt-2">
+                  <p className="text-red-400 text-sm font-medium">✗ Score not saved</p>
+                  <p className="text-red-300/80 text-xs mt-1">
+                    {formatSubmissionError(submissionError, gameMetadata.slug)}
+                  </p>
+                  <p className="text-white/40 text-xs mt-2 italic">
+                    Think this is valid? Contact{' '}
+                    <a
+                      href="mailto:goosetrials@gmail.com"
+                      className="text-amber-400/80 hover:text-amber-400 underline"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      goosetrials@gmail.com
+                    </a>
+                  </p>
+                </div>
               ) : (
                 <p className="text-green-500 text-sm mt-2">✓ Score saved!</p>
               )}

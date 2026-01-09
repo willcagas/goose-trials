@@ -22,25 +22,39 @@ ALTER TABLE public.scores ADD CONSTRAINT score_positive CHECK (score_value >= 0)
 
 -- Per-game score bounds constraints
 -- These use CHECK constraints with OR conditions for each game
--- Note: These are conservative bounds - actual realistic ranges are tighter
+-- Must match SCORE_RANGES in app/api/submit-score/route.ts
+
+-- First, delete violating scores (these are likely from testing/abuse before security fixes)
+-- Run this BEFORE adding the constraint to avoid constraint violation errors
+DELETE FROM scores
+WHERE 
+  (test_slug = 'reaction-time' AND (score_value < 50 OR score_value > 5000))
+  OR (test_slug = 'chimp' AND (score_value < 0 OR score_value > 50))
+  OR (test_slug = 'number-memory' AND (score_value < 0 OR score_value > 50))
+  OR (test_slug = 'aim-trainer' AND (score_value < 0 OR score_value > 200))
+  OR (test_slug = 'pathfinding' AND (score_value < 0 OR score_value > 100))
+  OR (test_slug = 'hanoi' AND (score_value < 3 OR score_value > 60))
+  OR (test_slug = 'tetris' AND (score_value < 3 OR score_value > 2000));
+
+-- Now add the constraint (should succeed since violating rows are deleted)
 ALTER TABLE public.scores DROP CONSTRAINT IF EXISTS score_bounds_by_game;
 ALTER TABLE public.scores ADD CONSTRAINT score_bounds_by_game CHECK (
   -- reaction-time: 50ms - 5000ms (humans typically 100-1000ms)
   (test_slug = 'reaction-time' AND score_value >= 50 AND score_value <= 5000)
-  -- chimp: 1-50 levels
-  OR (test_slug = 'chimp' AND score_value >= 1 AND score_value <= 50)
-  -- number-memory: 1-30 digits (20+ is exceptional)
-  OR (test_slug = 'number-memory' AND score_value >= 1 AND score_value <= 30)
-  -- aim-trainer: 1-1000 hits (generous upper bound)
-  OR (test_slug = 'aim-trainer' AND score_value >= 1 AND score_value <= 1000)
-  -- pathfinding: 1-100 rounds
-  OR (test_slug = 'pathfinding' AND score_value >= 1 AND score_value <= 100)
-  -- hanoi: 0.01s - 1 hour (seconds)
-  OR (test_slug = 'hanoi' AND score_value >= 0.01 AND score_value <= 3600)
-  -- tetris: 0.01s - 1 hour (seconds)
-  OR (test_slug = 'tetris' AND score_value >= 0.01 AND score_value <= 3600)
+  -- chimp: 0-50 levels (0 = failed immediately)
+  OR (test_slug = 'chimp' AND score_value >= 0 AND score_value <= 50)
+  -- number-memory: 0-50 digits (0 = failed immediately, 20 is world record)
+  OR (test_slug = 'number-memory' AND score_value >= 0 AND score_value <= 50)
+  -- aim-trainer: 0-200 hits (0 = hit nothing)
+  OR (test_slug = 'aim-trainer' AND score_value >= 0 AND score_value <= 200)
+  -- pathfinding: 0-100 rounds (0 = failed immediately)
+  OR (test_slug = 'pathfinding' AND score_value >= 0 AND score_value <= 100)
+  -- hanoi: 3-60 seconds (matches MAX_RUN_MS: 60_000ms = 60s)
+  OR (test_slug = 'hanoi' AND score_value >= 3 AND score_value <= 60)
+  -- tetris: 3-2000 seconds (no hard limit, but generous upper bound)
+  OR (test_slug = 'tetris' AND score_value >= 3 AND score_value <= 2000)
   -- Unknown game slugs will fail this constraint - this is intentional
-  -- When adding new games, update this constraint
+  -- When adding new games, update this constraint AND app/api/submit-score/route.ts
 );
 
 -- Constraint: Must have either user_id OR guest_id (not both, not neither)

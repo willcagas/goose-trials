@@ -5,6 +5,12 @@
 -- Enable RLS on scores table
 ALTER TABLE public.scores ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies if they exist (to avoid conflicts)
+DROP POLICY IF EXISTS "users_read_own_scores" ON public.scores;
+DROP POLICY IF EXISTS "public_read_all_scores" ON public.scores;
+DROP POLICY IF EXISTS "Scores public select" ON public.scores;
+DROP POLICY IF EXISTS "Score insert policy" ON public.scores;
+
 -- Policy: Users can read their own scores
 CREATE POLICY "users_read_own_scores" ON public.scores
   FOR SELECT

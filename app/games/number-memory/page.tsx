@@ -24,6 +24,7 @@ export default function NumberMemoryGamePage() {
   const [memorizeProgress, setMemorizeProgress] = useState(100);
   const [scoreTimestamp, setScoreTimestamp] = useState<Date | undefined>(undefined);
   const [isNewHighScore, setIsNewHighScore] = useState(false);
+  const [submissionError, setSubmissionError] = useState<string | null>(null);
 
   // Timer reference for cleanup
   const displayTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -255,6 +256,7 @@ export default function NumberMemoryGamePage() {
       if (finalScore > 0) {
         setSubmitting(true);
         setIsNewHighScore(false);
+        setSubmissionError(null);
         // Pass previous best to avoid race condition with isNewHighScore
         const previousBest = bestScore > 0 ? bestScore : null;
         const submitResult = await submitScore('number-memory', finalScore, previousBest);
@@ -266,6 +268,9 @@ export default function NumberMemoryGamePage() {
             setIsNewHighScore(true);
           }
         } else {
+          // Display error message to user
+          const errorMessage = submitResult.error || 'Failed to save score. Please try again.';
+          setSubmissionError(errorMessage);
           console.error('Failed to submit score:', submitResult.error);
         }
       }
@@ -454,6 +459,7 @@ export default function NumberMemoryGamePage() {
       timestamp={scoreTimestamp}
       onPlayAgain={handleRestart}
       isSubmitting={submitting}
+      submissionError={submissionError}
     />
   );
 

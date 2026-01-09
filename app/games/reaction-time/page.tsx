@@ -24,6 +24,7 @@ export default function ReactionTimeGame() {
   const [result, setResult] = useState<GameResult | undefined>(undefined);
   const [scoreTimestamp, setScoreTimestamp] = useState<Date | undefined>(undefined);
   const [isNewHighScore, setIsNewHighScore] = useState(false);
+  const [submissionError, setSubmissionError] = useState<string | null>(null);
 
   // Top 5 scores
   const [topScores, setTopScores] = useState<(TopScore | null)[]>(Array(5).fill(null));
@@ -192,6 +193,7 @@ export default function ReactionTimeGame() {
       // Submit score to database
       setSubmitting(true);
       setIsNewHighScore(false);
+      setSubmissionError(null);
       // Pass previous best to avoid race condition with isNewHighScore
       const submitResult = await submitScore('reaction-time', reaction, bestTime);
       setSubmitting(false);
@@ -228,6 +230,9 @@ export default function ReactionTimeGame() {
           }
         }
       } else {
+        // Display error message to user
+        const errorMessage = submitResult.error || 'Failed to save score. Please try again.';
+        setSubmissionError(errorMessage);
         console.error('Failed to submit score:', submitResult.error);
       }
     }
@@ -243,6 +248,7 @@ export default function ReactionTimeGame() {
     setInternalState('idle');
     setReactionTime(null);
     setResult(undefined);
+    setSubmissionError(null);
   };
 
   const handleRestart = () => {
@@ -343,6 +349,7 @@ export default function ReactionTimeGame() {
         timestamp={scoreTimestamp}
         onPlayAgain={handleRestart}
         isSubmitting={submitting}
+        submissionError={submissionError}
       />
     );
   };

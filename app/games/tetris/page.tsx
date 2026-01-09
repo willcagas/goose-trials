@@ -124,6 +124,7 @@ export default function TetrisGame() {
   const [result, setResult] = useState<GameResult | undefined>(undefined);
   const [submitting, setSubmitting] = useState(false);
   const [isNewHighScore, setIsNewHighScore] = useState(false);
+  const [submissionError, setSubmissionError] = useState<string | null>(null);
   const [isFastFalling, setIsFastFalling] = useState(false);
   const [recentPieces, setRecentPieces] = useState(0);
   const [colorScheme, setColorScheme] = useState<ColorScheme>(() => {
@@ -545,16 +546,25 @@ export default function TetrisGame() {
 
       // Submit score for both logged-in and guest users
       setSubmitting(true);
+      setSubmissionError(null);
       submitScore('tetris', finalTime, bestScore)
         .then((response) => {
           setSubmitting(false);
-          if (response.success && response.isNewHighScore) {
-            setIsNewHighScore(true);
+          if (response.success) {
+            if (response.isNewHighScore) {
+              setIsNewHighScore(true);
+            }
+          } else {
+            const errorMessage = response.error || 'Failed to save score. Please try again.';
+            setSubmissionError(errorMessage);
+            console.error('Failed to submit score:', response.error);
           }
         })
         .catch(err => {
-          console.error('Failed to submit score:', err);
           setSubmitting(false);
+          const errorMessage = err instanceof Error ? err.message : 'Failed to save score. Please try again.';
+          setSubmissionError(errorMessage);
+          console.error('Failed to submit score:', err);
         });
       return;
     }
@@ -929,16 +939,25 @@ export default function TetrisGame() {
 
         // Submit score for both logged-in and guest users
         setSubmitting(true);
+        setSubmissionError(null);
         submitScore('tetris', finalTime, bestScore)
           .then((response) => {
             setSubmitting(false);
-            if (response.success && response.isNewHighScore) {
-              setIsNewHighScore(true);
+            if (response.success) {
+              if (response.isNewHighScore) {
+                setIsNewHighScore(true);
+              }
+            } else {
+              const errorMessage = response.error || 'Failed to save score. Please try again.';
+              setSubmissionError(errorMessage);
+              console.error('Failed to submit score:', response.error);
             }
           })
           .catch(err => {
-            console.error('Failed to submit score:', err);
             setSubmitting(false);
+            const errorMessage = err instanceof Error ? err.message : 'Failed to save score. Please try again.';
+            setSubmissionError(errorMessage);
+            console.error('Failed to submit score:', err);
           });
         return;
       }
@@ -1517,6 +1536,7 @@ export default function TetrisGame() {
         personalBest={result.personalBest}
         personalBestLabel={result.personalBestLabel}
         message={result.message}
+        submissionError={submissionError}
         isNewHighScore={isNewHighScore}
         isSubmitting={submitting}
         onPlayAgain={handleRestart}

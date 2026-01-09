@@ -21,6 +21,7 @@ export function useAimTrainer(me?: { isLoggedIn?: boolean; userId?: string | nul
   const [submitState, setSubmitState] = useState<'idle' | 'success' | 'error'>(
     'idle'
   );
+  const [submissionError, setSubmissionError] = useState<string | null>(null);
   const [isNewHighScore, setIsNewHighScore] = useState(false);
   const [boardSize, setBoardSize] = useState<{
     width: number;
@@ -130,12 +131,19 @@ export function useAimTrainer(me?: { isLoggedIn?: boolean; userId?: string | nul
     setSubmitting(true);
     setSubmitState('idle');
     setIsNewHighScore(false);
+    setSubmissionError(null);
     // Pass previous best to avoid race condition with isNewHighScore
     const result = await submitScore('aim-trainer', finalScore, bestScore);
     setSubmitting(false);
-    setSubmitState(result.success ? 'success' : 'error');
-    if (result.success && result.isNewHighScore) {
-      setIsNewHighScore(true);
+    if (result.success) {
+      setSubmitState('success');
+      if (result.isNewHighScore) {
+        setIsNewHighScore(true);
+      }
+    } else {
+      setSubmitState('error');
+      const errorMessage = result.error || 'Failed to save score. Please try again.';
+      setSubmissionError(errorMessage);
     }
   }, [bestScore]);
 
@@ -360,6 +368,7 @@ export function useAimTrainer(me?: { isLoggedIn?: boolean; userId?: string | nul
     accuracy,
     submitting,
     submitState,
+    submissionError,
     isNewHighScore,
     canStart,
     phaseLabel,

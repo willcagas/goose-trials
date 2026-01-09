@@ -70,6 +70,7 @@ export default function ChimpGamePage() {
   const [result, setResult] = useState<GameResult | undefined>(undefined);
   const [scoreTimestamp, setScoreTimestamp] = useState<Date | undefined>(undefined);
   const [isNewHighScore, setIsNewHighScore] = useState(false);
+  const [submissionError, setSubmissionError] = useState<string | null>(null);
   const hideTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Load/save best score
@@ -184,6 +185,7 @@ export default function ChimpGamePage() {
       if (finalScore > 0) {
         setSubmitting(true);
         setIsNewHighScore(false);
+        setSubmissionError(null);
         // Pass previous best to avoid race condition with isNewHighScore
         const previousBest = bestLevel > 0 ? bestLevel : null;
         const submitResult = await submitScore('chimp', finalScore, previousBest);
@@ -195,6 +197,9 @@ export default function ChimpGamePage() {
             setIsNewHighScore(true);
           }
         } else {
+          // Display error message to user
+          const errorMessage = submitResult.error || 'Failed to save score. Please try again.';
+          setSubmissionError(errorMessage);
           console.error('Failed to submit score:', submitResult.error);
         }
       }
@@ -322,6 +327,7 @@ export default function ChimpGamePage() {
       timestamp={scoreTimestamp}
       onPlayAgain={() => startRun(4)}
       isSubmitting={submitting}
+      submissionError={submissionError}
     />
   );
 

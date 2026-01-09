@@ -293,6 +293,7 @@ export default function PathfindingGame() {
   const [submitState, setSubmitState] = useState<'idle' | 'success' | 'error'>(
     'idle'
   );
+  const [submissionError, setSubmissionError] = useState<string | null>(null);
   const [scoreTimestamp, setScoreTimestamp] = useState<Date | undefined>(undefined);
   const [isNewHighScore, setIsNewHighScore] = useState(false);
   const pathRef = useRef<Position[]>([]);
@@ -470,13 +471,20 @@ export default function PathfindingGame() {
     setSubmitting(true);
     setSubmitState('idle');
     setIsNewHighScore(false);
+    setSubmissionError(null);
     // Pass previous best to avoid race condition with isNewHighScore
     const previousBest = bestScore > 0 ? bestScore : null;
     const result = await submitScore('pathfinding', score, previousBest);
     setSubmitting(false);
-    setSubmitState(result.success ? 'success' : 'error');
-    if (result.success && result.isNewHighScore) {
-      setIsNewHighScore(true);
+    if (result.success) {
+      setSubmitState('success');
+      if (result.isNewHighScore) {
+        setIsNewHighScore(true);
+      }
+    } else {
+      setSubmitState('error');
+      const errorMessage = result.error || 'Failed to save score. Please try again.';
+      setSubmissionError(errorMessage);
     }
   };
 
@@ -676,17 +684,18 @@ export default function PathfindingGame() {
   );
 
   const renderResult = (result: GameResult) => (
-    <ResultCard
-      gameMetadata={gameMetadata}
-      score={result.score}
-      scoreLabel="rounds"
-      personalBest={bestScore > 0 ? bestScore : undefined}
-      personalBestLabel="rounds"
-      message={result.message}
-      isNewHighScore={isNewHighScore}
-      timestamp={scoreTimestamp}
-      onPlayAgain={startGame}
-      isSubmitting={submitting}
+      <ResultCard
+        gameMetadata={gameMetadata}
+        score={result.score}
+        scoreLabel="rounds"
+        personalBest={bestScore > 0 ? bestScore : undefined}
+        personalBestLabel="rounds"
+        message={result.message}
+        isNewHighScore={isNewHighScore}
+        timestamp={scoreTimestamp}
+        onPlayAgain={startGame}
+        isSubmitting={submitting}
+        submissionError={submissionError}
     />
   );
 
