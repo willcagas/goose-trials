@@ -6,6 +6,7 @@ import { useMe } from '@/app/providers/MeContext';
 import LoginModal from './LoginModal';
 import { GameMetadata } from '@/lib/games/registry';
 import { toPng } from 'html-to-image';
+import { formatResultDate, formatShortDate } from '@/utils/format';
 
 interface TopScore {
   score_value: number;
@@ -282,15 +283,9 @@ export default function ResultCard({
     }
   };
 
-  // Format timestamp
+  // Format timestamp using timezone-aware utility
   const formatTimestamp = (date: Date) => {
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-    });
+    return formatResultDate(date);
   };
 
   const flag = countryCodeToFlag(countryCode ?? null);
@@ -454,7 +449,7 @@ export default function ResultCard({
                           </div>
                           {scoreItem && (
                             <span className="text-white/30 text-xs">
-                              {new Date(scoreItem.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                              {formatShortDate(scoreItem.created_at)}
                             </span>
                           )}
                         </div>

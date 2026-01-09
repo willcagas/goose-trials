@@ -7,6 +7,7 @@ import Navbar from '@/components/Navbar';
 import LoginModal from '@/components/LoginModal';
 import UserTag from '@/components/UserTag';
 import PercentileGraph from '@/components/PercentileGraph';
+import { formatLeaderboardDate } from '@/utils/format';
 
 // Types for individual leaderboard entries
 interface LeaderboardEntry {
@@ -165,14 +166,7 @@ function formatScore(score: number, unit: string | null): string {
   return unit ? `${score.toFixed(2)} ${unit}` : score.toFixed(2);
 }
 
-function formatDate(dateString: string): string {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
-}
+// formatDate is now imported from utils/format as formatLeaderboardDate
 
 function getFlagEmoji(countryCode: string | null): string {
   if (!countryCode || countryCode.length !== 2) return '';
@@ -566,7 +560,7 @@ export default function LeaderboardTestPage() {
                       {formatScore(entry.best_score, testInfo?.unit || null)}
                     </td>
                     <td className="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-xs md:text-sm text-gray-500 text-right">
-                      {formatDate(entry.achieved_at)}
+                      {formatLeaderboardDate(entry.achieved_at)}
                     </td>
                     <td className="px-3 md:px-6 py-3 md:py-4 whitespace-nowrap text-center">
                       <button

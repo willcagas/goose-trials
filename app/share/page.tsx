@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import { GAMES_REGISTRY, GameSlug } from '@/lib/games/registry';
+import { formatLeaderboardDate } from '@/utils/format';
 
 function ShareContent() {
   const searchParams = useSearchParams();
@@ -39,13 +40,9 @@ function ShareContent() {
     );
   }
 
-  // Format timestamp if provided
+  // Format timestamp if provided (using timezone-aware formatting)
   const formattedDate = timestamp 
-    ? new Date(parseInt(timestamp)).toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-      })
+    ? formatLeaderboardDate(new Date(parseInt(timestamp)).toISOString())
     : null;
 
   return (

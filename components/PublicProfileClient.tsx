@@ -9,6 +9,7 @@ import PercentileGraph from '@/components/PercentileGraph';
 import { GAMES_REGISTRY } from '@/lib/games/registry';
 import Link from 'next/link';
 import type { UserHighlight } from '@/lib/db/user-highlights';
+import { formatMonthYear } from '@/utils/format';
 
 interface UniversityInfo {
   id: string;
@@ -131,10 +132,7 @@ export default function PublicProfileClient({
                         .map(h => new Date(h.achieved_at).getTime());
                       if (dates.length === 0) return '—';
                       const earliest = new Date(Math.min(...dates));
-                      return earliest.toLocaleDateString('en-US', {
-                        month: 'short',
-                        year: 'numeric',
-                      });
+                      return formatMonthYear(earliest.toISOString());
                     })()}
                   </div>
                 </div>
