@@ -155,11 +155,22 @@ export default function NumberMemoryGamePage() {
   };
 
   // Generate random N-digit number
+  // Generate digit by digit to avoid precision loss and scientific notation
+  // JavaScript's Number type loses precision beyond ~15-16 digits
   function generateNumber(digitCount: number): string {
-    const min = Math.pow(10, digitCount - 1);
-    const max = Math.pow(10, digitCount) - 1;
-    const num = Math.floor(min + Math.random() * (max - min + 1));
-    return String(num).padStart(digitCount, '0');
+    const digits: string[] = [];
+    // First digit can't be 0 (unless digitCount is 1, in which case it can be 0-9)
+    if (digitCount === 1) {
+      digits.push(String(Math.floor(Math.random() * 10)));
+    } else {
+      // First digit: 1-9
+      digits.push(String(Math.floor(Math.random() * 9) + 1));
+      // Remaining digits: 0-9
+      for (let i = 1; i < digitCount; i++) {
+        digits.push(String(Math.floor(Math.random() * 10)));
+      }
+    }
+    return digits.join('');
   }
 
   // Start a level with given digit count
@@ -174,8 +185,14 @@ export default function NumberMemoryGamePage() {
     setInputValue('');
     setPhase('showing');
 
-    // Random display time between 2-4 seconds
-    const displayTime = 2000 + Math.random() * 2000;
+    // Display time scales with number of digits for fairness
+    // Base time of 2 seconds + 0.5 seconds per digit
+    // Example: 3 digits = 3.5s, 10 digits = 7s, 20 digits = 12s
+    // Add some randomization (±0.3 seconds) to keep it interesting
+    const baseTime = 2000;
+    const timePerDigit = 500;
+    const randomVariation = (Math.random() - 0.5) * 600; // -300ms to +300ms
+    const displayTime = baseTime + (digitCount * timePerDigit) + randomVariation;
     displayTimeRef.current = displayTime;
     displayTimerRef.current = setTimeout(() => {
       setPhase('input');
