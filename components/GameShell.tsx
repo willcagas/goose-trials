@@ -110,18 +110,33 @@ export default function GameShell({
   // Global keybinds
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't trigger if user is typing in an input
+      // Check if authentication modal is open (LoginModal with data-auth-modal attribute)
+      const isAuthModalOpen = document.querySelector('[data-auth-modal="true"]') !== null;
+      
+      // Also check for any modal with z-50 as fallback
+      const isAnyModalOpen = document.querySelector('.fixed.inset-0.z-50') !== null;
+      
+      const isModalOpen = isAuthModalOpen || isAnyModalOpen;
+      
+      // Check if event target is inside a modal
+      const target = e.target as HTMLElement;
+      const isTargetInModal = target?.closest('[data-auth-modal="true"]') !== null || 
+                              target?.closest('.fixed.inset-0.z-50') !== null;
+      
+      // Don't trigger if user is typing in an input (unless it's not in a modal)
       if (
-        e.target instanceof HTMLInputElement ||
-        e.target instanceof HTMLTextAreaElement ||
-        (e.target instanceof HTMLElement && e.target.isContentEditable)
+        !isTargetInModal &&
+        (e.target instanceof HTMLInputElement ||
+         e.target instanceof HTMLTextAreaElement ||
+         (e.target instanceof HTMLElement && e.target.isContentEditable))
       ) {
         return;
       }
 
       // Esc: Always available (quit to IDLE or close help)
       // Handle ESC even on key repeat to ensure it works when held
-      if (e.key === 'Escape') {
+      // But don't handle if we're inside an auth modal (let modal handle it)
+      if (e.key === 'Escape' && !isAuthModalOpen) {
         e.preventDefault();
         e.stopPropagation();
         if (showHelp) {
@@ -132,8 +147,17 @@ export default function GameShell({
         return; // ESC always works, even if other keybinds are disabled
       }
 
-      // If keybinds are disabled, don't handle other keys
-      if (disableKeybinds) return;
+      // If keybinds are disabled or modal is open, don't handle other keys
+      // Also stop propagation to prevent any game actions
+      if (disableKeybinds || isModalOpen || isTargetInModal) {
+        // Prevent default and stop propagation for game keys to ensure they don't trigger game actions
+        const gameKeys = [' ', 'r', 'R', 'h', 'H'];
+        if (gameKeys.includes(e.key)) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        return;
+      }
 
       // Space: Start (from IDLE) or Restart (from FINISHED)
       if (e.key === ' ' && !e.repeat) {

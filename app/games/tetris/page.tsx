@@ -1030,6 +1030,26 @@ export default function TetrisGame() {
   // Global keyboard handler for restart
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      // Check if authentication modal is open (LoginModal with data-auth-modal attribute)
+      const isAuthModalOpen = document.querySelector('[data-auth-modal="true"]') !== null;
+      // Also check for any modal with z-50 as fallback
+      const isAnyModalOpen = document.querySelector('.fixed.inset-0.z-50') !== null;
+      const isModalOpen = isAuthModalOpen || isAnyModalOpen;
+      
+      // Check if event target is inside a modal
+      const target = e.target as HTMLElement;
+      const isTargetInModal = target?.closest('[data-auth-modal="true"]') !== null || 
+                              target?.closest('.fixed.inset-0.z-50') !== null;
+      
+      if (isModalOpen || isTargetInModal) {
+        // Prevent default and stop propagation for game keys to ensure they don't trigger game actions
+        if (e.key === 'r' || e.key === 'R') {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        return;
+      }
+      
       // Restart with R key (works during playing or completed/failed, returns to idle)
       if ((e.key === 'r' || e.key === 'R') && (internalState === 'playing' || internalState === 'completed' || internalState === 'failed')) {
         e.preventDefault();
@@ -1043,6 +1063,29 @@ export default function TetrisGame() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Check if authentication modal is open (LoginModal with data-auth-modal attribute)
+      const isAuthModalOpen = document.querySelector('[data-auth-modal="true"]') !== null;
+      // Also check for any modal with z-50 as fallback
+      const isAnyModalOpen = document.querySelector('.fixed.inset-0.z-50') !== null;
+      const isModalOpen = isAuthModalOpen || isAnyModalOpen;
+      
+      // Check if event target is inside a modal
+      const target = e.target as HTMLElement;
+      const isTargetInModal = target?.closest('[data-auth-modal="true"]') !== null || 
+                              target?.closest('.fixed.inset-0.z-50') !== null;
+      
+      if (isModalOpen || isTargetInModal) {
+        // Prevent default and stop propagation for all game-related keys
+        const gameKeys = [' ', 'r', 'R', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 
+                         'a', 'A', 'd', 'D', 's', 'S', 'w', 'W', 'x', 'X', 'z', 'Z', 
+                         'c', 'C', 'Control', 'Shift'];
+        if (gameKeys.includes(e.key)) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        return;
+      }
+      
       // Start the game from ready state and process the key that started it
       if (internalState === 'ready') {
         e.preventDefault();
@@ -1108,6 +1151,22 @@ export default function TetrisGame() {
     };
 
     const handleKeyUp = (e: KeyboardEvent) => {
+      // Check if authentication modal is open (LoginModal with data-auth-modal attribute)
+      const isAuthModalOpen = document.querySelector('[data-auth-modal="true"]') !== null;
+      // Also check for any modal with z-50 as fallback
+      const isAnyModalOpen = document.querySelector('.fixed.inset-0.z-50') !== null;
+      const isModalOpen = isAuthModalOpen || isAnyModalOpen;
+      
+      // Check if event target is inside a modal
+      const target = e.target as HTMLElement;
+      const isTargetInModal = target?.closest('[data-auth-modal="true"]') !== null || 
+                              target?.closest('.fixed.inset-0.z-50') !== null;
+      
+      if (isModalOpen || isTargetInModal) {
+        e.stopPropagation();
+        return;
+      }
+
       if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
         keyStateRef.current.left = false;
         if (shiftDirectionRef.current === -1) {

@@ -85,17 +85,17 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
       // Check if domain is in allowlist (advisory check)
       const supabase = createClient();
-      const { data: isAllowed, error: domainCheckError } = await supabase
-        .rpc('is_domain_allowed', { p_email_domain: domain });
+      // const { data: isAllowed, error: domainCheckError } = await supabase
+      //   .rpc('is_domain_allowed', { p_email_domain: domain });
 
-      if (domainCheckError) {
-        console.error('Error checking domain:', domainCheckError);
-        // Continue anyway - server-side enforcement will catch it
-      } else if (isAllowed !== true) {
-        setError('Use your university email to sign in.');
-        setLoading(false);
-        return;
-      }
+      // if (domainCheckError) {
+      //   console.error('Error checking domain:', domainCheckError);
+      //   // Continue anyway - server-side enforcement will catch it
+      // } else if (isAllowed !== true) {
+      //   setError('Use your university email to sign in.');
+      //   setLoading(false);
+      //   return;
+      // }
 
       // Send OTP code (not magic link)
       const { error } = await supabase.auth.signInWithOtp({
@@ -106,6 +106,11 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
       });
 
       if (error) {
+        // Log the full error for debugging
+        console.error('SignInWithOtp error:', error);
+        console.error('Error message:', error.message);
+        console.error('Error details:', JSON.stringify(error, null, 2));
+        
         // Check if error is related to domain validation
         if (error.message.includes('university email') || error.message.includes('domain')) {
           setError('Use a university email to sign in.');
@@ -246,7 +251,11 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={(e) => e.stopPropagation()}>
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-4" 
+      onClick={(e) => e.stopPropagation()}
+      data-auth-modal="true"
+    >
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/70 backdrop-blur-sm"

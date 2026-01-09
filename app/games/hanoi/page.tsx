@@ -533,6 +533,28 @@ export default function HanoiGame() {
   // Keyboard controls (hanoi-specific, disable global keybinds during play)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Check if authentication modal is open (LoginModal with data-auth-modal attribute)
+      const isAuthModalOpen = document.querySelector('[data-auth-modal="true"]') !== null;
+      // Also check for any modal with z-50 as fallback
+      const isAnyModalOpen = document.querySelector('.fixed.inset-0.z-50') !== null;
+      const isModalOpen = isAuthModalOpen || isAnyModalOpen;
+      
+      // Check if event target is inside a modal
+      const target = e.target as HTMLElement;
+      const isTargetInModal = target?.closest('[data-auth-modal="true"]') !== null || 
+                              target?.closest('.fixed.inset-0.z-50') !== null;
+      
+      if (isModalOpen || isTargetInModal) {
+        // Stop propagation for game keys to ensure they don't trigger game actions
+        if (e.key === '1' || e.key === '2' || e.key === '3' || 
+            e.key === 'a' || e.key === 'A' || e.key === 's' || e.key === 'S' || 
+            e.key === 'd' || e.key === 'D' || e.key === '8' || e.key === '9' || 
+            e.key === '0' || e.key === 'r' || e.key === 'R') {
+          e.stopPropagation();
+        }
+        return;
+      }
+      
       if (gameState !== 'playing') return;
       
       // Rod selection: 1, 2, 3 keys or 8, 9, 0 keys

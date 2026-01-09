@@ -38,14 +38,18 @@ export async function isUniversityDomainAllowed(email: string): Promise<boolean>
 /**
  * Find university ID by email domain
  * Uses the backend RPC function to match domain to university
+ * Supports subdomains (e.g., "mail.utoronto.ca" matches "utoronto.ca")
+ * Can accept either full email or domain string
  * 
- * @param emailDomain - Email domain (e.g., "uwaterloo.ca")
+ * @param emailDomain - Email domain (e.g., "uwaterloo.ca") or full email (e.g., "user@mail.utoronto.ca")
  * @returns University ID UUID or null if no match found
  */
 export async function findUniversityByDomain(emailDomain: string): Promise<string | null> {
   try {
     const supabase = await createClient();
     
+    // The SQL function now handles both emails and domains, so we can pass as-is
+    // Since the SQL function handles extraction, passing full email is safe
     const { data: universityData, error: universityError } = await supabase
       .rpc('find_university_by_domain', { p_email_domain: emailDomain });
 
