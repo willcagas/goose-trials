@@ -556,6 +556,15 @@ export default function LeaderboardTestPage() {
                             )}
                           </span>
                           <UserTag tagType={entry.user_tag} />
+                          {/* Non-Legitimate Score Badge for specific user on Hanoi leaderboard */}
+                          {testSlug === 'hanoi' && entry.user_id === '910b3e9f-b97c-415f-b069-48d81e792c1a' && (
+                            <span
+                              className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold border text-red-700 bg-red-100 border-red-400"
+                              title="This score has been flagged as non-legitimate"
+                            >
+                              🚫 Cheating Detected
+                            </span>
+                          )}
                         </div>
                       </div>
                     </td>
