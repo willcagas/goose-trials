@@ -15,7 +15,7 @@ import { validateScore } from '@/lib/scoring/validate';
 const CONFIG = {
   TUTORIAL_DISKS: 3,           // Practice mode, no submission
   RANKED_DISKS: 5,             // Ranked leaderboard run
-  MAX_RUN_MS: 60_000,          // Auto-end / DNF threshold
+  MAX_RUN_MS: 600_000,         // Auto-end / DNF threshold
   EXTRA_MOVE_PENALTY_MS: 1200, // Penalty per extra move beyond optimal
   MIN_PLAUSIBLE_MS: 2500,      // Anti-cheat minimum time for n=5
   GAME_SLUG: 'hanoi',
