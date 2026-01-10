@@ -33,6 +33,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [resendCooldown, setResendCooldown] = useState(0);
+  const [showDeliverabilityModal, setShowDeliverabilityModal] = useState(false);
 
   // Restore pending login state when modal opens
   useEffect(() => {
@@ -117,15 +118,19 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
         } else {
           setError(error.message || 'Failed to send verification code. Please try again.');
         }
+        setLoading(false);
         return;
       }
 
-      // Success - move to code entry step
-      setStep('code');
-      setCode('');
-      setResendCooldown(60); // 60 second cooldown
-      // Save pending login state
-      savePendingLogin(trimmedEmail);
+      // Success - wait 3 seconds, then transition directly to code entry step
+      setTimeout(() => {
+        setStep('code');
+        setCode('');
+        setResendCooldown(60); // 60 second cooldown
+        setLoading(false);
+        // Save pending login state
+        savePendingLogin(trimmedEmail);
+      }, 3000);
     } catch (err) {
       // Handle any unexpected errors
       const errorMessage = err instanceof Error ? err.message : String(err);
@@ -134,7 +139,6 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
       } else {
         setError('Failed to send verification code. Please try again.');
       }
-    } finally {
       setLoading(false);
     }
   };
@@ -306,6 +310,49 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
         {step === 'email' ? (
           <form onSubmit={handleSendCode} className="space-y-4">
+            {/* Notice about code delivery - must be read before email input */}
+            <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3">
+              <div className="flex items-start gap-2">
+                <svg 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  fill="none" 
+                  viewBox="0 0 24 24" 
+                  strokeWidth={2} 
+                  stroke="currentColor" 
+                  className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5"
+                >
+                  <path 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" 
+                  />
+                </svg>
+                <div className="flex-1 min-w-0">
+                  <p className="text-blue-300/90 text-sm leading-relaxed mb-2">
+                      Our goose may get stuck in campus admin 🦢
+                  </p>
+                  <ul className="text-blue-300/80 text-xs leading-relaxed space-y-1 list-decimal list-inside mb-0 ml-1">
+                    <li>
+                      <strong className="text-blue-200">Check for our email in your Spam / Junk or</strong>{' '}
+                      <a
+                        href="https://security.microsoft.com/quarantine"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-200 hover:text-blue-100 underline font-semibold"
+                      >
+                        Microsoft Quarantine
+                      </a>
+                    </li>
+                    <li>
+                      <strong className="text-blue-200">
+                        Mark it as Not Junk to help future codes arrive faster.
+                      </strong>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
             <div>
               <input
                 type="email"
@@ -327,7 +374,17 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
               disabled={loading}
               className="w-full px-4 py-3 bg-[#FFD700] text-gray-900 font-bold uppercase tracking-wide rounded-lg hover:bg-[#FFD700]/90 transition-colors disabled:opacity-50"
             >
-              {loading ? 'Sending...' : 'Send Code'}
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="w-5 h-5 animate-spin" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Sending...
+                </span>
+              ) : (
+                'Send Code'
+              )}
             </button>
 
             <p className="text-white/40 text-xs text-center">
@@ -356,32 +413,20 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
               <p className="text-red-400 text-sm">{error}</p>
             )}
 
-            {/* Prominent spam email warning - moved up and made more visible */}
-            <div className="bg-amber-400/20 border-2 border-amber-400/50 rounded-lg p-4 -mt-2 mb-2">
-              <div className="flex items-start gap-3">
-                <svg 
-                  xmlns="http://www.w3.org/2000/svg" 
-                  fill="none" 
-                  viewBox="0 0 24 24" 
-                  strokeWidth={2} 
-                  stroke="currentColor" 
-                  className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5"
+            {/* Code delivery reminder */}
+            <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3">
+              <p className="text-blue-300/90 text-xs leading-relaxed">
+                Didn't get the code? Check Spam / Junk or{' '}
+                <a
+                  href="https://security.microsoft.com/quarantine"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-200 hover:text-blue-100 underline font-medium"
                 >
-                  <path 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round" 
-                    d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" 
-                  />
-                </svg>
-                <div>
-                  <p className="text-amber-200 text-base font-semibold mb-1">
-                    📧 Check Your Spam/Junk Folder!
-                  </p>
-                  <p className="text-amber-300/90 text-sm leading-relaxed">
-                    Verification codes may take <strong>1–2 minutes</strong> to arrive and often end up in <strong className="underline">spam or junk folders</strong>. Keep this tab open and check your email spam folder!
-                  </p>
-                </div>
-              </div>
+                  Microsoft Quarantine
+                </a>
+                {' '}and search for "Goose Trials"
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -416,6 +461,119 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
           </form>
         )}
       </div>
+
+      {/* Deliverability Instructions Modal */}
+      {showDeliverabilityModal && (
+        <div 
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4" 
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowDeliverabilityModal(false);
+          }}
+        >
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            onClick={() => setShowDeliverabilityModal(false)}
+          />
+
+          {/* Modal */}
+          <div 
+            className="relative bg-[#0a0a0a] border border-white/20 rounded-2xl p-6 md:p-8 w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto" 
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close button */}
+            <button
+              onClick={() => setShowDeliverabilityModal(false)}
+              className="absolute top-4 right-4 text-white/60 hover:text-white transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            {/* Header */}
+            <div className="mb-6">
+              <h3 className="text-white text-xl font-bold uppercase tracking-wide mb-2">
+                Ensure Your Code Arrives Instantly
+              </h3>
+              <p className="text-white/60 text-sm">
+                Add <span className="font-mono text-blue-300">auth@auth.goosetrials.com</span> to your Safe Senders list before clicking "Send Code"
+              </p>
+            </div>
+
+            {/* Instructions */}
+            <div className="space-y-6">
+              {/* Outlook Web Instructions */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <svg 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    fill="none" 
+                    viewBox="0 0 24 24" 
+                    strokeWidth={2} 
+                    stroke="currentColor" 
+                    className="w-5 h-5 text-blue-400"
+                  >
+                    <path 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round" 
+                      d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" 
+                    />
+                  </svg>
+                  <h4 className="text-white font-semibold text-base">For University Outlook (Web)</h4>
+                </div>
+                <ol className="list-decimal list-inside space-y-2 text-white/80 text-sm ml-2">
+                  <li>Click the <strong className="text-white">Gear icon (Settings)</strong> in the top right</li>
+                  <li>Go to <strong className="text-white">Mail → Junk email</strong></li>
+                  <li>Under <strong className="text-white">Safe senders and domains</strong>, click <strong className="text-white">+ Add</strong></li>
+                  <li>Type <span className="font-mono text-blue-300 bg-white/5 px-2 py-0.5 rounded">auth@auth.goosetrials.com</span> and press <strong className="text-white">Enter</strong></li>
+                  <li>Click <strong className="text-white">Save</strong></li>
+                </ol>
+              </div>
+
+              {/* Alternative: Add to Contacts */}
+              <div className="border-t border-white/10 pt-6">
+                <div className="flex items-center gap-2 mb-3">
+                  <svg 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    fill="none" 
+                    viewBox="0 0 24 24" 
+                    strokeWidth={2} 
+                    stroke="currentColor" 
+                    className="w-5 h-5 text-amber-400"
+                  >
+                    <path 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round" 
+                      d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5zm6-10.125a1.875 1.875 0 11-3.75 0 1.875 1.875 0 013.75 0z" 
+                    />
+                  </svg>
+                  <h4 className="text-white font-semibold text-base">One-Step Alternative: Add to Contacts</h4>
+                </div>
+                <p className="text-white/70 text-sm leading-relaxed ml-2">
+                  For Mobile or Gmail users: Adding <span className="font-mono text-amber-300 bg-white/5 px-2 py-0.5 rounded">auth@auth.goosetrials.com</span> as a contact in your phone or email app is the easiest method. Once added to your Contacts, most filters (including Google and Apple) will automatically bypass the Spam folder because both Microsoft and Google trust email from contacts by default.
+                </p>
+              </div>
+
+              {/* Why this works */}
+              <div className="bg-amber-400/10 border border-amber-400/20 rounded-lg p-4">
+                <p className="text-amber-200 text-xs leading-relaxed">
+                  <strong className="text-amber-100">Why this works:</strong> When you add us to Safe Senders, it manually sets the Spam Confidence Level (SCL) to -1 for your account. This overrides server-wide filters and ensures your verification code arrives instantly, even if your university's AI initially flags our domain.
+                </p>
+              </div>
+            </div>
+
+            {/* Close button */}
+            <button
+              onClick={() => setShowDeliverabilityModal(false)}
+              className="mt-6 w-full px-4 py-3 bg-[#FFD700] text-gray-900 font-bold uppercase tracking-wide rounded-lg hover:bg-[#FFD700]/90 transition-colors"
+            >
+              Got it
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
