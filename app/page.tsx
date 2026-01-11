@@ -221,7 +221,18 @@ export default function HomePage() {
   }, [createGoose]);
 
   // Fetch tests and top 3 leaders for each test
+  const prevUserIdRef = useRef<string | null>(null);
+
   useEffect(() => {
+    const currentUserId = user?.id ?? null;
+    
+    // Only fetch if user ID actually changed (or initial mount)
+    if (prevUserIdRef.current === currentUserId && prevUserIdRef.current !== null) {
+      return;
+    }
+    
+    prevUserIdRef.current = currentUserId;
+    
     async function fetchTestsAndLeaders() {
       try {
         const response = await fetch('/api/tests/all');
@@ -266,7 +277,7 @@ export default function HomePage() {
       }
     }
     fetchTestsAndLeaders();
-  }, [user]);
+  }, [user?.id]);
 
   const handleClick = () => {
     createGoose();

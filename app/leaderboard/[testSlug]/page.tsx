@@ -289,6 +289,8 @@ export default function LeaderboardTestPage() {
   }, [me?.universityId, meLoading]);
 
   // Function to load leaderboards (can be called manually for refresh)
+  const loadLeaderboardsRef = useRef<(() => Promise<void>) | null>(null);
+
   const loadLeaderboards = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -332,12 +334,31 @@ export default function LeaderboardTestPage() {
     }
   }, [testSlug, me?.universityId, me?.countryCode]);
 
-  // Fetch leaderboards on mount and when dependencies change
+  loadLeaderboardsRef.current = loadLeaderboards;
+
+  // Track previous values using refs to prevent unnecessary refetches
+  const prevUniversityIdRef = useRef<string | null | undefined>(undefined);
+  const prevCountryCodeRef = useRef<string | null | undefined>(undefined);
+  const hasFetchedRef = useRef(false);
+
+  // Fetch leaderboards on mount and when dependencies actually change
   useEffect(() => {
-    if (!meLoading) {
-      loadLeaderboards();
+    if (meLoading) return;
+    
+    const universityId = me?.universityId ?? null;
+    const countryCode = me?.countryCode ?? null;
+    
+    const universityIdChanged = prevUniversityIdRef.current !== universityId;
+    const countryCodeChanged = prevCountryCodeRef.current !== countryCode;
+    
+    // Only fetch on initial mount or when values actually change
+    if (!hasFetchedRef.current || universityIdChanged || countryCodeChanged) {
+      prevUniversityIdRef.current = universityId;
+      prevCountryCodeRef.current = countryCode;
+      hasFetchedRef.current = true;
+      loadLeaderboardsRef.current?.();
     }
-  }, [meLoading, loadLeaderboards]);
+  }, [meLoading, me?.universityId, me?.countryCode]);
 
   // Handle percentile graph expansion
   const handlePercentileClick = (userId: string, e: React.MouseEvent) => {
