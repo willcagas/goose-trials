@@ -161,13 +161,32 @@ export default function ReactionTimeGame() {
     const delay = 2000 + Math.random() * 3000;
 
     timeoutRef.current = setTimeout(() => {
-      startTimeRef.current = Date.now();
+      // First, update the state to trigger the visual change to green
       setInternalState('ready');
-      isRestartingRef.current = false;
+      
+      // Use requestAnimationFrame to ensure we measure from when the screen actually turns green
+      // This accounts for React re-render and browser paint delays
+      requestAnimationFrame(() => {
+        // Double RAF to ensure the frame is actually painted before we start timing
+        requestAnimationFrame(() => {
+          // Set start time AFTER the green screen is visually displayed
+          startTimeRef.current = performance.now();
+          isRestartingRef.current = false;
+        });
+      });
     }, delay);
   };
 
-  const handleClick = async () => {
+  const handleInteraction = async (e: React.MouseEvent | React.TouchEvent) => {
+    // Prevent default to avoid scrolling on touch devices
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Prevent double-firing by checking if we're already processing
+    if (internalState === 'clicked' || internalState === 'tooEarly') {
+      return;
+    }
+
     if (internalState === 'waiting') {
       // Clicked too early!
       if (timeoutRef.current) {
@@ -184,9 +203,12 @@ export default function ReactionTimeGame() {
     }
 
     if (internalState === 'ready') {
-      // Calculate reaction time
-      const endTime = Date.now();
-      const reaction = endTime - startTimeRef.current;
+      // Immediately set state to prevent double-firing
+      setInternalState('clicked');
+      
+      // Calculate reaction time using performance.now() for high precision
+      const endTime = performance.now();
+      const reaction = Math.round(endTime - startTimeRef.current);
       setReactionTime(reaction);
       setAttempts(prev => prev + 1);
 
@@ -200,7 +222,6 @@ export default function ReactionTimeGame() {
         }
       }
 
-      setInternalState('clicked');
       setScoreTimestamp(new Date());
       setResult({
         score: reaction,
@@ -321,7 +342,9 @@ export default function ReactionTimeGame() {
     return (
       <div
         className={`h-[calc(100vh-8rem)] w-full ${bgColor} flex items-center justify-center text-white cursor-pointer select-none`}
-        onClick={handleClick}
+        onMouseDown={handleInteraction}
+        onTouchStart={handleInteraction}
+        style={{ touchAction: 'none' }}
       >
         <div className="text-center px-4">
           {internalState === 'waiting' && (
