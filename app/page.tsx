@@ -368,14 +368,31 @@ export default function HomePage() {
               { href: "/games/tetris", tag: "SPEED", icon: Box, title: "Tetris", desc: "Clear 15 lines as fast as possible.", mobileOnly: true }
             ].map((trial, idx) => {
               const isTetris = trial.title === "Tetris";
-              const isDisabledOnMobile = isTetris;
+              // Check if device is actually a mobile/tablet device
+              // We need both touch capability AND small screen OR mobile user agent
+              // This excludes desktop PCs with touchscreens (which have keyboards)
+              const isTouchDevice = typeof window !== 'undefined' && (
+                'ontouchstart' in window ||
+                navigator.maxTouchPoints > 0 ||
+                (navigator as any).msMaxTouchPoints > 0
+              );
+              
+              // Check for mobile user agent (phones/tablets)
+              const isMobileUserAgent = typeof window !== 'undefined' && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+              
+              // Check if screen is small (likely mobile/tablet, not desktop with touchscreen)
+              const isSmallScreen = typeof window !== 'undefined' && window.innerWidth < 1024;
+              
+              // Disable if it's a touch device AND (small screen OR mobile user agent)
+              // This allows desktop PCs with touchscreens (large screens, desktop user agent) to work
+              const isDisabledOnMobile = isTetris && isTouchDevice && (isSmallScreen || isMobileUserAgent);
 
               return (
                 <a
                   key={idx}
                   href={trial.href}
                   onClick={(e) => {
-                    if (isDisabledOnMobile && window.innerWidth < 768) {
+                    if (isDisabledOnMobile) {
                       e.preventDefault();
                     } else {
                       e.stopPropagation();
@@ -387,9 +404,9 @@ export default function HomePage() {
                       ? "bg-gray-100 border-gray-300 md:bg-white md:border-gray-200 md:hover:border-amber-400 md:active:scale-[0.98] md:hover:shadow-md"
                       : "bg-white border-gray-200 hover:border-amber-400 active:scale-[0.98] hover:shadow-md"
                     }`}>
-                    {/* Mobile Not Supported Badge - Only visible on mobile for Tetris */}
+                    {/* Mobile Not Supported Badge - Only visible on touch devices for Tetris */}
                     {isDisabledOnMobile && (
-                      <div className="absolute top-4 left-4 md:hidden">
+                      <div className="absolute top-4 left-4">
                         <span className="px-3 py-1 bg-gray-300 text-gray-600 text-[10px] font-bold uppercase rounded-full border border-gray-400">
                           Desktop Only
                         </span>
